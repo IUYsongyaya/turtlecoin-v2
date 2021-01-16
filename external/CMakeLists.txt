@@ -1,0 +1,11 @@
+add_subdirectory(cppfs)
+add_subdirectory(crypto)
+add_subdirectory(cxxfolders)
+add_subdirectory(lmdb)
+add_subdirectory(libzmq)
+
+set_property(TARGET cppfs PROPERTY FOLDER "external")
+set_property(TARGET crypto-static PROPERTY FOLDER "external")
+set_property(TARGET platform_folders PROPERTY FOLDER "external")
+set_property(TARGET lmdb PROPERTY FOLDER "external")
+set_property(TARGET libzmq-static PROPERTY FOLDER "external")

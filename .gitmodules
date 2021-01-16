@@ -1,0 +1,24 @@
+[submodule "external/crypto"]
+	path = external/crypto
+	url = https://github.com/turtlecoin/turtlecoin-crypto
+	branch = development
+[submodule "external/cxxopts"]
+	path = external/cxxopts
+	url = https://github.com/turtlecoin/cxxopts
+	branch = v2_2_1
+[submodule "external/libzmq"]
+	path = external/libzmq
+	url = https://github.com/turtlecoin/libzmq.git
+	branch = v4.3.4
+[submodule "external/cxxfolders"]
+	path = external/cxxfolders
+	url = https://github.com/turtlecoin/cxxfolders
+[submodule "external/cppfs"]
+	path = external/cppfs
+	url = https://github.com/turtlecoin/cppfs
+[submodule "external/lmdb"]
+	path = external/lmdb
+	url = https://github.com/turtlecoin/lmdb
+[submodule "external/cppzmq"]
+	path = external/cppzmq
+	url = https://github.com/turtlecoin/cppzmq

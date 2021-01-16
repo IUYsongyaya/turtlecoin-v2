@@ -1,0 +1,42 @@
+TRTL-OSLv1 License
+
+Copyright 2020-2021 The TurtleCoin® Developers
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+1) Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
+
+2) Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation and/or
+other materials provided with the distribution.
+
+3) Neither the name of the copyright holder nor the names of its contributors
+may be used to endorse or promote products derived from this software without
+specific written permission.
+
+4) Any modifications, improvements, enhancements, bugfixes, features, or other
+changes (hereafter known as "modifications") made to this software must be
+submitted to The TurtleCoin® Developers, in writing via a pull-request, which
+may or may not be accepted, to the matching source code repository no more than
+seven (7) days after such modifications have been made and any such
+modifications must be made available under this same license.
+
+5) This software, including its source code, binaries, and documentation, may
+not be used to create, manage, maintain, develop, interact with, or otherwise
+operate a cryptocurrency network other than the TurtleCoin® network or an
+ephemeral TurtleCoin® Testnet (which may only operate in support of testing
+proposed changes to the TurtleCoin® network) without the explicit written
+consent of The TurtleCoin® Developers.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
