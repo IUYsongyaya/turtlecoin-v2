@@ -4,6 +4,7 @@
 
 #include <benchmark.h>
 #include <types.h>
+#include <config.h>
 
 #define POW_TEST_ITERATIONS 10
 
@@ -11,7 +12,7 @@ int main()
 {
     benchmark_header(40, 25);
 
-    for (size_t i = 0; i < 32; ++i)
+    for (size_t i = 0; i < TurtleCoin::Configuration::Transaction::Fees::MAXIMUM_POW_ZEROS; ++i)
     {
         benchmark(
             [&i]() {
