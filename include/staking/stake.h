@@ -64,6 +64,13 @@ namespace TurtleCoin::Types::Staking
             return serialize().size();
         }
 
+        [[nodiscard]] std::string to_string() const
+        {
+            const auto bytes = serialize();
+
+            return Crypto::StringTools::to_hex(bytes.data(), bytes.size());
+        }
+
         uint64_t version() const
         {
             return record_version;
