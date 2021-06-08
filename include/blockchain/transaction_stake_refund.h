@@ -72,6 +72,14 @@ namespace TurtleCoin::Types::Blockchain
             JSON_MEMBER_OR_THROW("recall_stake_tx");
 
             recall_stake_tx = get_json_string(j, "recall_stake_tx");
+
+            JSON_MEMBER_OR_THROW("output");
+
+            {
+                const auto &elem = get_json_value(j, "output");
+
+                output_fromJSON(elem);
+            }
         }
 
         [[nodiscard]] crypto_hash_t hash() const
@@ -120,6 +128,7 @@ namespace TurtleCoin::Types::Blockchain
                 writer.Key("recall_stake_tx");
                 recall_stake_tx.toJSON(writer);
 
+                writer.Key("output");
                 output_toJSON(writer);
             }
             writer.EndObject();
