@@ -11,8 +11,9 @@
 #include "blockchain/block.h"
 
 // Network Transactions
-#include "blockchain/transaction_coinbase.h"
+#include "blockchain/transaction_genesis.h"
 #include "blockchain/transaction_stake_refund.h"
+#include "blockchain/transaction_staker_reward.h"
 
 // User Generated Transactions
 #include "blockchain/transaction_normal.h"
@@ -35,7 +36,8 @@ namespace TurtleCoin::Types
     namespace Blockchain
     {
         typedef std::variant<
-            coinbase_transaction_t,
+            genesis_transaction_t,
+            staker_reward_transaction_t,
             committed_normal_transaction_t,
             committed_recall_stake_transaction_t,
             committed_stake_transaction_t,

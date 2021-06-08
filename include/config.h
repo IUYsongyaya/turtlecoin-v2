@@ -10,11 +10,22 @@
 
 namespace TurtleCoin::Configuration
 {
+    namespace Version
+    {
+        const size_t MAJOR = 2;
+
+        const size_t MINOR = 0;
+
+        const size_t PATCH = 0;
+
+        const size_t BUILD = 0;
+    } // namespace Version
+
     const uint64_t GENESIS_BLOCK_TIMESTAMP = 1634788800;
 
     const uint64_t PUBLIC_ADDRESS_PREFIX = 0x6bb3b1d;
 
-    const size_t MINED_MONEY_UNLOCK_WINDOW = 60;
+    const size_t MINTED_MONEY_UNLOCK_WINDOW = 60;
 
     namespace Consensus
     {
@@ -55,15 +66,19 @@ namespace TurtleCoin::Configuration
 
     namespace Transaction
     {
-        const size_t RING_SIZE = 256;
+        const size_t RING_SIZE = 512; // must be a power of 2
 
         const size_t MAXIMUM_INPUTS = 8;
+
+        const size_t MINIMUM_OUTPUTS = 2;
 
         const size_t MAXIMUM_OUTPUTS = 8;
 
         namespace Types
         {
-            const uint64_t COINBASE = 1;
+            const uint64_t GENESIS = 0;
+
+            const uint64_t STAKER_REWARD = 1;
 
             const uint64_t NORMAL = 2;
 
@@ -100,12 +115,17 @@ namespace TurtleCoin::Configuration
              * The minimum number of difficulty (zeros) required to transmit a transaction
              * on the network
              */
-            const size_t MINIMUM_POW_ZEROS = 3;
+            const size_t MINIMUM_POW_ZEROS = 1;
 
             /**
-             * The maximum fee discount % that can be applied
+             * The maximum number of zeros that will be considered for the PoW discount
              */
-            const size_t MAXIMUM_FEE_DISCOUNT = 30;
+            const size_t MAXIMUM_POW_ZEROS = 16;
+
+            /**
+             * The multiplier used when calculating the discount for the number of additional PoW zeros
+             */
+            const float POW_ZERO_DISCOUNT_MULTIPLIER = 2;
         } // namespace Fees
 
         /**
@@ -113,7 +133,7 @@ namespace TurtleCoin::Configuration
          */
         namespace ProofOfWork
         {
-            const size_t ITERATIONS = 256;
+            const size_t ITERATIONS = 2048;
 
             const size_t MEMORY = 1024; // 1MB
 

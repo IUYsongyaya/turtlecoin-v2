@@ -363,7 +363,7 @@ namespace TurtleCoin::Types::Blockchain
 
             tx.outputs = outputs;
 
-            tx.stake_tx = stake_tx;
+            tx.staker_id = staker_id;
 
             tx.view_signature = view_signature;
 
@@ -428,7 +428,7 @@ namespace std
             os << output << std::endl;
         }
 
-        os << "\tStake Tx: " << value.stake_tx << std::endl
+        os << "\tStaker ID: " << value.staker_id << std::endl
            << "\tStaker View Signature: " << value.view_signature << std::endl
            << "\tStaker Spend Signature: " << value.spend_signature << std::endl;
 
@@ -463,7 +463,7 @@ namespace std
             os << output << std::endl;
         }
 
-        os << "\tStake Tx: " << value.stake_tx << std::endl
+        os << "\tStaker ID: " << value.staker_id << std::endl
            << "\tStaker View Signature: " << value.view_signature << std::endl
            << "\tStaker Spend Signature: " << value.spend_signature << std::endl
            << std::endl;

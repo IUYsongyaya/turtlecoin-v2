@@ -11,7 +11,60 @@
 
 namespace TurtleCoin::BaseTypes
 {
-    struct TransactionPrefix
+    struct TransactionHeader
+    {
+        TransactionHeader() {}
+
+        TransactionHeader(deserializer_t &reader)
+        {
+            deserialize_header(reader);
+        }
+
+        JSON_OBJECT_CONSTRUCTORS(TransactionHeader, header_fromJSON)
+
+        void deserialize_header(deserializer_t &reader)
+        {
+            type = reader.varint<uint64_t>();
+
+            version = reader.varint<uint64_t>();
+        }
+
+        void serialize_header(serializer_t &writer) const
+        {
+            writer.varint(type);
+
+            writer.varint(version);
+        }
+
+        void header_toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const
+        {
+            writer.Key("type");
+            writer.Uint64(type);
+
+            writer.Key("version");
+            writer.Uint64(version);
+        }
+
+        JSON_FROM_FUNC(header_fromJSON)
+        {
+            JSON_OBJECT_OR_THROW();
+
+            JSON_MEMBER_OR_THROW("type");
+
+            type = get_json_uint64_t(j, "type");
+
+            JSON_MEMBER_OR_THROW("version");
+
+            version = get_json_uint64_t(j, "version");
+        }
+
+        uint64_t version = 0;
+
+      protected:
+        uint64_t type = 0;
+    };
+
+    struct TransactionPrefix : TransactionHeader
     {
         TransactionPrefix() {}
 
@@ -24,9 +77,7 @@ namespace TurtleCoin::BaseTypes
 
         void deserialize_prefix(deserializer_t &reader)
         {
-            type = reader.varint<uint64_t>();
-
-            version = reader.varint<uint64_t>();
+            deserialize_header(reader);
 
             unlock_block = reader.varint<uint64_t>();
 
@@ -35,22 +86,16 @@ namespace TurtleCoin::BaseTypes
 
         void serialize_prefix(serializer_t &writer) const
         {
-            writer.varint(type);
-
-            writer.varint(version);
+            serialize_header(writer);
 
             writer.varint(unlock_block);
 
-            tx_public_key.serialize(writer);
+            writer.key(tx_public_key);
         }
 
         void prefix_toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const
         {
-            writer.Key("type");
-            writer.Uint64(type);
-
-            writer.Key("version");
-            writer.Uint64(version);
+            header_toJSON(writer);
 
             writer.Key("unlock_block");
             writer.Uint64(unlock_block);
@@ -63,13 +108,7 @@ namespace TurtleCoin::BaseTypes
         {
             JSON_OBJECT_OR_THROW();
 
-            JSON_MEMBER_OR_THROW("type");
-
-            type = get_json_uint64_t(j, "type");
-
-            JSON_MEMBER_OR_THROW("version");
-
-            version = get_json_uint64_t(j, "version");
+            header_fromJSON(j);
 
             JSON_MEMBER_OR_THROW("unlock_block");
 
@@ -80,12 +119,65 @@ namespace TurtleCoin::BaseTypes
             tx_public_key = get_json_string(j, "tx_public_key");
         }
 
-        uint64_t version = 0;
         uint64_t unlock_block = 0;
         crypto_public_key_t tx_public_key;
+    };
 
-      protected:
-        uint64_t type = 0;
+    struct StakerOutput
+    {
+        StakerOutput() {}
+
+        StakerOutput(const crypto_hash_t &staker_id, uint64_t amount): staker_id(staker_id), amount(amount) {}
+
+        StakerOutput(deserializer_t &reader)
+        {
+            deserialize_output(reader);
+        }
+
+        JSON_OBJECT_CONSTRUCTORS(StakerOutput, output_fromJSON)
+
+        void deserialize_output(deserializer_t &reader)
+        {
+            staker_id = reader.key<crypto_hash_t>();
+
+            amount = reader.varint<uint64_t>();
+        }
+
+        void serialize_output(serializer_t &writer) const
+        {
+            writer.key(staker_id);
+
+            writer.varint(amount);
+        }
+
+        void output_toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const
+        {
+            writer.StartObject();
+            {
+                writer.Key("staker_id");
+                staker_id.toJSON(writer);
+
+                writer.Key("amount");
+                writer.Uint64(amount);
+            }
+            writer.EndObject();
+        }
+
+        JSON_FROM_FUNC(output_fromJSON)
+        {
+            JSON_OBJECT_OR_THROW();
+
+            JSON_MEMBER_OR_THROW("staker_id");
+
+            staker_id = get_json_string(j, "staker_id");
+
+            JSON_MEMBER_OR_THROW("amount");
+
+            amount = get_json_uint64_t(j, "amount");
+        }
+
+        crypto_hash_t staker_id;
+        uint64_t amount = 0;
     };
 
     struct TransactionOutput
@@ -530,7 +622,7 @@ namespace TurtleCoin::BaseTypes
 
         void deserialize_data(deserializer_t &reader)
         {
-            stake_tx = reader.key<crypto_hash_t>();
+            staker_id = reader.key<crypto_hash_t>();
 
             view_signature = reader.key<crypto_signature_t>();
 
@@ -539,7 +631,7 @@ namespace TurtleCoin::BaseTypes
 
         void serialize_data(serializer_t &writer) const
         {
-            stake_tx.serialize(writer);
+            staker_id.serialize(writer);
 
             view_signature.serialize(writer);
 
@@ -549,7 +641,7 @@ namespace TurtleCoin::BaseTypes
         void data_toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const
         {
             writer.Key("stake_tx");
-            stake_tx.toJSON(writer);
+            staker_id.toJSON(writer);
 
             writer.Key("view_signature");
             view_signature.toJSON(writer);
@@ -564,7 +656,7 @@ namespace TurtleCoin::BaseTypes
 
             JSON_MEMBER_OR_THROW("stake_tx");
 
-            stake_tx = get_json_string(j, "stake_tx");
+            staker_id = get_json_string(j, "stake_tx");
 
             JSON_MEMBER_OR_THROW("view_signature");
 
@@ -575,7 +667,7 @@ namespace TurtleCoin::BaseTypes
             spend_signature = get_json_string(j, "spend_signature");
         }
 
-        crypto_hash_t stake_tx;
+        crypto_hash_t staker_id;
         crypto_signature_t view_signature, spend_signature;
     };
 } // namespace TurtleCoin::BaseTypes
@@ -583,6 +675,8 @@ namespace TurtleCoin::BaseTypes
 namespace TurtleCoin::Types::Blockchain
 {
     typedef TurtleCoin::BaseTypes::TransactionOutput transaction_output_t;
+
+    typedef TurtleCoin::BaseTypes::StakerOutput staker_output_t;
 } // namespace TurtleCoin::Types::Blockchain
 
 namespace std
@@ -593,6 +687,15 @@ namespace std
            << "\t\tPublic Ephemeral: " << value.public_ephemeral << std::endl
            << "\t\tAmount: " << value.amount << std::endl
            << "\t\tCommitment: " << value.commitment << std::endl;
+
+        return os;
+    }
+
+    inline ostream &operator<<(ostream &os, const TurtleCoin::Types::Blockchain::staker_output_t &value)
+    {
+        os << "\tStaker Output" << std::endl
+           << "\t\tStaker ID: " << value.staker_id << std::endl
+           << "\t\tAmount: " << value.amount << std::endl;
 
         return os;
     }

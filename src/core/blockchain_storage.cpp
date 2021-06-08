@@ -68,8 +68,10 @@ namespace TurtleCoin::Core
 
         switch (type)
         {
-            case Configuration::Transaction::Types::COINBASE:
-                return {true, Types::Blockchain::coinbase_transaction_t(reader)};
+            case Configuration::Transaction::Types::GENESIS:
+                return {true, Types::Blockchain::genesis_transaction_t(reader)};
+            case Configuration::Transaction::Types::STAKER_REWARD:
+                return {true, Types::Blockchain::staker_reward_transaction_t(reader)};
             case Configuration::Transaction::Types::NORMAL:
                 return {true, Types::Blockchain::committed_normal_transaction_t(reader)};
             case Configuration::Transaction::Types::STAKE:

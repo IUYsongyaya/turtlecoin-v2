@@ -5,7 +5,7 @@
 #ifndef TURTLECOIN_BLOCK_H
 #define TURTLECOIN_BLOCK_H
 
-#include "transaction_coinbase.h"
+#include "transaction_staker_reward.h"
 
 #include <map>
 
@@ -89,7 +89,9 @@ namespace TurtleCoin::Types::Blockchain
 
             timestamp = reader.varint<uint64_t>();
 
-            coinbase_tx.deserialize(reader);
+            block_index = reader.varint<uint64_t>();
+
+            staker_reward_tx.deserialize(reader);
 
             // transactions
             {
@@ -149,9 +151,13 @@ namespace TurtleCoin::Types::Blockchain
 
             timestamp = get_json_uint64_t(j, "timestamp");
 
-            JSON_MEMBER_OR_THROW("coinbase_tx");
+            JSON_MEMBER_OR_THROW("block_index");
 
-            coinbase_tx = coinbase_transaction_t(j, "coinbase_tx");
+            block_index = get_json_uint64_t(j, "block_index");
+
+            JSON_MEMBER_OR_THROW("staker_reward_tx");
+
+            staker_reward_tx = staker_reward_transaction_t(j, "staker_reward_tx");
 
             JSON_MEMBER_OR_THROW("transactions");
 
@@ -213,7 +219,7 @@ namespace TurtleCoin::Types::Blockchain
          */
         [[nodiscard]] uint64_t height() const
         {
-            return coinbase_tx.block_index;
+            return block_index;
         }
 
         /**
@@ -259,7 +265,9 @@ namespace TurtleCoin::Types::Blockchain
 
             writer.varint(timestamp);
 
-            coinbase_tx.serialize(writer);
+            writer.varint(block_index);
+
+            staker_reward_tx.serialize(writer);
 
             writer.varint(transactions.size());
 
@@ -348,8 +356,11 @@ namespace TurtleCoin::Types::Blockchain
                 writer.Key("timestamp");
                 writer.Uint64(timestamp);
 
-                writer.Key("coinbase_tx");
-                coinbase_tx.toJSON(writer);
+                writer.Key("block_index");
+                writer.Uint64(block_index);
+
+                writer.Key("staker_reward_tx");
+                staker_reward_tx.toJSON(writer);
 
                 writer.Key("transactions");
                 writer.StartArray();
@@ -421,21 +432,9 @@ namespace TurtleCoin::Types::Blockchain
          */
         [[nodiscard]] bool validate_construction() const
         {
-            if (Crypto::secret_key_to_public_key(coinbase_tx.tx_secret_key) != coinbase_tx.tx_public_key)
+            if (staker_reward_tx.staker_outputs.empty())
             {
                 return false;
-            }
-
-            /**
-             * Check to make sure that all outputs have well formed output keys
-             * and that their commitments are well formed
-             */
-            for (const auto &output : coinbase_tx.outputs)
-            {
-                if (!output.public_ephemeral.check() || !output.commitment.check())
-                {
-                    return false;
-                }
             }
 
             // producer may not validate their own blocks
@@ -516,9 +515,9 @@ namespace TurtleCoin::Types::Blockchain
             return {public_key, signature};
         }
 
-        uint64_t version = 1, timestamp = 0;
+        uint64_t version = 1, timestamp = 0, block_index;
         crypto_hash_t previous_blockhash;
-        coinbase_transaction_t coinbase_tx;
+        staker_reward_transaction_t staker_reward_tx;
 
         /**
          * Transaction hashes must be properly ordered in a block using standard sorting
@@ -545,13 +544,12 @@ namespace std
            << "\tVersion: " << value.version << std::endl
            << "\tPrevious Blockhash: " << value.previous_blockhash << std::endl
            << "\tTimestamp: " << value.timestamp << std::endl
-           << std::endl
-           << value.coinbase_tx << std::endl
+           << "\tBlock Index: " << value.block_index << std::endl
            << "\tTransactions:" << std::endl;
 
         for (const auto &tx : value.transactions)
         {
-            os << tx << std::endl;
+            os << "\t\t" << tx << std::endl;
         }
 
         os << "\tProducer Public Key: " << value.producer_public_key << std::endl

@@ -2,33 +2,33 @@
 //
 // Please see the included LICENSE file for more information.
 
-#ifndef TURTLECOIN_TRANSACTION_COINBASE_H
-#define TURTLECOIN_TRANSACTION_COINBASE_H
+#ifndef TURTLECOIN_TRANSACTION_GENESIS_H
+#define TURTLECOIN_TRANSACTION_GENESIS_H
 
 #include "base_types.h"
 
 namespace TurtleCoin::Types::Blockchain
 {
-    struct coinbase_transaction_t : TurtleCoin::BaseTypes::TransactionPrefix
+    struct genesis_transaction_t : TurtleCoin::BaseTypes::TransactionPrefix
     {
-        coinbase_transaction_t()
+        genesis_transaction_t()
         {
-            type = Configuration::Transaction::Types::COINBASE;
+            type = Configuration::Transaction::Types::GENESIS;
         }
 
-        coinbase_transaction_t(deserializer_t &reader)
+        genesis_transaction_t(deserializer_t &reader)
         {
             deserialize(reader);
         }
 
-        coinbase_transaction_t(const std::vector<uint8_t> &data)
+        genesis_transaction_t(const std::vector<uint8_t> &data)
         {
             deserializer_t reader(data);
 
             deserialize(reader);
         }
 
-        coinbase_transaction_t(std::initializer_list<uint8_t> input)
+        genesis_transaction_t(std::initializer_list<uint8_t> input)
         {
             std::vector<uint8_t> data(input);
 
@@ -37,22 +37,20 @@ namespace TurtleCoin::Types::Blockchain
             deserialize(reader);
         }
 
-        coinbase_transaction_t(const std::string &hex)
+        genesis_transaction_t(const std::string &hex)
         {
             deserializer_t reader(hex);
 
             deserialize(reader);
         }
 
-        JSON_OBJECT_CONSTRUCTORS(coinbase_transaction_t, fromJSON)
+        JSON_OBJECT_CONSTRUCTORS(genesis_transaction_t, fromJSON)
 
         void deserialize(deserializer_t &reader)
         {
             deserialize_prefix(reader);
 
             tx_secret_key = reader.key<crypto_secret_key_t>();
-
-            block_index = reader.varint<uint64_t>();
 
             // outputs
             {
@@ -77,10 +75,6 @@ namespace TurtleCoin::Types::Blockchain
 
             tx_secret_key = get_json_string(j, "tx_secret_key");
 
-            JSON_MEMBER_OR_THROW("block_index");
-
-            block_index = get_json_uint64_t(j, "block_index");
-
             JSON_MEMBER_OR_THROW("outputs");
 
             outputs.clear();
@@ -103,8 +97,6 @@ namespace TurtleCoin::Types::Blockchain
             serialize_prefix(writer);
 
             tx_secret_key.serialize(writer);
-
-            writer.varint(block_index);
 
             writer.varint(outputs.size());
 
@@ -139,9 +131,6 @@ namespace TurtleCoin::Types::Blockchain
                 writer.Key("tx_secret_key");
                 tx_secret_key.toJSON(writer);
 
-                writer.Key("block_index");
-                writer.Uint64(block_index);
-
                 writer.Key("outputs");
                 writer.StartArray();
                 {
@@ -163,22 +152,20 @@ namespace TurtleCoin::Types::Blockchain
         }
 
         crypto_secret_key_t tx_secret_key;
-        uint64_t block_index = 0;
         std::vector<transaction_output_t> outputs;
     };
 } // namespace TurtleCoin::Types::Blockchain
 
 namespace std
 {
-    inline ostream &operator<<(ostream &os, const TurtleCoin::Types::Blockchain::coinbase_transaction_t &value)
+    inline ostream &operator<<(ostream &os, const TurtleCoin::Types::Blockchain::genesis_transaction_t &value)
     {
-        os << "Coinbase Transaction [" << value.size() << " bytes]" << std::endl
+        os << "Genesis Transaction [" << value.size() << " bytes]" << std::endl
            << "\tHash: " << value.hash() << std::endl
            << "\tVersion: " << value.version << std::endl
            << "\tUnlock Block: " << value.unlock_block << std::endl
            << "\tTx Public Key: " << value.tx_public_key << std::endl
            << "\tTx Secret Key: " << value.tx_secret_key << std::endl
-           << "\tBlock Index: " << value.block_index << std::endl
            << "\tOutputs:" << std::endl;
 
         for (const auto &output : value.outputs)
@@ -190,4 +177,4 @@ namespace std
     }
 } // namespace std
 
-#endif // TURTLECOIN_TRANSACTION_COINBASE_H
+#endif // TURTLECOIN_TRANSACTION_GENESIS_H

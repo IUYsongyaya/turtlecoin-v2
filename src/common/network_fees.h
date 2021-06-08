@@ -12,23 +12,26 @@ namespace TurtleCoin::Common::NetworkFees
 {
     /**
      * Calculate the base transaction fee given the size of the transaction in bytes
+     *
      * @param transaction_size
      * @return
      */
     uint64_t calculate_base_transaction_fee(size_t transaction_size);
 
     /**
-     * Calculate the transaction fee discount given the number of leading zeros
+     * Calculate the transaction fee discount percentage given the number of leading zeros
      * found in the PoW hash of the transaction
+     *
      * @param leading_zeros
      * @return
      */
-    size_t calculate_transaction_discount(size_t leading_zeros = 0);
+    float calculate_transaction_discount(size_t leading_zeros = 0);
 
     /**
      * Calculate the transaction fee given the size of the transaction in bytes
      * as well as the number of leading zeros found in the PoW hash of the
      * transaction
+     *
      * @param transaction_size
      * @param leading_zeros
      * @return
