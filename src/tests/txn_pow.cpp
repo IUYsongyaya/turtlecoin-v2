@@ -3,8 +3,8 @@
 // Please see the included LICENSE file for more information.
 
 #include <benchmark.h>
-#include <types.h>
 #include <config.h>
+#include <types.h>
 
 #define POW_TEST_ITERATIONS 10
 
