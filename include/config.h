@@ -16,7 +16,7 @@ namespace TurtleCoin::Configuration
 
         const std::string COPYRIGHT = "Copyright (c) 2021 The TurtleCoin Developers";
 
-        const std::string LICENSE_URL = "";
+        const std::string LICENSE_URL = "https://github.com/turtlecoin/turtlecoin-v2/blob/master/LICENSE";
 
         const size_t MAJOR = 2;
 
