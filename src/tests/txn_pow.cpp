@@ -5,6 +5,8 @@
 #include <benchmark.h>
 #include <types.h>
 
+#define POW_TEST_ITERATIONS 10
+
 int main()
 {
     benchmark_header(40, 25);
@@ -20,7 +22,7 @@ int main()
                 const auto success = tx.mine(i);
             },
             "Searching for " + std::to_string(i) + " leading zeros",
-            10,
+            POW_TEST_ITERATIONS,
             40,
             25);
     }
