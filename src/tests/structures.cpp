@@ -2,6 +2,7 @@
 //
 // Please see the included LICENSE file for more information.
 
+#include <cli_header.h>
 #include <types.h>
 
 using namespace TurtleCoin::Types;
@@ -76,6 +77,8 @@ template<typename T> static inline void check_binary_serialization(const T &valu
 
 int main()
 {
+    print_cli_header();
+
     std::cout << "Data Structures Tests" << std::endl << std::endl;
 
     // Block

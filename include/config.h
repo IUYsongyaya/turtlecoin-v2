@@ -12,6 +12,12 @@ namespace TurtleCoin::Configuration
 {
     namespace Version
     {
+        const std::string PROJECT_NAME = "TurtleCoin";
+
+        const std::string COPYRIGHT = "Copyright (c) 2021 The TurtleCoin Developers";
+
+        const std::string LICENSE_URL = "";
+
         const size_t MAJOR = 2;
 
         const size_t MINOR = 0;

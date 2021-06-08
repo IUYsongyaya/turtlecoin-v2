@@ -3,6 +3,7 @@
 // Please see the included LICENSE file for more information.
 
 #include <benchmark.h>
+#include <cli_header.h>
 #include <config.h>
 #include <types.h>
 
@@ -10,6 +11,8 @@
 
 int main()
 {
+    print_cli_header();
+
     benchmark_header(40, 25);
 
     for (size_t i = 0; i < TurtleCoin::Configuration::Transaction::Fees::MAXIMUM_POW_ZEROS; ++i)
