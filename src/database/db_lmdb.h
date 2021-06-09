@@ -598,7 +598,7 @@ namespace TurtleCoin::Database
                 _value = ValueType(data);
             }
 
-            return {success, _value};
+            return {success == 0, _value};
         }
 
         /**
