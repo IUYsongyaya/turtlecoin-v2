@@ -228,6 +228,13 @@ namespace TurtleCoin::BaseTypes
         {
         }
 
+        TransactionOutput(const std::vector<uint8_t> &data)
+        {
+            deserializer_t reader(data);
+
+            deserialize_output(reader);
+        }
+
         TransactionOutput(deserializer_t &reader)
         {
             deserialize_output(reader);
@@ -251,6 +258,15 @@ namespace TurtleCoin::BaseTypes
             writer.varint(amount);
 
             writer.key(commitment);
+        }
+
+        std::vector<uint8_t> serialize_output() const
+        {
+            serializer_t writer;
+
+            serialize_output(writer);
+
+            return writer.vector();
         }
 
         void output_toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const
