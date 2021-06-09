@@ -9,7 +9,6 @@
 #include <utility>
 
 #define LMDB_SPACE_MULTIPLIER (1024 * 1024) // to MB
-#define MDB_STR_ERR(variable) std::string(mdb_strerror(variable))
 
 std::map<std::string, std::shared_ptr<TurtleCoin::Database::LMDB>> l_environments;
 
@@ -336,6 +335,13 @@ namespace TurtleCoin::Database
         return stats;
     }
 
+    std::unique_ptr<LMDBTransaction> LMDB::transaction(bool readonly)
+    {
+        auto instance = LMDB::get_instance(id());
+
+        return std::make_unique<LMDBTransaction>(instance, readonly);
+    }
+
     void LMDB::transaction_register(const LMDBTransaction &txn)
     {
         if (txn.readonly())
@@ -584,6 +590,11 @@ namespace TurtleCoin::Database
         }
 
         mdb_txn_renew(*m_txn);
+    }
+
+    void LMDBTransaction::set_database(std::shared_ptr<LMDBDatabase> &db)
+    {
+        m_db = db;
     }
 
     void LMDBTransaction::txn_setup()

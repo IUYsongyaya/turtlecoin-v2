@@ -12,6 +12,7 @@
 #include <mutex>
 #include <tuple>
 
+#define MDB_STR_ERR(variable) std::string(mdb_strerror(variable))
 #define MDB_VAL(input, output) MDB_val output = {(input).size(), (void *)(input).data()}
 #define MDB_VAL_NUM(input, output) MDB_val output = {sizeof(input), (void *)&(input)}
 #define FROM_MDB_VAL(value)                                  \
@@ -187,6 +188,13 @@ namespace TurtleCoin::Database
          * @return
          */
         MDB_stat stats();
+
+        /**
+         * Opens a transaction in the database
+         * @param readonly
+         * @return
+         */
+        std::unique_ptr<LMDBTransaction> transaction(bool readonly = false);
 
         /**
          * Registers a new transaction in the environment
@@ -688,6 +696,12 @@ namespace TurtleCoin::Database
          * Reset a read-only transaction.
          */
         void reset();
+
+        /**
+         * Sets the current database for the transaction
+         * @param db
+         */
+        void set_database(std::shared_ptr<LMDBDatabase> &db);
 
       private:
         /**
