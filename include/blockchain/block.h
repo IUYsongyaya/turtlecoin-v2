@@ -515,7 +515,7 @@ namespace TurtleCoin::Types::Blockchain
             return {public_key, signature};
         }
 
-        uint64_t version = 1, timestamp = 0, block_index;
+        uint64_t version = 1, timestamp = 0, block_index = 0;
         crypto_hash_t previous_blockhash;
         staker_reward_transaction_t staker_reward_tx;
 
