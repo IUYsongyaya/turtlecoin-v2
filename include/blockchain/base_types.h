@@ -658,6 +658,10 @@ namespace TurtleCoin::BaseTypes
 
         void deserialize_data(deserializer_t &reader)
         {
+            stake_amount = reader.varint<uint64_t>();
+
+            candidate_public_key = reader.key<crypto_public_key_t>();
+
             staker_id = reader.key<crypto_hash_t>();
 
             view_signature = reader.key<crypto_signature_t>();
@@ -667,16 +671,26 @@ namespace TurtleCoin::BaseTypes
 
         void serialize_data(serializer_t &writer) const
         {
-            staker_id.serialize(writer);
+            writer.varint(stake_amount);
 
-            view_signature.serialize(writer);
+            writer.key(candidate_public_key);
 
-            spend_signature.serialize(writer);
+            writer.key(staker_id);
+
+            writer.key(view_signature);
+
+            writer.key(spend_signature);
         }
 
         void data_toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const
         {
-            writer.Key("stake_tx");
+            writer.Key("stake_amount");
+            writer.Uint64(stake_amount);
+
+            writer.Key("candidate_public_key");
+            candidate_public_key.toJSON(writer);
+
+            writer.Key("staker_id");
             staker_id.toJSON(writer);
 
             writer.Key("view_signature");
@@ -690,9 +704,17 @@ namespace TurtleCoin::BaseTypes
         {
             JSON_OBJECT_OR_THROW();
 
-            JSON_MEMBER_OR_THROW("stake_tx");
+            JSON_MEMBER_OR_THROW("stake_amount");
 
-            staker_id = get_json_string(j, "stake_tx");
+            stake_amount = get_json_uint64_t(j, "stake_amount");
+
+            JSON_MEMBER_OR_THROW("candidate_public_key");
+
+            candidate_public_key = get_json_string(j, "candidate_public_key");
+
+            JSON_MEMBER_OR_THROW("staker_id");
+
+            staker_id = get_json_string(j, "staker_id");
 
             JSON_MEMBER_OR_THROW("view_signature");
 
@@ -703,6 +725,8 @@ namespace TurtleCoin::BaseTypes
             spend_signature = get_json_string(j, "spend_signature");
         }
 
+        uint64_t stake_amount = 0;
+        crypto_public_key_t candidate_public_key;
         crypto_hash_t staker_id;
         crypto_signature_t view_signature, spend_signature;
     };

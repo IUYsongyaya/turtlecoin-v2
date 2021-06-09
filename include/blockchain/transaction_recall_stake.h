@@ -430,9 +430,12 @@ namespace std
             os << output << std::endl;
         }
 
-        os << "\tStaker ID: " << value.staker_id << std::endl
+        os << "\tStaker Recall Amount: " << std::to_string(value.stake_amount) << std::endl
+           << "\tCandidate Public Key: " << value.candidate_public_key << std::endl
+           << "\tStaker ID: " << value.staker_id << std::endl
            << "\tStaker View Signature: " << value.view_signature << std::endl
-           << "\tStaker Spend Signature: " << value.spend_signature << std::endl;
+           << "\tStaker Spend Signature: " << value.spend_signature << std::endl
+           << std::endl;
 
         return os;
     }
@@ -465,7 +468,9 @@ namespace std
             os << output << std::endl;
         }
 
-        os << "\tStaker ID: " << value.staker_id << std::endl
+        os << "\tStaker Recall Amount: " << std::to_string(value.stake_amount) << std::endl
+           << "\tCandidate Public Key: " << value.candidate_public_key << std::endl
+           << "\tStaker ID: " << value.staker_id << std::endl
            << "\tStaker View Signature: " << value.view_signature << std::endl
            << "\tStaker Spend Signature: " << value.spend_signature << std::endl
            << std::endl;
