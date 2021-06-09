@@ -23,7 +23,7 @@ int main()
 
                 tx.tx_public_key = Crypto::random_point();
 
-                const auto success = tx.mine(i);
+                [[maybe_unused]] const auto success = tx.mine(i);
             },
             "Searching for " + std::to_string(i) + " leading zeros",
             POW_TEST_ITERATIONS,
