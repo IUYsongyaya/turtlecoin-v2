@@ -17,18 +17,18 @@ namespace TurtleCoin::Core
         m_db_stakes = m_db_env->open_database("stakes", MDB_CREATE | MDB_DUPSORT);
     }
 
-    bool StakingEngine::add_candidate(const Types::Staking::candidate_node_t &candidate)
+    Error StakingEngine::add_candidate(const Types::Staking::candidate_node_t &candidate)
     {
         std::scoped_lock lock(candidates_mutex);
 
-        return m_db_candidates->put(candidate.public_signing_key, candidate.serialize()) == 0;
+        return m_db_candidates->put(candidate.public_signing_key, candidate.serialize());
     }
 
-    bool StakingEngine::add_staker(const Types::Staking::staker_t &staker)
+    Error StakingEngine::add_staker(const Types::Staking::staker_t &staker)
     {
         std::scoped_lock lock(stakers_mutex);
 
-        return m_db_stakers->put(staker.id(), staker.serialize()) == 0;
+        return m_db_stakers->put(staker.id(), staker.serialize());
     }
 
     std::tuple<crypto_public_key_t, uint256_t, bool>
@@ -58,38 +58,46 @@ namespace TurtleCoin::Core
         return {P, P.to_uint256_t(), sum % 2 == 0};
     }
 
-    bool StakingEngine::delete_candidate(const crypto_public_key_t &candidate_key)
+    Error StakingEngine::delete_candidate(const crypto_public_key_t &candidate_key)
     {
         std::scoped_lock lock(candidates_mutex);
 
-        const auto [found, candidata] = get_candidate(candidate_key);
+        const auto [error, candidate] = get_candidate(candidate_key);
 
-        if (!found)
+        if (error)
         {
-            return true;
+            return {STAKING_CANDIDATE_NOT_FOUND, {}};
         }
 
-        return m_db_candidates->del(candidate_key) == 0;
+        return m_db_candidates->del(candidate_key);
     }
 
-    bool StakingEngine::delete_staker(const crypto_hash_t &staker_id)
+    Error StakingEngine::delete_staker(const crypto_hash_t &staker_id)
     {
         std::scoped_lock lock(stakers_mutex);
 
-        const auto [found, staker] = get_staker(staker_id);
+        const auto [error, staker] = get_staker(staker_id);
 
-        if (!found)
+        if (error)
         {
-            return true;
+            return {STAKING_STAKER_NOT_FOUND};
         }
 
-        return m_db_stakers->del(staker_id) == 0;
+        return m_db_stakers->del(staker_id);
     }
 
-    std::tuple<bool, Types::Staking::candidate_node_t>
+    std::tuple<Error, Types::Staking::candidate_node_t>
         StakingEngine::get_candidate(const crypto_public_key_t &candidate_key)
     {
-        return m_db_candidates->get<crypto_public_key_t, Types::Staking::candidate_node_t>(candidate_key);
+        const auto [error, candidate] =
+            m_db_candidates->get<crypto_public_key_t, Types::Staking::candidate_node_t>(candidate_key);
+
+        if (error)
+        {
+            return {STAKING_CANDIDATE_NOT_FOUND, {}};
+        }
+
+        return {error, candidate};
     }
 
     std::vector<Types::Staking::stake_t> StakingEngine::get_candidate_stakes(const crypto_public_key_t &candidate_key)
@@ -98,7 +106,7 @@ namespace TurtleCoin::Core
 
         auto cursor = txn->cursor();
 
-        const auto [found, key, stakes] = cursor->get_all<crypto_public_key_t, Types::Staking::stake_t>(candidate_key);
+        const auto [error, key, stakes] = cursor->get_all<crypto_public_key_t, Types::Staking::stake_t>(candidate_key);
 
         return stakes;
     }
@@ -111,9 +119,9 @@ namespace TurtleCoin::Core
 
         auto cursor = txn->cursor();
 
-        const auto [found, key, values] = cursor->get_all<crypto_public_key_t, Types::Staking::stake_t>(candidate_key);
+        const auto [error, key, values] = cursor->get_all<crypto_public_key_t, Types::Staking::stake_t>(candidate_key);
 
-        if (found)
+        if (!error)
         {
             for (const auto &value : values)
             {
@@ -134,9 +142,16 @@ namespace TurtleCoin::Core
         return m_db_stakers->list_keys<crypto_hash_t>();
     }
 
-    std::tuple<bool, Types::Staking::staker_t> StakingEngine::get_staker(const crypto_hash_t &staker_key)
+    std::tuple<Error, Types::Staking::staker_t> StakingEngine::get_staker(const crypto_hash_t &staker_key)
     {
-        return m_db_stakers->get<crypto_hash_t, Types::Staking::staker_t>(staker_key);
+        const auto [error, staker] = m_db_stakers->get<crypto_hash_t, Types::Staking::staker_t>(staker_key);
+
+        if (error)
+        {
+            return {Error(STAKING_STAKER_NOT_FOUND), {}};
+        }
+
+        return {error, staker};
     }
 
     uint64_t StakingEngine::get_staker_candidate_votes(
@@ -195,7 +210,7 @@ namespace TurtleCoin::Core
         return results;
     }
 
-    bool StakingEngine::recall_stake(
+    Error StakingEngine::recall_stake(
         const Types::Staking::staker_t &staker,
         const crypto_hash_t &stake_txn,
         const crypto_public_key_t &candidate_key,
@@ -207,10 +222,10 @@ namespace TurtleCoin::Core
         const auto stake_record = Types::Staking::stake_t(staker.id(), stake_txn, stake);
 
         // now delete it
-        return m_db_stakes->del(candidate_key, stake_record.serialize()) == 0;
+        return m_db_stakes->del(candidate_key, stake_record.serialize());
     }
 
-    bool StakingEngine::record_stake(
+    Error StakingEngine::record_stake(
         const Types::Staking::staker_t &staker,
         const crypto_hash_t &stake_txn,
         const crypto_public_key_t &candidate_key,
@@ -218,33 +233,41 @@ namespace TurtleCoin::Core
     {
         std::scoped_lock lock(stakes_mutex);
 
-        // check to see if the candidate exists
-        const auto [found_candidate, _c] = get_candidate(candidate_key);
-
-        // can't stake a candidate that does not exist
-        if (!found_candidate)
         {
-            return false;
+            // check to see if the candidate exists
+            const auto [error, value] = get_candidate(candidate_key);
+
+            // can't stake a candidate that does not exist
+            if (error)
+            {
+                return Error(STAKING_CANDIDATE_NOT_FOUND);
+            }
         }
 
-        // add the staker to the database
-        if (!add_staker(staker))
         {
-            return false;
+            // add the staker to the database
+            auto error = add_staker(staker);
+
+            if (error)
+            {
+                return error;
+            }
         }
 
         // create the stake record
         const auto stake_record = Types::Staking::stake_t(staker.id(), stake_txn, stake);
 
-        const auto [found_staker, _s] = get_staker(staker.id());
-
-        if (!found_staker)
         {
-            return false;
+            const auto [error, value] = get_staker(staker.id());
+
+            if (error)
+            {
+                return error;
+            }
         }
 
         // attempt to write the stake to the database
-        return m_db_stakes->put(candidate_key, stake_record.serialize()) == 0;
+        return m_db_stakes->put(candidate_key, stake_record.serialize());
     }
 
     std::tuple<std::vector<crypto_public_key_t>, std::vector<crypto_public_key_t>>

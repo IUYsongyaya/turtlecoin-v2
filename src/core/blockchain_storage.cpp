@@ -62,19 +62,19 @@ namespace TurtleCoin::Core
 
     bool BlockchainStorage::block_exists(const uint64_t &block_height) const
     {
-        const auto [found, block_hash] = m_block_heights->get<crypto_hash_t>(block_height);
+        const auto [error, block_hash] = m_block_heights->get<crypto_hash_t>(block_height);
 
-        return found;
+        return !error;
     }
 
-    std::tuple<bool, Types::Blockchain::transaction_t>
+    std::tuple<Error, Types::Blockchain::transaction_t>
         BlockchainStorage::get_transaction(const crypto_hash_t &txn_hash) const
     {
-        const auto [found, txn_data] = m_transactions->get(txn_hash);
+        const auto [error, txn_data] = m_transactions->get(txn_hash);
 
-        if (!found)
+        if (error)
         {
-            return {false, {}};
+            return {TRANSACTION_NOT_FOUND, {}};
         }
 
         deserializer_t reader(txn_data);
@@ -84,57 +84,57 @@ namespace TurtleCoin::Core
         switch (type)
         {
             case TurtleCoin::Types::Blockchain::TransactionType::GENESIS:
-                return {true, Types::Blockchain::genesis_transaction_t(reader)};
+                return {SUCCESS, Types::Blockchain::genesis_transaction_t(reader)};
             case TurtleCoin::Types::Blockchain::TransactionType::STAKER_REWARD:
-                return {true, Types::Blockchain::staker_reward_transaction_t(reader)};
+                return {SUCCESS, Types::Blockchain::staker_reward_transaction_t(reader)};
             case TurtleCoin::Types::Blockchain::TransactionType::NORMAL:
-                return {true, Types::Blockchain::committed_normal_transaction_t(reader)};
+                return {SUCCESS, Types::Blockchain::committed_normal_transaction_t(reader)};
             case TurtleCoin::Types::Blockchain::TransactionType::STAKE:
-                return {true, Types::Blockchain::committed_stake_transaction_t(reader)};
+                return {SUCCESS, Types::Blockchain::committed_stake_transaction_t(reader)};
             case TurtleCoin::Types::Blockchain::TransactionType::RECALL_STAKE:
-                return {true, Types::Blockchain::committed_recall_stake_transaction_t(reader)};
+                return {SUCCESS, Types::Blockchain::committed_recall_stake_transaction_t(reader)};
             case TurtleCoin::Types::Blockchain::TransactionType::STAKE_REFUND:
-                return {true, Types::Blockchain::stake_refund_transaction_t(reader)};
+                return {SUCCESS, Types::Blockchain::stake_refund_transaction_t(reader)};
             default:
-                return {false, {}};
+                return {UNKNOWN_TRANSACTION_TYPE, {}};
         }
     }
 
-    std::tuple<bool, Types::Blockchain::block_t, std::vector<Types::Blockchain::transaction_t>>
+    std::tuple<Error, Types::Blockchain::block_t, std::vector<Types::Blockchain::transaction_t>>
         BlockchainStorage::get_block(const crypto_hash_t &block_hash) const
     {
-        const auto [block_found, block] = m_blocks->get<crypto_hash_t, Types::Blockchain::block_t>(block_hash);
+        const auto [error, block] = m_blocks->get<crypto_hash_t, Types::Blockchain::block_t>(block_hash);
 
-        if (!block_found)
+        if (error)
         {
-            return {false, {}, {}};
+            return {BLOCK_NOT_FOUND, {}, {}};
         }
 
         std::vector<Types::Blockchain::transaction_t> transactions;
 
         for (const auto &txn : block.transactions)
         {
-            const auto [txn_found, transaction] = get_transaction(txn);
+            const auto [txn_error, transaction] = get_transaction(txn);
 
-            if (!txn_found)
+            if (txn_error)
             {
-                return {false, {}, {}};
+                return {TRANSACTION_NOT_FOUND, {}, {}};
             }
 
             transactions.push_back(transaction);
         }
 
-        return {true, block, transactions};
+        return {SUCCESS, block, transactions};
     }
 
-    std::tuple<bool, Types::Blockchain::block_t, std::vector<Types::Blockchain::transaction_t>>
+    std::tuple<Error, Types::Blockchain::block_t, std::vector<Types::Blockchain::transaction_t>>
         BlockchainStorage::get_block(const uint64_t &block_height) const
     {
-        const auto [found, block_hash] = m_block_heights->get<crypto_hash_t>(block_height);
+        const auto [error, block_hash] = m_block_heights->get<crypto_hash_t>(block_height);
 
-        if (!found)
+        if (error)
         {
-            return {false, {}, {}};
+            return {BLOCK_NOT_FOUND, {}, {}};
         }
 
         return get_block(block_hash);
@@ -147,31 +147,21 @@ namespace TurtleCoin::Core
         return (count == 0) ? count : count - 1;
     }
 
-    std::tuple<bool, Types::Blockchain::transaction_output_t>
+    std::tuple<Error, Types::Blockchain::transaction_output_t>
         BlockchainStorage::get_output_by_global_index(size_t global_index) const
     {
         if (global_index > get_maximum_global_index())
         {
-            return {false, {}};
+            return {GLOBAL_INDEX_OUT_OF_BOUNDS, {}};
         }
 
         return m_global_indexes->get<Types::Blockchain::transaction_output_t>(global_index);
     }
 
-    bool BlockchainStorage::put_block(
+    Error BlockchainStorage::put_block(
         const Types::Blockchain::block_t &block,
         const std::vector<Types::Blockchain::transaction_t> &transactions)
     {
-        if (!block_exists(block.previous_blockhash) && block.block_index != 0)
-        {
-            return false;
-        }
-
-        if (block_exists(block.block_index))
-        {
-            return false;
-        }
-
         /**
          * Sanity check transaction order before write
          */
@@ -194,7 +184,7 @@ namespace TurtleCoin::Core
 
             if (block_hashes != tx_hashes)
             {
-                return false;
+                return BLOCK_TXN_ORDER;
             }
         }
 
@@ -202,51 +192,71 @@ namespace TurtleCoin::Core
 
         auto db_tx = m_db_env->transaction();
 
-        if (!std::visit([this, &db_tx](auto &&arg) { return put_transaction(db_tx, arg); }, block.reward_tx))
         {
-            return false;
+            auto error =
+                std::visit([this, &db_tx](auto &&arg) { return put_transaction(db_tx, arg); }, block.reward_tx);
+
+            if (error)
+            {
+                return error;
+            }
         }
 
         for (const auto &transaction : transactions)
         {
-            if (!put_transaction(db_tx, transaction))
+            auto error = put_transaction(db_tx, transaction);
+
+            if (error)
             {
-                return false;
+                return error;
             }
         }
 
         const auto block_hash = block.hash();
 
-        db_tx->set_database(m_blocks);
-
-        if (db_tx->put(block_hash, block.serialize()) != 0)
         {
-            return false;
+            db_tx->set_database(m_blocks);
+
+            auto error = db_tx->put(block_hash, block.serialize());
+
+            if (error)
+            {
+                return error;
+            }
         }
 
-        db_tx->set_database(m_block_heights);
-
-        if (db_tx->put(block.block_index, block_hash) != 0)
         {
-            return false;
+            db_tx->set_database(m_block_heights);
+
+            auto error = db_tx->put(block.block_index, block_hash);
+
+            if (error)
+            {
+                return error;
+            }
         }
 
-        return db_tx->commit() == 0;
+        return db_tx->commit();
     }
 
-    bool BlockchainStorage::put_transaction(
+    Error BlockchainStorage::put_transaction(
         std::unique_ptr<Database::LMDBTransaction> &db_tx,
         const Types::Blockchain::transaction_t &transaction)
     {
         db_tx->set_database(m_transactions);
 
-        if (!std::visit(
+        {
+            auto error = std::visit(
                 [this, &db_tx](auto &&arg) {
                     using T = std::decay_t<decltype(arg)>;
 
-                    if (db_tx->put(arg.hash(), arg.serialize()) != 0)
                     {
-                        return false;
+                        auto error = db_tx->put(arg.hash(), arg.serialize());
+
+                        if (error)
+                        {
+                            return error;
+                        }
                     }
 
                     if constexpr (
@@ -257,25 +267,31 @@ namespace TurtleCoin::Core
                     {
                         for (const auto &key_image : arg.key_images)
                         {
-                            if (!put_key_image(db_tx, key_image))
+                            auto error = put_key_image(db_tx, key_image);
+
+                            if (error)
                             {
-                                return false;
+                                return error;
                             }
                         }
                     }
 
-                    return true;
+                    return Error(SUCCESS);
                 },
-                transaction))
-        {
-            return false;
+                transaction);
+
+            if (error)
+            {
+                return error;
+            }
         }
 
         uint64_t count = m_global_indexes->count();
 
         db_tx->set_database(m_global_indexes);
 
-        if (!std::visit(
+        {
+            auto error = std::visit(
                 [&count, &db_tx](auto &&arg) {
                     using T = std::decay_t<decltype(arg)>;
 
@@ -287,9 +303,11 @@ namespace TurtleCoin::Core
                     {
                         for (const auto &output : arg.outputs)
                         {
-                            if (db_tx->put(count, output.serialize_output()) != 0)
+                            auto error = db_tx->put(count, output.serialize_output());
+
+                            if (error)
                             {
-                                return false;
+                                return error;
                             }
 
                             count++;
@@ -304,30 +322,35 @@ namespace TurtleCoin::Core
                         const auto output =
                             Types::Blockchain::transaction_output_t(arg.public_ephemeral, 0, arg.commitment);
 
-                        if (db_tx->put(count, output.serialize_output()) != 0)
+                        auto error = db_tx->put(count, output.serialize_output());
+
+                        if (error)
                         {
-                            return false;
+                            return error;
                         }
 
                         count++;
                     }
 
-                    return true;
+                    return Error(SUCCESS);
                 },
-                transaction))
-        {
-            return false;
+                transaction);
+
+            if (error)
+            {
+                return error;
+            }
         }
 
-        return true;
+        return SUCCESS;
     }
 
-    bool BlockchainStorage::put_key_image(
+    Error BlockchainStorage::put_key_image(
         std::unique_ptr<Database::LMDBTransaction> &db_tx,
         const crypto_key_image_t &key_image)
     {
         db_tx->set_database(m_key_images);
 
-        return db_tx->put<crypto_key_image_t, std::vector<uint8_t>>(key_image, {}) == 0;
+        return db_tx->put<crypto_key_image_t, std::vector<uint8_t>>(key_image, {});
     }
 } // namespace TurtleCoin::Core

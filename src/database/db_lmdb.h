@@ -6,6 +6,7 @@
 #define DATABASE_LMDB_H
 
 #include <crypto.h>
+#include <errors.h>
 #include <lmdb.h>
 #include <map>
 #include <memory>
@@ -61,21 +62,21 @@ namespace TurtleCoin::Database
         /**
          * Closes the environment
          */
-        void close();
+        Error close();
 
         /**
          * Detects the current memory map size if it has been changed elsewhere
          * This requires that there are no open R/W transactions; otherwise, the method
          * will throw an exception.
          */
-        void detect_map_size();
+        Error detect_map_size();
 
         /**
          * Expands the memory map by the growth factor supplied to the constructor
          * This requires that there are no open R/W transactions; otherwise, the method
          * will throw an exception.
          */
-        void expand();
+        Error expand();
 
         /**
          * Expands the memory map by the number of pages specified.
@@ -83,7 +84,7 @@ namespace TurtleCoin::Database
          * will throw an exception.
          * @param pages
          */
-        void expand(size_t pages);
+        Error expand(size_t pages);
 
         /**
          * Flush the data buffers to disk.
@@ -93,7 +94,7 @@ namespace TurtleCoin::Database
          * This call is not valid if the environment was opened with MDB_RDONLY.
          * @param force a synchronous flush of the buffers to disk
          */
-        void flush(bool force = false);
+        Error flush(bool force = false);
 
         /**
          * Retrieves an already open database by its ID
@@ -106,7 +107,7 @@ namespace TurtleCoin::Database
          * Retrieves the LMDB environment flags
          * @return
          */
-        unsigned int get_flags() const;
+        std::tuple<Error, unsigned int> get_flags() const;
 
         /**
          * Retrieves an existing instance of an environment by its ID
@@ -147,19 +148,19 @@ namespace TurtleCoin::Database
          * Retrieves the LMDB environment information
          * @return
          */
-        MDB_envinfo info() const;
+        std::tuple<Error, MDB_envinfo> info() const;
 
         /**
          * Retrieves the maximum byte size of a key in the LMDB environment
          * @return
          */
-        size_t max_key_size() const;
+        std::tuple<Error, size_t> max_key_size() const;
 
         /**
          * Retrieves the maximum number of readers for the LMDB environment
          * @return
          */
-        unsigned int max_readers() const;
+        std::tuple<Error, unsigned int> max_readers() const;
 
         /**
          * Opens a database (separate key space) in the environment as a logical
@@ -181,13 +182,13 @@ namespace TurtleCoin::Database
          * @param flags
          * @param flag_state
          */
-        void set_flags(int flags = 0, bool flag_state = true);
+        Error set_flags(int flags = 0, bool flag_state = true);
 
         /**
          * Retrieves the LMDB environment statistics
          * @return
          */
-        MDB_stat stats() const;
+        std::tuple<Error, MDB_stat> stats() const;
 
         /**
          * Opens a transaction in the database
@@ -226,7 +227,7 @@ namespace TurtleCoin::Database
          * @param memory
          * @return
          */
-        size_t memory_to_pages(size_t memory) const;
+        std::tuple<Error, size_t> memory_to_pages(size_t memory) const;
 
         std::string m_id;
 
@@ -279,7 +280,7 @@ namespace TurtleCoin::Database
          * @param key
          * @return
          */
-        template<typename KeyType> int del(const KeyType &key);
+        template<typename KeyType> Error del(const KeyType &key);
 
         /**
          * Simplified deletion of the given key with the given value. Automatically
@@ -295,14 +296,14 @@ namespace TurtleCoin::Database
          * @param value
          * @return
          */
-        template<typename KeyType, typename ValueType> int del(const KeyType &key, const ValueType &value);
+        template<typename KeyType, typename ValueType> Error del(const KeyType &key, const ValueType &value);
 
         /**
          * Empties all of the key/value pairs from the database
          * @param delete_db if specified, also deletes the database from the environment
          * @return
          */
-        bool drop(bool delete_db);
+        Error drop(bool delete_db);
 
         /**
          * Returns the current LMDB environment associated with this database
@@ -328,7 +329,7 @@ namespace TurtleCoin::Database
          * @param key
          * @return
          */
-        template<typename KeyType, typename ValueType> std::tuple<bool, ValueType> get(const KeyType &key);
+        template<typename KeyType, typename ValueType> std::tuple<Error, ValueType> get(const KeyType &key);
 
         /**
          * Simplified retrieval of the value at the specified key which opens a new
@@ -339,7 +340,7 @@ namespace TurtleCoin::Database
          * @param key
          * @return
          */
-        template<typename ValueType> std::tuple<bool, ValueType> get(const uint64_t &key);
+        template<typename ValueType> std::tuple<Error, ValueType> get(const uint64_t &key);
 
         /**
          * Simplified retrieval of the value at the specified key which opens a new
@@ -349,13 +350,13 @@ namespace TurtleCoin::Database
          * @param key
          * @return
          */
-        template<typename KeyType> std::tuple<bool, std::vector<uint8_t>> get(const KeyType &key);
+        template<typename KeyType> std::tuple<Error, std::vector<uint8_t>> get(const KeyType &key);
 
         /**
          * Retrieves the database flags
          * @return
          */
-        unsigned int get_flags();
+        std::tuple<Error, unsigned int> get_flags();
 
         /**
          * List all keys in the database
@@ -378,7 +379,7 @@ namespace TurtleCoin::Database
          * @return
          */
         template<typename KeyType, typename ValueType>
-        int put(const std::vector<KeyType> &keys, const std::vector<ValueType> &values);
+        Error put(const std::vector<KeyType> &keys, const std::vector<ValueType> &values);
 
         /**
          * Simplified put which opens a new transaction, puts the value, and then returns.
@@ -392,7 +393,7 @@ namespace TurtleCoin::Database
          * @param value
          * @return
          */
-        template<typename KeyType, typename ValueType> int put(const KeyType &key, const ValueType &value);
+        template<typename KeyType, typename ValueType> Error put(const KeyType &key, const ValueType &value);
 
         /**
          * Returns the ID of the database
@@ -463,7 +464,7 @@ namespace TurtleCoin::Database
          * Commits the currently open transaction
          * @return
          */
-        int commit();
+        Error commit();
 
         /**
          * Opens a LMDB cursos within the transaction
@@ -477,11 +478,13 @@ namespace TurtleCoin::Database
          * @param key
          * @return
          */
-        template<typename KeyType> int del(const KeyType &key)
+        template<typename KeyType> Error del(const KeyType &key)
         {
             MDB_VAL(key, i_key);
 
-            return mdb_del(*m_txn, *m_db, &i_key, nullptr) == 0;
+            const auto result = mdb_del(*m_txn, *m_db, &i_key, nullptr);
+
+            return Error(result, MDB_STR_ERR(result));
         }
 
         /**
@@ -489,11 +492,13 @@ namespace TurtleCoin::Database
          * @param key
          * @return
          */
-        int del(const uint64_t &key)
+        Error del(const uint64_t &key)
         {
             MDB_VAL_NUM(key, i_key);
 
-            return mdb_del(*m_txn, *m_db, &i_key, nullptr) == 0;
+            const auto result = mdb_del(*m_txn, *m_db, &i_key, nullptr);
+
+            return Error(result, MDB_STR_ERR(result));
         }
 
         /**
@@ -509,13 +514,15 @@ namespace TurtleCoin::Database
          * @param value
          * @return
          */
-        template<typename KeyType, typename ValueType> int del(const KeyType &key, const ValueType &value)
+        template<typename KeyType, typename ValueType> Error del(const KeyType &key, const ValueType &value)
         {
             MDB_VAL(key, i_key);
 
             MDB_VAL(value, i_value);
 
-            return mdb_del(*m_txn, *m_db, &i_key, &i_value);
+            const auto result = mdb_del(*m_txn, *m_db, &i_key, &i_value);
+
+            return Error(result, MDB_STR_ERR(result));
         }
 
         /**
@@ -530,13 +537,15 @@ namespace TurtleCoin::Database
          * @param value
          * @return
          */
-        template<typename ValueType> int del(const uint64_t &key, const ValueType &value)
+        template<typename ValueType> Error del(const uint64_t &key, const ValueType &value)
         {
             MDB_VAL_NUM(key, i_key);
 
             MDB_VAL(value, i_value);
 
-            return mdb_del(*m_txn, *m_db, &i_key, &i_value);
+            const auto result = mdb_del(*m_txn, *m_db, &i_key, &i_value);
+
+            return Error(result, MDB_STR_ERR(result));
         }
 
         /**
@@ -547,9 +556,9 @@ namespace TurtleCoin::Database
          */
         template<typename KeyType> bool exists(const KeyType &key)
         {
-            const auto [found, value] = get(key);
+            const auto [error, value] = get(key);
 
-            return found;
+            return error == SUCCESS;
         }
 
         /**
@@ -559,18 +568,18 @@ namespace TurtleCoin::Database
          * @param key
          * @return
          */
-        template<typename KeyType, typename ValueType> std::tuple<bool, ValueType> get(const KeyType &key)
+        template<typename KeyType, typename ValueType> std::tuple<Error, ValueType> get(const KeyType &key)
         {
-            const auto [success, data] = get(key);
+            const auto [error, data] = get(key);
 
             ValueType result;
 
-            if (success)
+            if (!error)
             {
                 result = ValueType(data);
             }
 
-            return {success, result};
+            return {error, result};
         }
 
         /**
@@ -579,26 +588,26 @@ namespace TurtleCoin::Database
          * @param key
          * @return
          */
-        template<typename ValueType> std::tuple<bool, ValueType> get(const uint64_t &key)
+        template<typename ValueType> std::tuple<Error, ValueType> get(const uint64_t &key)
         {
             MDB_VAL_NUM(key, i_key);
 
             MDB_val value;
 
-            const auto success = mdb_get(*m_txn, *m_db, &i_key, &value);
+            const auto result = mdb_get(*m_txn, *m_db, &i_key, &value);
 
             std::vector<uint8_t> data;
 
             ValueType _value;
 
-            if (success == 0)
+            if (result == MDB_SUCCESS)
             {
                 data = FROM_MDB_VAL(value);
 
                 _value = ValueType(data);
             }
 
-            return {success == 0, _value};
+            return {Error(result, MDB_STR_ERR(result)), _value};
         }
 
         /**
@@ -607,22 +616,22 @@ namespace TurtleCoin::Database
          * @param key
          * @return [found, value]
          */
-        template<typename KeyType> std::tuple<bool, std::vector<uint8_t>> get(const KeyType &key)
+        template<typename KeyType> std::tuple<Error, std::vector<uint8_t>> get(const KeyType &key)
         {
             MDB_VAL(key, i_key);
 
             MDB_val value;
 
-            const auto success = mdb_get(*m_txn, *m_db, &i_key, &value);
+            const auto result = mdb_get(*m_txn, *m_db, &i_key, &value);
 
-            std::vector<uint8_t> result;
+            std::vector<uint8_t> results;
 
-            if (success == 0)
+            if (result == MDB_SUCCESS)
             {
-                result = FROM_MDB_VAL(value);
+                results = FROM_MDB_VAL(value);
             }
 
-            return {success == 0, result};
+            return {Error(result, MDB_STR_ERR(result)), results};
         }
 
         /**
@@ -631,7 +640,7 @@ namespace TurtleCoin::Database
          * If a 0 value is returned, the transaction is complete [abort() or commit() has been used]
          * @return
          */
-        size_t id() const;
+        std::tuple<Error, size_t> id() const;
 
         /**
          * Puts the specified value with the specified key in the database using the specified flag(s)
@@ -648,13 +657,15 @@ namespace TurtleCoin::Database
          * @return
          */
         template<typename KeyType, typename ValueType>
-        int put(const KeyType &key, const ValueType &value, int flags = 0)
+        Error put(const KeyType &key, const ValueType &value, int flags = 0)
         {
             MDB_VAL(key, i_key);
 
             MDB_VAL(value, i_value);
 
-            return mdb_put(*m_txn, *m_db, &i_key, &i_value, flags);
+            const auto result = mdb_put(*m_txn, *m_db, &i_key, &i_value, flags);
+
+            return Error(result, MDB_STR_ERR(result));
         }
 
         /**
@@ -670,13 +681,15 @@ namespace TurtleCoin::Database
          * @param flags
          * @return
          */
-        template<typename ValueType> int put(const uint64_t &key, const ValueType &value, int flags = 0)
+        template<typename ValueType> Error put(const uint64_t &key, const ValueType &value, int flags = 0)
         {
             MDB_VAL_NUM(key, i_key);
 
             MDB_VAL(value, i_value);
 
-            return mdb_put(*m_txn, *m_db, &i_key, &i_value, flags);
+            const auto result = mdb_put(*m_txn, *m_db, &i_key, &i_value, flags);
+
+            return Error(result, MDB_STR_ERR(result));
         }
 
         /**
@@ -690,12 +703,12 @@ namespace TurtleCoin::Database
          *
          * @return
          */
-        bool renew();
+        Error renew();
 
         /**
          * Reset a read-only transaction.
          */
-        void reset();
+        Error reset();
 
         /**
          * Sets the current database for the transaction
@@ -743,21 +756,21 @@ namespace TurtleCoin::Database
          * Return count of duplicates for current key.
          * @return
          */
-        size_t count();
+        std::tuple<Error, size_t> count();
 
         /**
          * Delete current key/data pair.
          * @param flags
          * @return
          */
-        bool del(int flags = 0);
+        Error del(int flags = 0);
 
         /**
          * Retrieve key/data pairs by cursor.
          * @param op
          * @return [found, key, value]
          */
-        std::tuple<bool, std::vector<uint8_t>, std::vector<uint8_t>> get(const MDB_cursor_op &op = MDB_FIRST);
+        std::tuple<Error, std::vector<uint8_t>, std::vector<uint8_t>> get(const MDB_cursor_op &op = MDB_FIRST);
 
         /**
          * Retrieve key/data pairs by cursor.
@@ -767,22 +780,22 @@ namespace TurtleCoin::Database
          * @return [found, key, value]
          */
         template<typename KeyType, typename ValueType>
-        std::tuple<bool, KeyType, ValueType> get(const MDB_cursor_op &op = MDB_FIRST)
+        std::tuple<Error, KeyType, ValueType> get(const MDB_cursor_op &op = MDB_FIRST)
         {
-            const auto [success, r_key, r_value] = get(op);
+            const auto [error, r_key, r_value] = get(op);
 
             KeyType key;
 
             ValueType value;
 
-            if (success)
+            if (!error)
             {
                 key = KeyType(r_key);
 
                 value = ValueType(r_value);
             }
 
-            return {success, key, value};
+            return {error, key, value};
         }
 
         /**
@@ -797,25 +810,25 @@ namespace TurtleCoin::Database
          * @return [found, key, value]
          */
         template<typename KeyType>
-        std::tuple<bool, std::vector<uint8_t>, std::vector<uint8_t>>
+        std::tuple<Error, std::vector<uint8_t>, std::vector<uint8_t>>
             get(const KeyType &key, const MDB_cursor_op &op = MDB_SET)
         {
             MDB_val i_value;
 
             MDB_VAL(key, i_key);
 
-            const auto success = mdb_cursor_get(m_cursor, &i_key, &i_value, op);
+            const auto result = mdb_cursor_get(m_cursor, &i_key, &i_value, op);
 
             std::vector<uint8_t> r_key, r_value;
 
-            if (success == 0)
+            if (result == MDB_SUCCESS)
             {
                 r_key = FROM_MDB_VAL(i_key);
 
                 r_value = FROM_MDB_VAL(i_value);
             }
 
-            return {success == 0, r_key, r_value};
+            return {Error(result, MDB_STR_ERR(result)), r_key, r_value};
         }
 
         /**
@@ -831,22 +844,22 @@ namespace TurtleCoin::Database
          * @return [found, key, value]
          */
         template<typename KeyType, typename ValueType>
-        std::tuple<bool, KeyType, ValueType> get(const KeyType &key, const MDB_cursor_op &op = MDB_SET)
+        std::tuple<Error, KeyType, ValueType> get(const KeyType &key, const MDB_cursor_op &op = MDB_SET)
         {
-            const auto [success, i_key, i_value] = get(key, op);
+            const auto [error, i_key, i_value] = get(key, op);
 
             KeyType r_key;
 
             ValueType r_value;
 
-            if (success)
+            if (!error)
             {
                 r_key = KeyType(i_key);
 
                 r_value = ValueType(i_value);
             }
 
-            return {success, r_key, r_value};
+            return {error, r_key, r_value};
         }
 
         /**
@@ -860,7 +873,7 @@ namespace TurtleCoin::Database
          * @return [found, key, values]
          */
         template<typename KeyType, typename ValueType>
-        std::tuple<bool, KeyType, std::vector<ValueType>> get_all(const KeyType &key)
+        std::tuple<Error, KeyType, std::vector<ValueType>> get_all(const KeyType &key)
         {
             std::vector<ValueType> results;
 
@@ -868,17 +881,19 @@ namespace TurtleCoin::Database
 
             do
             {
-                const auto [found, k, v] = get<KeyType, ValueType>(key, (!success) ? MDB_SET : MDB_NEXT_DUP);
+                const auto [error, k, v] = get<KeyType, ValueType>(key, (!success) ? MDB_SET : MDB_NEXT_DUP);
 
-                if (found)
+                if (!error)
                 {
                     results.push_back(v);
                 }
 
-                success = found;
+                success = error == SUCCESS;
             } while (success);
 
-            return {!results.empty(), key, results};
+            Error error = (!results.empty()) ? SUCCESS : DB_KEY_NOT_FOUND;
+
+            return {error, key, results};
         }
 
         /**
@@ -897,20 +912,22 @@ namespace TurtleCoin::Database
          * @return
          */
         template<typename KeyType, typename ValueType>
-        int put(const KeyType &key, const ValueType &value, int flags = 0)
+        Error put(const KeyType &key, const ValueType &value, int flags = 0)
         {
             MDB_VAL(key, i_key);
 
             MDB_VAL(value, i_value);
 
-            return mdb_cursor_put(m_cursor, &i_key, &i_value, flags);
+            const auto result = mdb_cursor_put(m_cursor, &i_key, &i_value, flags);
+
+            return Error(result, MDB_STR_ERR(result));
         }
 
         /**
          * Renews the cursor
          * @return
          */
-        bool renew();
+        Error renew();
 
       private:
         std::shared_ptr<LMDBDatabase> m_db;
@@ -926,14 +943,14 @@ namespace TurtleCoin::Database
      * Complete the template forward declarations
      */
 
-    template<typename KeyType> int LMDBDatabase::del(const KeyType &key)
+    template<typename KeyType> Error LMDBDatabase::del(const KeyType &key)
     {
     try_again:
         auto txn = transaction();
 
-        auto success = txn->del(key);
+        auto result = txn->del(key);
 
-        if (success == MDB_MAP_FULL)
+        if (result == LMDB_MAP_FULL)
         {
             txn->abort();
 
@@ -942,9 +959,9 @@ namespace TurtleCoin::Database
             goto try_again;
         }
 
-        success = txn->commit();
+        result = txn->commit();
 
-        if (success == MDB_MAP_FULL)
+        if (result == LMDB_MAP_FULL)
         {
             txn->abort();
 
@@ -953,17 +970,17 @@ namespace TurtleCoin::Database
             goto try_again;
         }
 
-        return success;
+        return result;
     }
 
-    template<typename KeyType, typename ValueType> int LMDBDatabase::del(const KeyType &key, const ValueType &value)
+    template<typename KeyType, typename ValueType> Error LMDBDatabase::del(const KeyType &key, const ValueType &value)
     {
     try_again:
         auto txn = transaction();
 
-        auto success = txn->del(key, value);
+        auto result = txn->del(key, value);
 
-        if (success == MDB_MAP_FULL)
+        if (result == LMDB_MAP_FULL)
         {
             txn->abort();
 
@@ -972,9 +989,9 @@ namespace TurtleCoin::Database
             goto try_again;
         }
 
-        success = txn->commit();
+        result = txn->commit();
 
-        if (success == MDB_MAP_FULL)
+        if (result == LMDB_MAP_FULL)
         {
             txn->abort();
 
@@ -983,7 +1000,7 @@ namespace TurtleCoin::Database
             goto try_again;
         }
 
-        return success;
+        return result;
     }
 
     template<typename KeyType> bool LMDBDatabase::exists(const KeyType &key)
@@ -993,28 +1010,28 @@ namespace TurtleCoin::Database
         return txn->exists(key);
     }
 
-    template<typename KeyType, typename ValueType> std::tuple<bool, ValueType> LMDBDatabase::get(const KeyType &key)
+    template<typename KeyType, typename ValueType> std::tuple<Error, ValueType> LMDBDatabase::get(const KeyType &key)
     {
-        const auto [success, data] = get(key);
+        const auto [error, data] = get(key);
 
         ValueType result;
 
-        if (success)
+        if (!error)
         {
             result = ValueType(data);
         }
 
-        return {success, result};
+        return {error, result};
     }
 
-    template<typename ValueType> std::tuple<bool, ValueType> LMDBDatabase::get(const uint64_t &key)
+    template<typename ValueType> std::tuple<Error, ValueType> LMDBDatabase::get(const uint64_t &key)
     {
         auto txn = transaction(true);
 
         return txn->get<ValueType>(key);
     }
 
-    template<typename KeyType> std::tuple<bool, std::vector<uint8_t>> LMDBDatabase::get(const KeyType &key)
+    template<typename KeyType> std::tuple<Error, std::vector<uint8_t>> LMDBDatabase::get(const KeyType &key)
     {
         auto txn = transaction(true);
 
@@ -1037,7 +1054,7 @@ namespace TurtleCoin::Database
 
         auto last_key = std::string();
 
-        while (mdb_cursor_get(db_cursor, &key, &value, count ? MDB_NEXT : MDB_FIRST) == 0)
+        while (mdb_cursor_get(db_cursor, &key, &value, count ? MDB_NEXT : MDB_FIRST) == MDB_SUCCESS)
         {
             const auto bytes = FROM_MDB_VAL(key);
 
@@ -1059,7 +1076,7 @@ namespace TurtleCoin::Database
     }
 
     template<typename KeyType, typename ValueType>
-    int LMDBDatabase::put(const std::vector<KeyType> &keys, const std::vector<ValueType> &values)
+    Error LMDBDatabase::put(const std::vector<KeyType> &keys, const std::vector<ValueType> &values)
     {
         if (keys.size() != values.size())
             throw std::invalid_argument("keys and values must be of the same size");
@@ -1069,9 +1086,9 @@ namespace TurtleCoin::Database
 
         for (size_t i = 0; i < keys.size(); ++i)
         {
-            const auto success = txn->put(keys[i], values[i]);
+            const auto result = txn->put(keys[i], values[i]);
 
-            if (success == MDB_MAP_FULL)
+            if (result == LMDB_MAP_FULL)
             {
                 txn->abort();
 
@@ -1081,9 +1098,9 @@ namespace TurtleCoin::Database
             }
         }
 
-        const auto success = txn->commit();
+        const auto result = txn->commit();
 
-        if (success == MDB_MAP_FULL)
+        if (result == LMDB_MAP_FULL)
         {
             txn->abort();
 
@@ -1092,17 +1109,17 @@ namespace TurtleCoin::Database
             goto try_again;
         }
 
-        return success;
+        return result;
     }
 
-    template<typename KeyType, typename ValueType> int LMDBDatabase::put(const KeyType &key, const ValueType &value)
+    template<typename KeyType, typename ValueType> Error LMDBDatabase::put(const KeyType &key, const ValueType &value)
     {
     try_again:
         auto txn = transaction();
 
-        auto success = txn->put(key, value);
+        auto result = txn->put(key, value);
 
-        if (success == MDB_MAP_FULL)
+        if (result == LMDB_MAP_FULL)
         {
             txn->abort();
 
@@ -1111,9 +1128,9 @@ namespace TurtleCoin::Database
             goto try_again;
         }
 
-        success = txn->commit();
+        result = txn->commit();
 
-        if (success == MDB_MAP_FULL)
+        if (result == LMDB_MAP_FULL)
         {
             txn->abort();
 
@@ -1122,7 +1139,7 @@ namespace TurtleCoin::Database
             goto try_again;
         }
 
-        return success;
+        return result;
     }
 } // namespace TurtleCoin::Database
 

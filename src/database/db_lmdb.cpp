@@ -28,21 +28,21 @@ namespace TurtleCoin::Database
 
         auto success = mdb_env_create(&m_env);
 
-        if (success != 0)
+        if (success != MDB_SUCCESS)
         {
             throw std::runtime_error("Could not create LMDB environment: " + MDB_STR_ERR(success));
         }
 
         success = mdb_env_set_mapsize(m_env, growth_factor * LMDB_SPACE_MULTIPLIER);
 
-        if (success != 0)
+        if (success != MDB_SUCCESS)
         {
             throw std::runtime_error("Could not allocate initial LMDB memory map: " + MDB_STR_ERR(success));
         }
 
         success = mdb_env_set_maxdbs(m_env, max_databases);
 
-        if (success != 0)
+        if (success != MDB_SUCCESS)
         {
             throw std::runtime_error("Could not set maximum number of LMDB named databases: " + MDB_STR_ERR(success));
         }
@@ -53,7 +53,7 @@ namespace TurtleCoin::Database
          */
         success = mdb_env_open(m_env, path.c_str(), flags | MDB_NOTLS, mode);
 
-        if (success != 0)
+        if (success != MDB_SUCCESS)
         {
             mdb_env_close(m_env);
 
@@ -76,11 +76,18 @@ namespace TurtleCoin::Database
         return m_env;
     }
 
-    void LMDB::close()
+    Error LMDB::close()
     {
         std::scoped_lock lock(m_mutex);
 
-        flush(true);
+        {
+            const auto error = flush(true);
+
+            if (error)
+            {
+                return error;
+            }
+        }
 
         mdb_env_close(m_env);
 
@@ -90,68 +97,76 @@ namespace TurtleCoin::Database
         {
             l_environments.erase(m_id);
         }
+
+        return SUCCESS;
     }
 
-    void LMDB::detect_map_size()
+    Error LMDB::detect_map_size()
     {
         std::scoped_lock lock(m_mutex);
 
         if (open_transactions() != 0)
         {
-            throw std::runtime_error("Cannot detect LMDB environment map size while transactions are open");
+            return Error(LMDB_ERROR, "Cannot detect LMDB environment map size while transactions are open");
         }
 
-        const auto success = mdb_env_set_mapsize(m_env, 0);
+        const auto result = mdb_env_set_mapsize(m_env, 0);
 
-        if (success != 0)
-        {
-            throw std::runtime_error("Could not detect LMDB environment memory map size: " + MDB_STR_ERR(success));
-        }
+        return Error(result, MDB_STR_ERR(result));
     }
 
-    void LMDB::expand()
+    Error LMDB::expand()
     {
-        const auto pages = memory_to_pages(m_growth_factor * 1024 * 1024);
+        const auto [error, pages] = memory_to_pages(m_growth_factor * 1024 * 1024);
 
-        expand(pages);
+        if (error)
+        {
+            return error;
+        }
+
+        return expand(pages);
     }
 
-    void LMDB::expand(size_t pages)
+    Error LMDB::expand(size_t pages)
     {
         std::scoped_lock lock(m_mutex);
 
         if (open_transactions() != 0)
         {
-            throw std::runtime_error("Cannot expand LMDB environment map size while transactions are open");
+            return Error(LMDB_ERROR, "Cannot expand LMDB environment map size while transactions are open");
         }
 
-        const auto l_info = info();
+        const auto [info_error, l_info] = info();
 
-        const auto l_stats = stats();
+        if (info_error)
+        {
+            return info_error;
+        }
+
+        const auto [stats_error, l_stats] = stats();
+
+        if (stats_error)
+        {
+            return stats_error;
+        }
 
         const auto new_size = (l_stats.ms_psize * pages) + l_info.me_mapsize;
 
-        const auto success = mdb_env_set_mapsize(m_env, new_size);
+        const auto result = mdb_env_set_mapsize(m_env, new_size);
 
-        if (success != 0)
-        {
-            throw std::runtime_error("Could not expand LMDB environment memory map size: " + MDB_STR_ERR(success));
-        }
+        return Error(result, MDB_STR_ERR(result));
     }
 
-    void LMDB::flush(bool force)
+    Error LMDB::flush(bool force)
     {
         if (!m_env)
         {
-            throw std::runtime_error("LMDB environment has been previously closed");
+            return Error(LMDB_ERROR, "LMDB environment has been previously closed");
         }
 
-        const auto success = mdb_env_sync(m_env, (force) ? 1 : 0);
+        const auto result = mdb_env_sync(m_env, (force) ? 1 : 0);
 
-        if (success != 0)
-        {
-            throw std::runtime_error("Could not flush LMDB data buffers to disk: " + MDB_STR_ERR(success));
-        }
+        return Error(result, MDB_STR_ERR(result));
     }
 
     std::shared_ptr<LMDBDatabase> LMDB::get_database(const std::string &id)
@@ -164,23 +179,18 @@ namespace TurtleCoin::Database
         throw std::invalid_argument("LMDB database not found");
     }
 
-    unsigned int LMDB::get_flags() const
+    std::tuple<Error, unsigned int> LMDB::get_flags() const
     {
         if (!m_env)
         {
-            throw std::runtime_error("LMDB environment has been previously closed");
+            return {Error(LMDB_ERROR, "LMDB environment has been previously closed."), 0};
         }
 
         unsigned int env_flags;
 
-        const auto success = mdb_env_get_flags(m_env, &env_flags);
+        const auto result = mdb_env_get_flags(m_env, &env_flags);
 
-        if (success != 0)
-        {
-            throw std::runtime_error("Could not retrieve LMDB environment flags: " + MDB_STR_ERR(success));
-        }
-
-        return env_flags;
+        return {Error(result, MDB_STR_ERR(result)), env_flags};
     }
 
     std::shared_ptr<LMDB> LMDB::get_instance(const std::string &id)
@@ -224,59 +234,51 @@ namespace TurtleCoin::Database
         return m_id;
     }
 
-    MDB_envinfo LMDB::info() const
+    std::tuple<Error, MDB_envinfo> LMDB::info() const
     {
-        if (!m_env)
-        {
-            throw std::runtime_error("LMDB environment has been previously closed");
-        }
-
         MDB_envinfo info;
 
-        const auto success = mdb_env_info(m_env, &info);
-
-        if (success != 0)
+        if (!m_env)
         {
-            throw std::runtime_error("Could not retrieve LMDB environment information: " + MDB_STR_ERR(success));
+            return {Error(LMDB_ERROR, "LMDB environment has been previously closed"), info};
         }
 
-        return info;
+        const auto result = mdb_env_info(m_env, &info);
+
+        return {Error(result, MDB_STR_ERR(result)), info};
     }
 
-    size_t LMDB::memory_to_pages(size_t memory) const
+    std::tuple<Error, size_t> LMDB::memory_to_pages(size_t memory) const
     {
-        const auto l_stats = stats();
+        const auto [error, l_stats] = stats();
 
-        return size_t(ceil(double(memory) / double(l_stats.ms_psize)));
+        return {SUCCESS, size_t(ceil(double(memory) / double(l_stats.ms_psize)))};
     }
 
-    size_t LMDB::max_key_size() const
+    std::tuple<Error, size_t> LMDB::max_key_size() const
     {
         if (!m_env)
         {
-            throw std::runtime_error("LMDB environment has been previously closed");
+            return {Error(LMDB_ERROR, "LMDB environment has been previously closed"), 0};
         }
 
-        return mdb_env_get_maxkeysize(m_env);
+        const auto result = mdb_env_get_maxkeysize(m_env);
+
+        return {SUCCESS, result};
     }
 
-    unsigned int LMDB::max_readers() const
+    std::tuple<Error, unsigned int> LMDB::max_readers() const
     {
         if (!m_env)
         {
-            throw std::runtime_error("LMDB environment has been previously closed");
+            return {Error(LMDB_ERROR, "LMDB environment has been previously closed"), 0};
         }
 
-        unsigned int readers;
+        unsigned int readers = 0;
 
-        const auto success = mdb_env_get_maxreaders(m_env, &readers);
+        const auto result = mdb_env_get_maxreaders(m_env, &readers);
 
-        if (success != 0)
-        {
-            throw std::runtime_error("Could not retrieve LMDB maximum readers: " + MDB_STR_ERR(success));
-        }
-
-        return readers;
+        return {Error(result, MDB_STR_ERR(result)), readers};
     }
 
     std::shared_ptr<LMDBDatabase> LMDB::open_database(const std::string &name, int flags)
@@ -304,35 +306,27 @@ namespace TurtleCoin::Database
         return m_open_txns;
     }
 
-    void LMDB::set_flags(int flags, bool flag_state)
+    Error LMDB::set_flags(int flags, bool flag_state)
     {
         std::scoped_lock lock(m_mutex);
 
-        const auto success = mdb_env_set_flags(m_env, flags, (flag_state) ? 1 : 0);
+        const auto result = mdb_env_set_flags(m_env, flags, (flag_state) ? 1 : 0);
 
-        if (success != 0)
-        {
-            throw std::runtime_error("Could not set LMDB environment flags: " + MDB_STR_ERR(success));
-        }
+        return Error(result, MDB_STR_ERR(result));
     }
 
-    MDB_stat LMDB::stats() const
+    std::tuple<Error, MDB_stat> LMDB::stats() const
     {
-        if (!m_env)
-        {
-            throw std::runtime_error("LMDB environment has been previously closed");
-        }
-
         MDB_stat stats;
 
-        const auto success = mdb_env_stat(m_env, &stats);
-
-        if (success != 0)
+        if (!m_env)
         {
-            throw std::runtime_error("Could not retrieve LMDB environment statistics: " + MDB_STR_ERR(success));
+            return {Error(LMDB_ERROR, "LMDB enviroment has been previously closed"), stats};
         }
 
-        return stats;
+        const auto result = mdb_env_stat(m_env, &stats);
+
+        return {Error(result, MDB_STR_ERR(result)), stats};
     }
 
     std::unique_ptr<LMDBTransaction> LMDB::transaction(bool readonly)
@@ -382,7 +376,7 @@ namespace TurtleCoin::Database
     {
         m_id = Crypto::Hashing::sha3(name.data(), name.size()).to_string();
 
-        const auto env_flags = env->get_flags();
+        const auto [error, env_flags] = env->get_flags();
 
         const auto readonly = (env_flags & MDB_RDONLY);
 
@@ -390,16 +384,14 @@ namespace TurtleCoin::Database
 
         auto success = mdb_dbi_open(*txn, name.empty() ? nullptr : name.c_str(), flags, &m_dbi);
 
-        if (success != 0)
+        if (success != MDB_SUCCESS)
         {
             throw std::runtime_error("Unable to open LMDB named database: " + MDB_STR_ERR(success));
         }
 
         if (!(env_flags & MDB_RDONLY))
         {
-            success = txn->commit();
-
-            if (success != 0)
+            if (txn->commit() != SUCCESS)
             {
                 throw std::runtime_error("Could not commit to open LMDB named database: " + MDB_STR_ERR(success));
             }
@@ -430,7 +422,7 @@ namespace TurtleCoin::Database
 
         size_t count = 0;
 
-        while (mdb_cursor_get(db_cursor, &key, &value, count ? MDB_NEXT : MDB_FIRST) == 0)
+        while (mdb_cursor_get(db_cursor, &key, &value, count ? MDB_NEXT : MDB_FIRST) == MDB_SUCCESS)
         {
             count++;
         }
@@ -438,7 +430,7 @@ namespace TurtleCoin::Database
         return count;
     }
 
-    bool LMDBDatabase::drop(bool delete_db)
+    Error LMDBDatabase::drop(bool delete_db)
     {
         std::scoped_lock lock(m_db_mutex);
 
@@ -446,9 +438,9 @@ namespace TurtleCoin::Database
 
         auto txn = std::make_unique<LMDBTransaction>(m_env);
 
-        const auto success = mdb_drop(*txn, m_dbi, (delete_db) ? 1 : 0);
+        auto result = mdb_drop(*txn, m_dbi, (delete_db) ? 1 : 0);
 
-        if (success == MDB_MAP_FULL)
+        if (result == MDB_MAP_FULL)
         {
             txn->abort();
 
@@ -457,7 +449,7 @@ namespace TurtleCoin::Database
             goto try_again;
         }
 
-        return txn->commit() == 0;
+        return txn->commit();
     }
 
     std::shared_ptr<LMDB> LMDBDatabase::env()
@@ -465,20 +457,15 @@ namespace TurtleCoin::Database
         return m_env;
     }
 
-    unsigned int LMDBDatabase::get_flags()
+    std::tuple<Error, unsigned int> LMDBDatabase::get_flags()
     {
         auto txn = transaction(true);
 
         unsigned int dbi_flags;
 
-        const auto success = mdb_dbi_flags(*txn, m_dbi, &dbi_flags);
+        const auto result = mdb_dbi_flags(*txn, m_dbi, &dbi_flags);
 
-        if (success != 0)
-        {
-            throw std::runtime_error("Could not retrieve LMDB database flags: " + MDB_STR_ERR(success));
-        }
-
-        return dbi_flags;
+        return {Error(result, MDB_STR_ERR(result)), dbi_flags};
     }
 
     std::string LMDBDatabase::id() const
@@ -536,20 +523,20 @@ namespace TurtleCoin::Database
         m_txn = nullptr;
     }
 
-    int LMDBTransaction::commit()
+    Error LMDBTransaction::commit()
     {
         if (!m_txn)
         {
-            return MDB_BAD_TXN;
+            return Error(LMDB_ERROR, MDB_STR_ERR(MDB_BAD_TXN));
         }
 
-        const auto success = mdb_txn_commit(*m_txn);
+        const auto result = mdb_txn_commit(*m_txn);
 
         m_env->transaction_unregister(*this);
 
         m_txn = nullptr;
 
-        return success;
+        return Error(result, MDB_STR_ERR(result));
     }
 
     std::unique_ptr<LMDBCursor> LMDBTransaction::cursor()
@@ -557,14 +544,16 @@ namespace TurtleCoin::Database
         return std::make_unique<LMDBCursor>(m_txn, m_db, m_readonly);
     }
 
-    size_t LMDBTransaction::id() const
+    std::tuple<Error, size_t> LMDBTransaction::id() const
     {
         if (!m_txn)
         {
-            return 0;
+            return {Error(LMDB_BAD_TXN, "Transaction does not exist"), 0};
         }
 
-        return mdb_txn_id(*m_txn);
+        const auto result = mdb_txn_id(*m_txn);
+
+        return {SUCCESS, result};
     }
 
     bool LMDBTransaction::readonly() const
@@ -572,24 +561,28 @@ namespace TurtleCoin::Database
         return m_readonly;
     }
 
-    bool LMDBTransaction::renew()
+    Error LMDBTransaction::renew()
     {
         if (!m_txn || !m_readonly)
         {
-            return false;
+            return Error(LMDB_BAD_TXN, "Transaction does not exist");
         }
 
-        return mdb_txn_renew(*m_txn) == 0;
+        const auto result = mdb_txn_renew(*m_txn);
+
+        return Error(result, MDB_STR_ERR(result));
     }
 
-    void LMDBTransaction::reset()
+    Error LMDBTransaction::reset()
     {
         if (!m_txn || !m_readonly)
         {
-            return;
+            return Error(LMDB_BAD_TXN, "Transaction does not exist or is readonly");
         }
 
-        mdb_txn_renew(*m_txn);
+        const auto result = mdb_txn_renew(*m_txn);
+
+        return Error(result, MDB_STR_ERR(result));
     }
 
     void LMDBTransaction::set_database(std::shared_ptr<LMDBDatabase> &db)
@@ -603,21 +596,21 @@ namespace TurtleCoin::Database
 
         for (int i = 0; i < 3; ++i)
         {
-            const auto success = mdb_txn_begin(*m_env, nullptr, (m_readonly) ? MDB_RDONLY : 0, &result);
+            const auto mdb_result = mdb_txn_begin(*m_env, nullptr, (m_readonly) ? MDB_RDONLY : 0, &result);
 
-            if (success == 0)
+            if (mdb_result == MDB_SUCCESS)
             {
                 break;
             }
 
-            if (success == MDB_MAP_RESIZED && i < 2)
+            if (mdb_result == MDB_MAP_RESIZED && i < 2)
             {
                 m_env->detect_map_size();
 
                 continue;
             }
 
-            throw std::runtime_error("Unable to start LMDB transaction: " + MDB_STR_ERR(success));
+            throw std::runtime_error("Unable to start LMDB transaction: " + MDB_STR_ERR(mdb_result));
         }
 
         m_txn = std::make_shared<MDB_txn *>(result);
@@ -628,11 +621,11 @@ namespace TurtleCoin::Database
     LMDBCursor::LMDBCursor(std::shared_ptr<MDB_txn *> &txn, std::shared_ptr<LMDBDatabase> &db, bool readonly):
         m_txn(txn), m_db(db), m_readonly(readonly)
     {
-        const auto success = mdb_cursor_open(*m_txn, *m_db, &m_cursor);
+        const auto result = mdb_cursor_open(*m_txn, *m_db, &m_cursor);
 
-        if (success != 0)
+        if (result != MDB_SUCCESS)
         {
-            throw std::runtime_error("Could not open LMDB cursor: " + MDB_STR_ERR(success));
+            throw std::runtime_error("Could not open LMDB cursor: " + MDB_STR_ERR(result));
         }
     }
 
@@ -651,55 +644,54 @@ namespace TurtleCoin::Database
         return m_cursor;
     }
 
-    size_t LMDBCursor::count()
+    std::tuple<Error, size_t> LMDBCursor::count()
     {
         if (!m_cursor)
         {
-            return 0;
+            return {Error(LMDB_ERROR, "Cursor does not exist"), 0};
         }
 
-        size_t count;
+        size_t count = 0;
 
-        const auto success = mdb_cursor_count(m_cursor, &count);
+        const auto result = mdb_cursor_count(m_cursor, &count);
 
-        if (success != 0)
-        {
-            throw std::runtime_error("Could not get the count from the LMDB cursor: " + MDB_STR_ERR(success));
-        }
-
-        return count;
+        return {Error(result, MDB_STR_ERR(result)), count};
     }
 
-    bool LMDBCursor::del(int flags)
+    Error LMDBCursor::del(int flags)
     {
-        return mdb_cursor_del(m_cursor, flags) == 0;
+        const auto result = mdb_cursor_del(m_cursor, flags);
+
+        return Error(result, MDB_STR_ERR(result));
     }
 
-    std::tuple<bool, std::vector<uint8_t>, std::vector<uint8_t>> LMDBCursor::get(const MDB_cursor_op &op)
+    std::tuple<Error, std::vector<uint8_t>, std::vector<uint8_t>> LMDBCursor::get(const MDB_cursor_op &op)
     {
         MDB_val i_key, i_value;
 
-        const auto success = mdb_cursor_get(m_cursor, &i_key, &i_value, op);
+        const auto result = mdb_cursor_get(m_cursor, &i_key, &i_value, op);
 
         std::vector<uint8_t> r_key, r_value;
 
-        if (success == 0)
+        if (result == MDB_SUCCESS)
         {
             r_key = FROM_MDB_VAL(i_key);
 
             r_value = FROM_MDB_VAL(i_value);
         }
 
-        return {success == 0, r_key, r_value};
+        return {Error(result, MDB_STR_ERR(result)), r_key, r_value};
     }
 
-    bool LMDBCursor::renew()
+    Error LMDBCursor::renew()
     {
         if (!m_cursor || !m_readonly)
         {
-            return false;
+            return Error(LMDB_ERROR, "Cursor does not exist or is read only.");
         }
 
-        return mdb_cursor_renew(*m_txn, m_cursor) == 0;
+        const auto result = mdb_cursor_renew(*m_txn, m_cursor);
+
+        return Error(result, MDB_STR_ERR(result));
     }
 } // namespace TurtleCoin::Database

@@ -7,6 +7,7 @@
 
 #include <crypto.h>
 #include <db_lmdb.h>
+#include <errors.h>
 #include <types.h>
 
 namespace TurtleCoin::Core
@@ -29,14 +30,14 @@ namespace TurtleCoin::Core
          * @param candidate the candidate public key
          * @return
          */
-        bool add_candidate(const Types::Staking::candidate_node_t &candidate);
+        Error add_candidate(const Types::Staking::candidate_node_t &candidate);
 
         /**
          * Adds a new staker to the database
          * @param staker
          * @return
          */
-        bool add_staker(const Types::Staking::staker_t &staker);
+        Error add_staker(const Types::Staking::staker_t &staker);
 
         /**
          * Calculates the election seed from the given last blocks presented
@@ -51,21 +52,21 @@ namespace TurtleCoin::Core
          * @param candidate_key
          * @return
          */
-        bool delete_candidate(const crypto_public_key_t &candidate_key);
+        Error delete_candidate(const crypto_public_key_t &candidate_key);
 
         /**
          * Deletes the staker from the database
          * @param staker_id
          * @return
          */
-        bool delete_staker(const crypto_hash_t &staker_id);
+        Error delete_staker(const crypto_hash_t &staker_id);
 
         /**
          * Retrieves the candidate record for the given candidate key
          * @param candidate_key
          * @return [found, candidate_record]
          */
-        std::tuple<bool, Types::Staking::candidate_node_t> get_candidate(const crypto_public_key_t &candidate_key);
+        std::tuple<Error, Types::Staking::candidate_node_t> get_candidate(const crypto_public_key_t &candidate_key);
 
         /**
          * Retrieves all of the active stakes for the given candidate
@@ -95,7 +96,7 @@ namespace TurtleCoin::Core
          * @param staker_key
          * @return [found, staker_record]
          */
-        std::tuple<bool, Types::Staking::staker_t> get_staker(const crypto_hash_t &staker_key);
+        std::tuple<Error, Types::Staking::staker_t> get_staker(const crypto_hash_t &staker_key);
 
         /**
          * Retrieves all tally of all of a staker's votes for a particular candidate
@@ -127,7 +128,7 @@ namespace TurtleCoin::Core
          * @param stake
          * @return
          */
-        bool recall_stake(
+        Error recall_stake(
             const Types::Staking::staker_t &staker,
             const crypto_hash_t &stake_txn,
             const crypto_public_key_t &candidate_key,
@@ -141,7 +142,7 @@ namespace TurtleCoin::Core
          * @param stake
          * @return
          */
-        bool record_stake(
+        Error record_stake(
             const Types::Staking::staker_t &staker,
             const crypto_hash_t &stake_txn,
             const crypto_public_key_t &candidate_key,

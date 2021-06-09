@@ -45,6 +45,10 @@ std::string Error::to_string() const
             return "The block for the height provided already exists in storage.";
         case BLOCK_TXN_ORDER:
             return "The transactions supplied for the DB are not in the same order as specified in the block.";
+        case STAKING_CANDIDATE_NOT_FOUND:
+            return "The staking candidate was not found in the database.";
+        case STAKING_STAKER_NOT_FOUND:
+            return "The staker was not found in the database.";
         default:
             return "Unknown error code supplied";
     }
