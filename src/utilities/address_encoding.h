@@ -6,6 +6,7 @@
 #define TURTLECOIN_BASE58_H
 
 #include <crypto.h>
+#include <errors.h>
 
 namespace TurtleCoin::Utilities
 {
@@ -14,7 +15,7 @@ namespace TurtleCoin::Utilities
      * @param address public wallet address
      * @return
      */
-    std::tuple<bool, crypto_public_key_t, crypto_public_key_t> decode_address(const std::string &address);
+    std::tuple<Error, crypto_public_key_t, crypto_public_key_t> decode_address(const std::string &address);
 
     /**
      * Encodes the public keys into a Base58 encoded public wallet address

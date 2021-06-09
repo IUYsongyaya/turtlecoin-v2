@@ -8,13 +8,13 @@
 
 namespace TurtleCoin::Utilities
 {
-    std::tuple<bool, crypto_public_key_t, crypto_public_key_t> decode_address(const std::string &address)
+    std::tuple<Error, crypto_public_key_t, crypto_public_key_t> decode_address(const std::string &address)
     {
         auto [success, decoded] = Crypto::CNBase58::decode_check(address);
 
         if (!success)
         {
-            return {false, {}, {}};
+            return {Error(BASE58_DECODE), {}, {}};
         }
 
         // extract the public keys from the result
@@ -24,23 +24,18 @@ namespace TurtleCoin::Utilities
 
             if (prefix != TurtleCoin::Configuration::PUBLIC_ADDRESS_PREFIX)
             {
-                return {false, {}, {}};
+                return {Error(ADDRESS_PREFIX_MISMATCH), {}, {}};
             }
 
             const auto public_spend = decoded.key<crypto_public_key_t>();
 
             const auto public_view = decoded.key<crypto_public_key_t>();
 
-            if (!public_spend.check() || !public_view.check())
-            {
-                return {false, {}, {}};
-            }
-
-            return {true, public_spend, public_view};
+            return {SUCCESS, public_spend, public_view};
         }
         catch (...)
         {
-            return {false, {}, {}};
+            return {Error(NOT_A_PUBLIC_KEY), {}, {}};
         }
     }
 
