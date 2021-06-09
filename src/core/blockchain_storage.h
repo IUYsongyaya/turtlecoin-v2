@@ -18,21 +18,30 @@ namespace TurtleCoin::Core
 
         static std::shared_ptr<BlockchainStorage> getInstance(const std::string &db_path);
 
-        std::tuple<bool, Types::Blockchain::block_t, std::vector<Types::Blockchain::transaction_t>>
-            get_block(const crypto_hash_t &block_hash);
+        bool block_exists(const crypto_hash_t &block_hash) const;
+
+        bool block_exists(const uint64_t &block_height) const;
 
         std::tuple<bool, Types::Blockchain::block_t, std::vector<Types::Blockchain::transaction_t>>
-            get_block(const uint64_t &block_height);
+            get_block(const crypto_hash_t &block_hash) const;
+
+        std::tuple<bool, Types::Blockchain::block_t, std::vector<Types::Blockchain::transaction_t>>
+            get_block(const uint64_t &block_height) const;
+
+        size_t get_maximum_global_index() const;
+
+        std::tuple<bool, Types::Blockchain::transaction_output_t> get_output_by_global_index(size_t global_index) const;
 
         bool put_block(
             const Types::Blockchain::block_t &block,
             const std::vector<Types::Blockchain::transaction_t> &transactions);
 
-        std::tuple<bool, Types::Blockchain::transaction_t> get_transaction(const crypto_hash_t &txn_hash);
+        std::tuple<bool, Types::Blockchain::transaction_t> get_transaction(const crypto_hash_t &txn_hash) const;
 
-        bool check_key_image_spent(const crypto_key_image_t &key_image);
+        bool check_key_image_spent(const crypto_key_image_t &key_image) const;
 
-        std::map<crypto_key_image_t, bool> check_key_image_spent(const std::vector<crypto_key_image_t> &key_images);
+        std::map<crypto_key_image_t, bool>
+            check_key_image_spent(const std::vector<crypto_key_image_t> &key_images) const;
 
       private:
         bool put_transaction(

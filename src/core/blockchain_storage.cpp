@@ -33,13 +33,13 @@ namespace TurtleCoin::Core
         return blockchain_storage_instance;
     }
 
-    bool BlockchainStorage::check_key_image_spent(const crypto_key_image_t &key_image)
+    bool BlockchainStorage::check_key_image_spent(const crypto_key_image_t &key_image) const
     {
         return m_key_images->exists(key_image);
     }
 
     std::map<crypto_key_image_t, bool>
-        BlockchainStorage::check_key_image_spent(const std::vector<crypto_key_image_t> &key_images)
+        BlockchainStorage::check_key_image_spent(const std::vector<crypto_key_image_t> &key_images) const
     {
         auto txn = m_key_images->transaction(true);
 
@@ -55,7 +55,20 @@ namespace TurtleCoin::Core
         return results;
     }
 
-    std::tuple<bool, Types::Blockchain::transaction_t> BlockchainStorage::get_transaction(const crypto_hash_t &txn_hash)
+    bool BlockchainStorage::block_exists(const crypto_hash_t &block_hash) const
+    {
+        return m_blocks->exists(block_hash);
+    }
+
+    bool BlockchainStorage::block_exists(const uint64_t &block_height) const
+    {
+        const auto [found, block_hash] = m_block_heights->get<crypto_hash_t>(block_height);
+
+        return found;
+    }
+
+    std::tuple<bool, Types::Blockchain::transaction_t>
+        BlockchainStorage::get_transaction(const crypto_hash_t &txn_hash) const
     {
         const auto [found, txn_data] = m_transactions->get(txn_hash);
 
@@ -88,7 +101,7 @@ namespace TurtleCoin::Core
     }
 
     std::tuple<bool, Types::Blockchain::block_t, std::vector<Types::Blockchain::transaction_t>>
-        BlockchainStorage::get_block(const crypto_hash_t &block_hash)
+        BlockchainStorage::get_block(const crypto_hash_t &block_hash) const
     {
         const auto [block_found, block] = m_blocks->get<crypto_hash_t, Types::Blockchain::block_t>(block_hash);
 
@@ -105,7 +118,6 @@ namespace TurtleCoin::Core
 
             if (!txn_found)
             {
-                // TODO: Log error as if we have the block, we should have the transaction
                 return {false, {}, {}};
             }
 
@@ -116,7 +128,7 @@ namespace TurtleCoin::Core
     }
 
     std::tuple<bool, Types::Blockchain::block_t, std::vector<Types::Blockchain::transaction_t>>
-        BlockchainStorage::get_block(const uint64_t &block_height)
+        BlockchainStorage::get_block(const uint64_t &block_height) const
     {
         const auto [found, block_hash] = m_block_heights->get<crypto_hash_t>(block_height);
 
@@ -128,10 +140,38 @@ namespace TurtleCoin::Core
         return get_block(block_hash);
     }
 
+    size_t BlockchainStorage::get_maximum_global_index() const
+    {
+        const auto count = m_global_indexes->count();
+
+        return (count == 0) ? count : count - 1;
+    }
+
+    std::tuple<bool, Types::Blockchain::transaction_output_t>
+        BlockchainStorage::get_output_by_global_index(size_t global_index) const
+    {
+        if (global_index > get_maximum_global_index())
+        {
+            return {false, {}};
+        }
+
+        return m_global_indexes->get<Types::Blockchain::transaction_output_t>(global_index);
+    }
+
     bool BlockchainStorage::put_block(
         const Types::Blockchain::block_t &block,
         const std::vector<Types::Blockchain::transaction_t> &transactions)
     {
+        if (!block_exists(block.previous_blockhash) && block.block_index != 0)
+        {
+            return false;
+        }
+
+        if (block_exists(block.block_index))
+        {
+            return false;
+        }
+
         /**
          * Sanity check transaction order before write
          */
@@ -222,6 +262,54 @@ namespace TurtleCoin::Core
                                 return false;
                             }
                         }
+                    }
+
+                    return true;
+                },
+                transaction))
+        {
+            return false;
+        }
+
+        uint64_t count = m_global_indexes->count();
+
+        db_tx->set_database(m_global_indexes);
+
+        if (!std::visit(
+                [&count, &db_tx](auto &&arg) {
+                    using T = std::decay_t<decltype(arg)>;
+
+                    if constexpr (
+                        std::is_same_v<
+                            T,
+                            Types::Blockchain::
+                                committed_normal_transaction_t> || std::is_same_v<T, Types::Blockchain::committed_stake_transaction_t> || std::is_same_v<T, Types::Blockchain::committed_recall_stake_transaction_t> || std::is_same_v<T, Types::Blockchain::genesis_transaction_t>)
+                    {
+                        for (const auto &output : arg.outputs)
+                        {
+                            if (db_tx->put(count, output.serialize_output()) != 0)
+                            {
+                                return false;
+                            }
+
+                            count++;
+                        }
+                    }
+                    else if constexpr (std::is_same_v<T, Types::Blockchain::stake_refund_transaction_t>)
+                    {
+                        /**
+                         * We set the amount to 0 here as a) the amount is masked anyways and b) it does not
+                         * matter for generating or checking signatures
+                         */
+                        const auto output =
+                            Types::Blockchain::transaction_output_t(arg.public_ephemeral, 0, arg.commitment);
+
+                        if (db_tx->put(count, output.serialize_output()) != 0)
+                        {
+                            return false;
+                        }
+
+                        count++;
                     }
 
                     return true;
