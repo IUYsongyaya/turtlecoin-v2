@@ -150,7 +150,7 @@ namespace std
 {
     inline ostream &operator<<(ostream &os, const TurtleCoin::Types::Blockchain::staker_reward_transaction_t &value)
     {
-        os << "Genesis Transaction [" << value.size() << " bytes]" << std::endl
+        os << "Staker Reward Transaction [" << value.size() << " bytes]" << std::endl
            << "\tHash: " << value.hash() << std::endl
            << "\tVersion: " << value.version << std::endl
            << "\tStaker Outputs:" << std::endl;
