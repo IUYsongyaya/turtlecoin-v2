@@ -5,10 +5,6 @@
 #ifndef TURTLECOIN_UTILITIES_H
 #define TURTLECOIN_UTILITIES_H
 
-#include <algorithm>
-#include <iostream>
-#include <iterator>
-#include <sstream>
 #include <string>
 #include <vector>
 
