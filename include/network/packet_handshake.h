@@ -7,9 +7,9 @@
 
 #include "base_types.h"
 
-namespace TurtleCoin::Types::Network
+namespace Types::Network
 {
-    struct packet_handshake_t : TurtleCoin::BaseTypes::NetworkPacket
+    struct packet_handshake_t : BaseTypes::NetworkPacket
     {
         packet_handshake_t()
         {
@@ -107,11 +107,11 @@ namespace TurtleCoin::Types::Network
             }
         }
     };
-} // namespace TurtleCoin::Types::Network
+} // namespace Types::Network
 
 namespace std
 {
-    inline ostream &operator<<(ostream &os, const TurtleCoin::Types::Network::packet_handshake_t &value)
+    inline ostream &operator<<(ostream &os, const Types::Network::packet_handshake_t &value)
     {
         os << "Handshake Packet [" << value.size() << " bytes]" << std::endl
            << "\tType: " << std::to_string(value.type) << std::endl

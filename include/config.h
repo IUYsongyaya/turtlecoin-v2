@@ -8,7 +8,7 @@
 #include <crypto.h>
 #include <cstdint>
 
-namespace TurtleCoin::Configuration
+namespace Configuration
 {
     namespace Version
     {
@@ -131,6 +131,6 @@ namespace TurtleCoin::Configuration
             const size_t THREADS = 1;
         } // namespace ProofOfWork
     } // namespace Transaction
-} // namespace TurtleCoin::Configuration
+} // namespace Configuration
 
 #endif // TURTLECOIN_CONFIG_H

@@ -5,7 +5,7 @@
 #ifndef TURTLECOIN_LOGGER_H
 #define TURTLECOIN_LOGGER_H
 
-namespace TurtleCoin::Logger
+namespace Logger
 {
 }
 

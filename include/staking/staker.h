@@ -7,7 +7,7 @@
 
 #include <crypto.h>
 
-namespace TurtleCoin::Types::Staking
+namespace Types::Staking
 {
     struct staker_t
     {
@@ -98,11 +98,11 @@ namespace TurtleCoin::Types::Staking
          */
         uint64_t record_version = Configuration::Staking::STAKER_RECORD_VERSION;
     };
-} // namespace TurtleCoin::Types::Staking
+} // namespace Types::Staking
 
 namespace std
 {
-    inline ostream &operator<<(ostream &os, const TurtleCoin::Types::Staking::staker_t &value)
+    inline ostream &operator<<(ostream &os, const Types::Staking::staker_t &value)
     {
         os << "Staker [v" << value.version() << "]" << std::endl
            << "\tID: " << value.id() << std::endl

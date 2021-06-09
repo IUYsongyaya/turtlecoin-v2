@@ -15,11 +15,11 @@ int main()
 
     benchmark_header(40, 25);
 
-    for (size_t i = 0; i < TurtleCoin::Configuration::Transaction::Fees::MAXIMUM_POW_ZEROS; ++i)
+    for (size_t i = 0; i < Configuration::Transaction::Fees::MAXIMUM_POW_ZEROS; ++i)
     {
         benchmark(
             [&i]() {
-                TurtleCoin::Types::Blockchain::uncommited_normal_transaction_t tx;
+                Types::Blockchain::uncommited_normal_transaction_t tx;
 
                 tx.tx_public_key = Crypto::random_point();
 

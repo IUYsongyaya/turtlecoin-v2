@@ -9,7 +9,7 @@
 #include <config.h>
 #include <sstream>
 
-using namespace TurtleCoin::Configuration::Version;
+using namespace Configuration::Version;
 
 static inline std::string get_cli_header()
 {

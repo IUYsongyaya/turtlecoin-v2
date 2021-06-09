@@ -21,7 +21,7 @@
         static_cast<const unsigned char *>((value).mv_data), \
         static_cast<const unsigned char *>((value).mv_data) + (value).mv_size)
 
-namespace TurtleCoin::Database
+namespace Database
 {
     // forward declarations
     class LMDBDatabase;
@@ -1141,6 +1141,6 @@ namespace TurtleCoin::Database
 
         return result;
     }
-} // namespace TurtleCoin::Database
+} // namespace Database
 
 #endif // DATABASE_LMDB_H

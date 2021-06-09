@@ -5,7 +5,7 @@
 #ifndef TURTLECOIN_COMMON_H
 #define TURTLECOIN_COMMON_H
 
-namespace TurtleCoin::Common
+namespace Common
 {
 }
 

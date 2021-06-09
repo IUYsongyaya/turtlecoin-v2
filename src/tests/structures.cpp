@@ -5,7 +5,7 @@
 #include <cli_header.h>
 #include <types.h>
 
-using namespace TurtleCoin::Types;
+using namespace Types;
 
 template<typename T> static inline void check_json_serialization(const T &value, const std::string &name = "")
 {

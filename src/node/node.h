@@ -5,7 +5,7 @@
 #ifndef TURTLECOIN_NODE_H
 #define TURTLECOIN_NODE_H
 
-namespace TurtleCoin::Node
+namespace Node
 {
 }
 

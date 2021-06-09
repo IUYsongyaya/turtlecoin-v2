@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-namespace TurtleCoin::Utilities
+namespace Utilities
 {
     /**
      * Joins a vector of strings together using the specified character as the delimiter
@@ -25,6 +25,6 @@ namespace TurtleCoin::Utilities
      * @return
      */
     std::vector<std::string> str_split(const std::string &input, const char &ch = ' ');
-} // namespace TurtleCoin::Utilities
+} // namespace Utilities
 
 #endif // TURTLECOIN_UTILITIES_H

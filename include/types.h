@@ -31,7 +31,7 @@
 #include "staking/stake.h"
 #include "staking/staker.h"
 
-namespace TurtleCoin::Types
+namespace Types
 {
     namespace Blockchain
     {
@@ -58,6 +58,6 @@ namespace TurtleCoin::Types
         typedef std::variant<packet_handshake_t, packet_peer_exchange_t, packet_keepalive_t, packet_data_t>
             network_packet_t;
     } // namespace Network
-} // namespace TurtleCoin::Types
+} // namespace Types
 
 #endif // TURTLECOIN_TYPES_H

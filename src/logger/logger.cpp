@@ -4,6 +4,6 @@
 
 #include "logger.h"
 
-namespace TurtleCoin::Logger
+namespace Logger
 {
 }

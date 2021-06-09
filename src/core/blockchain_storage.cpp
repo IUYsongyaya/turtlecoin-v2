@@ -4,9 +4,9 @@
 
 #include "blockchain_storage.h"
 
-static std::shared_ptr<TurtleCoin::Core::BlockchainStorage> blockchain_storage_instance;
+static std::shared_ptr<Core::BlockchainStorage> blockchain_storage_instance;
 
-namespace TurtleCoin::Core
+namespace Core
 {
     BlockchainStorage::BlockchainStorage(const std::string &db_path)
     {
@@ -83,17 +83,17 @@ namespace TurtleCoin::Core
 
         switch (type)
         {
-            case TurtleCoin::Types::Blockchain::TransactionType::GENESIS:
+            case Types::Blockchain::TransactionType::GENESIS:
                 return {SUCCESS, Types::Blockchain::genesis_transaction_t(reader)};
-            case TurtleCoin::Types::Blockchain::TransactionType::STAKER_REWARD:
+            case Types::Blockchain::TransactionType::STAKER_REWARD:
                 return {SUCCESS, Types::Blockchain::staker_reward_transaction_t(reader)};
-            case TurtleCoin::Types::Blockchain::TransactionType::NORMAL:
+            case Types::Blockchain::TransactionType::NORMAL:
                 return {SUCCESS, Types::Blockchain::committed_normal_transaction_t(reader)};
-            case TurtleCoin::Types::Blockchain::TransactionType::STAKE:
+            case Types::Blockchain::TransactionType::STAKE:
                 return {SUCCESS, Types::Blockchain::committed_stake_transaction_t(reader)};
-            case TurtleCoin::Types::Blockchain::TransactionType::RECALL_STAKE:
+            case Types::Blockchain::TransactionType::RECALL_STAKE:
                 return {SUCCESS, Types::Blockchain::committed_recall_stake_transaction_t(reader)};
-            case TurtleCoin::Types::Blockchain::TransactionType::STAKE_REFUND:
+            case Types::Blockchain::TransactionType::STAKE_REFUND:
                 return {SUCCESS, Types::Blockchain::stake_refund_transaction_t(reader)};
             default:
                 return {UNKNOWN_TRANSACTION_TYPE, {}};
@@ -353,4 +353,4 @@ namespace TurtleCoin::Core
 
         return db_tx->put<crypto_key_image_t, std::vector<uint8_t>>(key_image, {});
     }
-} // namespace TurtleCoin::Core
+} // namespace Core

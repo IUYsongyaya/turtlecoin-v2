@@ -7,7 +7,7 @@
 #include <crypto.h>
 #include <utilities.h>
 
-using namespace TurtleCoin::Utilities;
+using namespace Utilities;
 
 int main()
 {

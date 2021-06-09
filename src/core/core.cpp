@@ -4,6 +4,6 @@
 
 #include "core.h"
 
-namespace TurtleCoin::Core
+namespace Core
 {
 }

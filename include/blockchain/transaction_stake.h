@@ -7,18 +7,18 @@
 
 #include "base_types.h"
 
-namespace TurtleCoin::Types::Blockchain
+namespace Types::Blockchain
 {
     struct committed_stake_transaction_t :
-        TurtleCoin::BaseTypes::TransactionPrefix,
-        TurtleCoin::BaseTypes::TransactionUserBody,
-        TurtleCoin::BaseTypes::StakeTransactionData,
-        TurtleCoin::BaseTypes::CommittedTransactionSuffix,
-        virtual TurtleCoin::BaseTypes::IBlockchainSerializable
+        BaseTypes::TransactionPrefix,
+        BaseTypes::TransactionUserBody,
+        BaseTypes::StakeTransactionData,
+        BaseTypes::CommittedTransactionSuffix,
+        virtual BaseTypes::IBlockchainSerializable
     {
         committed_stake_transaction_t()
         {
-            l_type = TurtleCoin::BaseTypes::TransactionType::STAKE;
+            l_type = BaseTypes::TransactionType::STAKE;
         }
 
         committed_stake_transaction_t(deserializer_t &reader)
@@ -165,15 +165,15 @@ namespace TurtleCoin::Types::Blockchain
     };
 
     struct uncommitted_stake_transaction_t :
-        TurtleCoin::BaseTypes::TransactionPrefix,
-        TurtleCoin::BaseTypes::TransactionUserBody,
-        TurtleCoin::BaseTypes::StakeTransactionData,
-        TurtleCoin::BaseTypes::UncommittedTransactionSuffix,
-        virtual TurtleCoin::BaseTypes::IBlockchainSerializable
+        BaseTypes::TransactionPrefix,
+        BaseTypes::TransactionUserBody,
+        BaseTypes::StakeTransactionData,
+        BaseTypes::UncommittedTransactionSuffix,
+        virtual BaseTypes::IBlockchainSerializable
     {
         uncommitted_stake_transaction_t()
         {
-            l_type = TurtleCoin::BaseTypes::TransactionType::STAKE;
+            l_type = BaseTypes::TransactionType::STAKE;
         }
 
         uncommitted_stake_transaction_t(deserializer_t &reader)
@@ -296,9 +296,9 @@ namespace TurtleCoin::Types::Blockchain
 
             return Crypto::Hashing::argon2id(
                 data,
-                TurtleCoin::Configuration::Transaction::ProofOfWork::ITERATIONS,
-                TurtleCoin::Configuration::Transaction::ProofOfWork::MEMORY,
-                TurtleCoin::Configuration::Transaction::ProofOfWork::THREADS);
+                Configuration::Transaction::ProofOfWork::ITERATIONS,
+                Configuration::Transaction::ProofOfWork::MEMORY,
+                Configuration::Transaction::ProofOfWork::THREADS);
         }
 
         [[nodiscard]] bool pow_verify(const uint8_t zeros = 0) const
@@ -404,11 +404,11 @@ namespace TurtleCoin::Types::Blockchain
             return Crypto::StringTools::to_hex(bytes.data(), bytes.size());
         }
     };
-} // namespace TurtleCoin::Types::Blockchain
+} // namespace Types::Blockchain
 
 namespace std
 {
-    inline ostream &operator<<(ostream &os, const TurtleCoin::Types::Blockchain::committed_stake_transaction_t &value)
+    inline ostream &operator<<(ostream &os, const Types::Blockchain::committed_stake_transaction_t &value)
     {
         os << "Committed Stake Transaction [" << value.size() << " bytes]" << std::endl
            << "\tHash: " << value.hash() << std::endl
@@ -441,7 +441,7 @@ namespace std
         return os;
     }
 
-    inline ostream &operator<<(ostream &os, const TurtleCoin::Types::Blockchain::uncommitted_stake_transaction_t &value)
+    inline ostream &operator<<(ostream &os, const Types::Blockchain::uncommitted_stake_transaction_t &value)
     {
         os << "Uncommitted Stake Transaction [" << value.size() << " bytes]" << std::endl
            << "\tCommitted Size: " << value.digest_size() << " bytes" << std::endl

@@ -4,6 +4,6 @@
 
 #include "common.h"
 
-namespace TurtleCoin::Common
+namespace Common
 {
 }

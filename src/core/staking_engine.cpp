@@ -4,7 +4,7 @@
 
 #include "staking_engine.h"
 
-namespace TurtleCoin::Core
+namespace Core
 {
     StakingEngine::StakingEngine(const std::string &db_path)
     {
@@ -432,4 +432,4 @@ namespace TurtleCoin::Core
 
         return {producers, validators};
     }
-} // namespace TurtleCoin::Core
+} // namespace Core

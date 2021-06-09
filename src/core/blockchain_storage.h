@@ -9,7 +9,7 @@
 #include <db_lmdb.h>
 #include <types.h>
 
-namespace TurtleCoin::Core
+namespace Core
 {
     class BlockchainStorage
     {
@@ -58,6 +58,6 @@ namespace TurtleCoin::Core
 
         std::mutex write_mutex;
     };
-} // namespace TurtleCoin::Core
+} // namespace Core
 
 #endif // CORE_BLOCKCHAIN_STORAGE_H

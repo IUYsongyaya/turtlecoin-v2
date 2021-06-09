@@ -7,16 +7,16 @@
 
 #include "base_types.h"
 
-namespace TurtleCoin::Types::Blockchain
+namespace Types::Blockchain
 {
     struct stake_refund_transaction_t :
-        TurtleCoin::BaseTypes::TransactionPrefix,
-        TurtleCoin::BaseTypes::TransactionOutput,
-        virtual TurtleCoin::BaseTypes::IBlockchainSerializable
+        BaseTypes::TransactionPrefix,
+        BaseTypes::TransactionOutput,
+        virtual BaseTypes::IBlockchainSerializable
     {
         stake_refund_transaction_t()
         {
-            l_type = TurtleCoin::BaseTypes::TransactionType::STAKE_REFUND;
+            l_type = BaseTypes::TransactionType::STAKE_REFUND;
         }
 
         stake_refund_transaction_t(deserializer_t &reader)
@@ -145,11 +145,11 @@ namespace TurtleCoin::Types::Blockchain
         crypto_secret_key_t tx_secret_key;
         crypto_hash_t recall_stake_tx;
     };
-} // namespace TurtleCoin::Types::Blockchain
+} // namespace Types::Blockchain
 
 namespace std
 {
-    inline ostream &operator<<(ostream &os, const TurtleCoin::Types::Blockchain::stake_refund_transaction_t &value)
+    inline ostream &operator<<(ostream &os, const Types::Blockchain::stake_refund_transaction_t &value)
     {
         os << "Stake Refund Transaction [" << value.size() << " bytes]" << std::endl
            << "\tHash: " << value.hash() << std::endl

@@ -4,6 +4,6 @@
 
 #include "http.h"
 
-namespace TurtleCoin::HTTP
+namespace HTTP
 {
 }

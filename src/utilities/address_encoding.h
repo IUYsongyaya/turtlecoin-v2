@@ -8,7 +8,7 @@
 #include <crypto.h>
 #include <errors.h>
 
-namespace TurtleCoin::Utilities
+namespace Utilities
 {
     /**
      * Decodes the public keys from a Base58 encoded public wallet address
@@ -24,6 +24,6 @@ namespace TurtleCoin::Utilities
      * @return
      */
     std::string encode_address(const crypto_public_key_t &public_spend, const crypto_public_key_t &public_view);
-} // namespace TurtleCoin::Utilities
+} // namespace Utilities
 
 #endif // TURTLECOIN_BASE58_H

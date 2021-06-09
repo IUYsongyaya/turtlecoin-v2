@@ -5,7 +5,7 @@
 #ifndef TURTLECOIN_CORE_H
 #define TURTLECOIN_CORE_H
 
-namespace TurtleCoin::Core
+namespace Core
 {
 }
 

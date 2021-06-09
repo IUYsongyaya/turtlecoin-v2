@@ -7,15 +7,13 @@
 
 #include "base_types.h"
 
-namespace TurtleCoin::Types::Blockchain
+namespace Types::Blockchain
 {
-    struct staker_reward_transaction_t :
-        TurtleCoin::BaseTypes::TransactionHeader,
-        virtual TurtleCoin::BaseTypes::IBlockchainSerializable
+    struct staker_reward_transaction_t : BaseTypes::TransactionHeader, virtual BaseTypes::IBlockchainSerializable
     {
         staker_reward_transaction_t()
         {
-            l_type = TurtleCoin::BaseTypes::TransactionType::STAKER_REWARD;
+            l_type = BaseTypes::TransactionType::STAKER_REWARD;
         }
 
         staker_reward_transaction_t(deserializer_t &reader)
@@ -144,11 +142,11 @@ namespace TurtleCoin::Types::Blockchain
 
         std::vector<staker_output_t> staker_outputs;
     };
-} // namespace TurtleCoin::Types::Blockchain
+} // namespace Types::Blockchain
 
 namespace std
 {
-    inline ostream &operator<<(ostream &os, const TurtleCoin::Types::Blockchain::staker_reward_transaction_t &value)
+    inline ostream &operator<<(ostream &os, const Types::Blockchain::staker_reward_transaction_t &value)
     {
         os << "Staker Reward Transaction [" << value.size() << " bytes]" << std::endl
            << "\tHash: " << value.hash() << std::endl

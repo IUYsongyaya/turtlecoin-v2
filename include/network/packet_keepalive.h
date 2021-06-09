@@ -7,9 +7,9 @@
 
 #include "base_types.h"
 
-namespace TurtleCoin::Types::Network
+namespace Types::Network
 {
-    struct packet_keepalive_t : TurtleCoin::BaseTypes::NetworkPacket
+    struct packet_keepalive_t : BaseTypes::NetworkPacket
     {
         packet_keepalive_t()
         {
@@ -73,11 +73,11 @@ namespace TurtleCoin::Types::Network
             version = reader.varint<uint16_t>();
         }
     };
-} // namespace TurtleCoin::Types::Network
+} // namespace Types::Network
 
 namespace std
 {
-    inline ostream &operator<<(ostream &os, const TurtleCoin::Types::Network::packet_keepalive_t &value)
+    inline ostream &operator<<(ostream &os, const Types::Network::packet_keepalive_t &value)
     {
         os << "Keepalive Packet [" << value.size() << " bytes]" << std::endl
            << "\tType: " << std::to_string(value.type) << std::endl

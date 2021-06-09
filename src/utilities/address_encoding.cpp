@@ -6,7 +6,7 @@
 
 #include <config.h>
 
-namespace TurtleCoin::Utilities
+namespace Utilities
 {
     std::tuple<Error, crypto_public_key_t, crypto_public_key_t> decode_address(const std::string &address)
     {
@@ -22,7 +22,7 @@ namespace TurtleCoin::Utilities
         {
             const auto prefix = decoded.varint<uint64_t>();
 
-            if (prefix != TurtleCoin::Configuration::PUBLIC_ADDRESS_PREFIX)
+            if (prefix != Configuration::PUBLIC_ADDRESS_PREFIX)
             {
                 return {Error(ADDRESS_PREFIX_MISMATCH), {}, {}};
             }
@@ -44,7 +44,7 @@ namespace TurtleCoin::Utilities
         // construct the raw address [prefix || public_spend || public_view]
         serializer_t writer;
 
-        writer.varint(TurtleCoin::Configuration::PUBLIC_ADDRESS_PREFIX);
+        writer.varint(Configuration::PUBLIC_ADDRESS_PREFIX);
 
         writer.key(public_spend);
 
@@ -53,4 +53,4 @@ namespace TurtleCoin::Utilities
         // Encode the raw address as Base58 and prepend the Base58 encoded prefix
         return Crypto::CNBase58::encode_check(writer);
     }
-} // namespace TurtleCoin::Utilities
+} // namespace Utilities

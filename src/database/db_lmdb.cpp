@@ -10,9 +10,9 @@
 
 #define LMDB_SPACE_MULTIPLIER (1024 * 1024) // to MB
 
-std::map<std::string, std::shared_ptr<TurtleCoin::Database::LMDB>> l_environments;
+std::map<std::string, std::shared_ptr<Database::LMDB>> l_environments;
 
-namespace TurtleCoin::Database
+namespace Database
 {
     LMDB::LMDB(const std::string &path, int flags, int mode, size_t growth_factor, unsigned int max_databases):
         m_growth_factor(growth_factor), m_env(nullptr), m_open_txns(0)
@@ -694,4 +694,4 @@ namespace TurtleCoin::Database
 
         return Error(result, MDB_STR_ERR(result));
     }
-} // namespace TurtleCoin::Database
+} // namespace Database

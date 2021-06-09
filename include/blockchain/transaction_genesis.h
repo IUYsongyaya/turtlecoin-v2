@@ -7,15 +7,13 @@
 
 #include "base_types.h"
 
-namespace TurtleCoin::Types::Blockchain
+namespace Types::Blockchain
 {
-    struct genesis_transaction_t :
-        TurtleCoin::BaseTypes::TransactionPrefix,
-        virtual TurtleCoin::BaseTypes::IBlockchainSerializable
+    struct genesis_transaction_t : BaseTypes::TransactionPrefix, virtual BaseTypes::IBlockchainSerializable
     {
         genesis_transaction_t()
         {
-            l_type = TurtleCoin::BaseTypes::TransactionType::GENESIS;
+            l_type = BaseTypes::TransactionType::GENESIS;
         }
 
         genesis_transaction_t(deserializer_t &reader)
@@ -156,11 +154,11 @@ namespace TurtleCoin::Types::Blockchain
         crypto_secret_key_t tx_secret_key;
         std::vector<transaction_output_t> outputs;
     };
-} // namespace TurtleCoin::Types::Blockchain
+} // namespace Types::Blockchain
 
 namespace std
 {
-    inline ostream &operator<<(ostream &os, const TurtleCoin::Types::Blockchain::genesis_transaction_t &value)
+    inline ostream &operator<<(ostream &os, const Types::Blockchain::genesis_transaction_t &value)
     {
         os << "Genesis Transaction [" << value.size() << " bytes]" << std::endl
            << "\tHash: " << value.hash() << std::endl

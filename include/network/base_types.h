@@ -7,16 +7,16 @@
 
 #include <crypto.h>
 
-namespace TurtleCoin::BaseTypes
+namespace BaseTypes
 {
     struct NetworkPacket
     {
         uint16_t type = 0;
         uint16_t version = 0;
     };
-} // namespace TurtleCoin::BaseTypes
+} // namespace BaseTypes
 
-namespace TurtleCoin::Types::Network
+namespace Types::Network
 {
     struct network_peer_t
     {
@@ -82,11 +82,11 @@ namespace TurtleCoin::Types::Network
             peer_id = reader.bytes(bytes);
         }
     };
-} // namespace TurtleCoin::Types::Network
+} // namespace Types::Network
 
 namespace std
 {
-    inline ostream &operator<<(ostream &os, const TurtleCoin::Types::Network::network_peer_t &value)
+    inline ostream &operator<<(ostream &os, const Types::Network::network_peer_t &value)
     {
         os << "\tPeer Entry: [" << value.size() << " bytes]" << std::endl
            << "\t\tIP Address: " << std::to_string(value.ip_address) << std::endl

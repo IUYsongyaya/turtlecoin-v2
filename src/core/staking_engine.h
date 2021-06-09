@@ -10,7 +10,7 @@
 #include <errors.h>
 #include <types.h>
 
-namespace TurtleCoin::Core
+namespace Core
 {
     /**
      * Represents the core staking engine
@@ -167,6 +167,6 @@ namespace TurtleCoin::Core
 
         std::mutex candidates_mutex, stakers_mutex, stakes_mutex;
     };
-} // namespace TurtleCoin::Core
+} // namespace Core
 
 #endif // CORE_STAKING_ENGINE_H

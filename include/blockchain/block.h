@@ -11,11 +11,9 @@
 
 #include <map>
 
-namespace TurtleCoin::Types::Blockchain
+namespace Types::Blockchain
 {
-    typedef std::variant<
-        TurtleCoin::Types::Blockchain::genesis_transaction_t,
-        TurtleCoin::Types::Blockchain::staker_reward_transaction_t>
+    typedef std::variant<Types::Blockchain::genesis_transaction_t, Types::Blockchain::staker_reward_transaction_t>
         block_transaction_t;
 
     enum block_digest_mode_t
@@ -103,10 +101,10 @@ namespace TurtleCoin::Types::Blockchain
 
                 switch (type)
                 {
-                    case TurtleCoin::BaseTypes::TransactionType::GENESIS:
+                    case BaseTypes::TransactionType::GENESIS:
                         reward_tx = genesis_transaction_t(reader);
                         break;
-                    case TurtleCoin::BaseTypes::TransactionType::STAKER_REWARD:
+                    case BaseTypes::TransactionType::STAKER_REWARD:
                         reward_tx = staker_reward_transaction_t(reader);
                         break;
                     default:
@@ -185,10 +183,10 @@ namespace TurtleCoin::Types::Blockchain
 
                 switch (type)
                 {
-                    case TurtleCoin::BaseTypes::TransactionType::GENESIS:
+                    case BaseTypes::TransactionType::GENESIS:
                         reward_tx = genesis_transaction_t(elem);
                         break;
-                    case TurtleCoin::BaseTypes::TransactionType::STAKER_REWARD:
+                    case BaseTypes::TransactionType::STAKER_REWARD:
                         reward_tx = staker_reward_transaction_t(elem);
                         break;
                     default:
@@ -597,11 +595,11 @@ namespace TurtleCoin::Types::Blockchain
             return get_json_uint64_t(j, "type");
         }
     };
-} // namespace TurtleCoin::Types::Blockchain
+} // namespace Types::Blockchain
 
 namespace std
 {
-    inline ostream &operator<<(ostream &os, const TurtleCoin::Types::Blockchain::block_t &value)
+    inline ostream &operator<<(ostream &os, const Types::Blockchain::block_t &value)
     {
         os << "Block [" << value.size() << " bytes]" << std::endl
            << "\tHash: " << value.hash() << std::endl

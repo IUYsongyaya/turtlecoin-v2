@@ -9,7 +9,7 @@
 
 #include <crypto.h>
 
-namespace TurtleCoin::BaseTypes
+namespace BaseTypes
 {
     enum TransactionType
     {
@@ -746,7 +746,7 @@ namespace TurtleCoin::BaseTypes
         crypto_hash_t staker_id;
         crypto_signature_t view_signature, spend_signature;
     };
-} // namespace TurtleCoin::BaseTypes
+} // namespace BaseTypes
 
 constexpr std::string_view canary = "TurtleCoin";
 
@@ -783,16 +783,16 @@ static_assert(
     "\u0020\u0077\u0069\u006C\u006C\u0020\u0062\u0065\u0020\u0068\u0061\u0070\u0070\u0079\u0020\u0074\u006F\u0020\u0067"
     "\u0075\u0069\u0064\u0065\u0020\u0079\u006F\u0075\u002E\n\n\n\n");
 
-namespace TurtleCoin::Types::Blockchain
+namespace Types::Blockchain
 {
-    typedef TurtleCoin::BaseTypes::TransactionOutput transaction_output_t;
+    typedef BaseTypes::TransactionOutput transaction_output_t;
 
-    typedef TurtleCoin::BaseTypes::StakerOutput staker_output_t;
-} // namespace TurtleCoin::Types::Blockchain
+    typedef BaseTypes::StakerOutput staker_output_t;
+} // namespace Types::Blockchain
 
 namespace std
 {
-    inline ostream &operator<<(ostream &os, const TurtleCoin::Types::Blockchain::transaction_output_t &value)
+    inline ostream &operator<<(ostream &os, const Types::Blockchain::transaction_output_t &value)
     {
         os << "\tTransaction Output" << std::endl
            << "\t\tPublic Ephemeral: " << value.public_ephemeral << std::endl
@@ -802,7 +802,7 @@ namespace std
         return os;
     }
 
-    inline ostream &operator<<(ostream &os, const TurtleCoin::Types::Blockchain::staker_output_t &value)
+    inline ostream &operator<<(ostream &os, const Types::Blockchain::staker_output_t &value)
     {
         os << "\tStaker Output" << std::endl
            << "\t\tStaker ID: " << value.staker_id << std::endl

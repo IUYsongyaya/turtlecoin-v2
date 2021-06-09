@@ -4,7 +4,7 @@
 
 #include "utilities.h"
 
-namespace TurtleCoin::Utilities
+namespace Utilities
 {
     std::string str_join(const std::vector<std::string> &input, const char &ch)
     {
@@ -42,4 +42,4 @@ namespace TurtleCoin::Utilities
 
         return result;
     }
-} // namespace TurtleCoin::Utilities
+} // namespace Utilities

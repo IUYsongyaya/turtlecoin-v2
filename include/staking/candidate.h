@@ -8,7 +8,7 @@
 #include <config.h>
 #include <crypto.h>
 
-namespace TurtleCoin::Types::Staking
+namespace Types::Staking
 {
     struct candidate_node_t
     {
@@ -134,11 +134,11 @@ namespace TurtleCoin::Types::Staking
          */
         uint64_t record_version = Configuration::Staking::CANDIDATE_RECORD_VERSION;
     };
-} // namespace TurtleCoin::Types::Staking
+} // namespace Types::Staking
 
 namespace std
 {
-    inline ostream &operator<<(ostream &os, const TurtleCoin::Types::Staking::candidate_node_t &value)
+    inline ostream &operator<<(ostream &os, const Types::Staking::candidate_node_t &value)
     {
         os << "Candidate Node [v" << value.version() << "]" << std::endl
            << "\tStaking Hash: " << value.staking_hash << std::endl

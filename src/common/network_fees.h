@@ -8,7 +8,7 @@
 #include <config.h>
 #include <stdexcept>
 
-namespace TurtleCoin::Common::NetworkFees
+namespace Common::NetworkFees
 {
     /**
      * Calculate the base transaction fee given the size of the transaction in bytes
@@ -37,6 +37,6 @@ namespace TurtleCoin::Common::NetworkFees
      * @return
      */
     uint64_t calculate_transaction_fee(size_t transaction_size, size_t leading_zeros = 0);
-} // namespace TurtleCoin::Common::NetworkFees
+} // namespace Common::NetworkFees
 
 #endif // COMMON_FEES_H

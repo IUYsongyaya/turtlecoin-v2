@@ -4,6 +4,6 @@
 
 #include "node.h"
 
-namespace TurtleCoin::Node
+namespace Node
 {
 }

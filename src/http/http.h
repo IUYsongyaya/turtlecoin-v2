@@ -5,7 +5,7 @@
 #ifndef TURTLECOIN_HTTP_H
 #define TURTLECOIN_HTTP_H
 
-namespace TurtleCoin::HTTP
+namespace HTTP
 {
 }
 
