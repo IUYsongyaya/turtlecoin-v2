@@ -62,9 +62,7 @@ namespace Core
 
     bool BlockchainStorage::block_exists(const uint64_t &block_height) const
     {
-        const auto [error, block_hash] = m_block_heights->get<crypto_hash_t>(block_height);
-
-        return !error;
+        return m_block_heights->exists(block_height);
     }
 
     std::tuple<Error, Types::Blockchain::transaction_t>

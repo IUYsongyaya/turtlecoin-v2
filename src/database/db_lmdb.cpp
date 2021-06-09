@@ -544,6 +544,17 @@ namespace Database
         return std::make_unique<LMDBCursor>(m_txn, m_db, m_readonly);
     }
 
+    bool LMDBTransaction::exists(const uint64_t &key)
+    {
+        MDB_VAL_NUM(key, i_key);
+
+        MDB_val value;
+
+        const auto result = mdb_get(*m_txn, *m_db, &i_key, &value);
+
+        return result == MDB_SUCCESS;
+    }
+
     std::tuple<Error, size_t> LMDBTransaction::id() const
     {
         if (!m_txn)

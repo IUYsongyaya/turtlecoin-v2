@@ -556,10 +556,21 @@ namespace Database
          */
         template<typename KeyType> bool exists(const KeyType &key)
         {
-            const auto [error, value] = get(key);
+            MDB_VAL(key, i_key);
 
-            return error == SUCCESS;
+            MDB_val value;
+
+            const auto result = mdb_get(*m_txn, *m_db, &i_key, &value);
+
+            return result == MDB_SUCCESS;
         }
+
+        /**
+         * Checks if the given key exists in the database
+         * @param key
+         * @return
+         */
+        bool exists(const uint64_t &key);
 
         /**
          * Retrieves the value stored with the specified key as the specified type
