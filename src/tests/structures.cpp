@@ -81,11 +81,20 @@ int main()
 
     std::cout << "Data Structures Tests" << std::endl << std::endl;
 
-    // Block
+    // Block w/ Genesis
     {
         auto structure = Blockchain::block_t();
 
-        check_binary_serialization_by_hash(structure, "block_t");
+        check_binary_serialization_by_hash(structure, "block_t[genesis]");
+    }
+
+    // Block w/ Staker Reward
+    {
+        auto structure = Blockchain::block_t();
+
+        structure.reward_tx = Blockchain::staker_reward_transaction_t();
+
+        check_binary_serialization_by_hash(structure, "block_t[staker_reward]");
     }
 
     // Genesis Transaction

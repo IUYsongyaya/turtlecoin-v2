@@ -5,12 +5,19 @@
 #ifndef TURTLECOIN_BLOCK_H
 #define TURTLECOIN_BLOCK_H
 
+#include "base_types.h"
+#include "transaction_genesis.h"
 #include "transaction_staker_reward.h"
 
 #include <map>
 
 namespace TurtleCoin::Types::Blockchain
 {
+    typedef std::variant<
+        TurtleCoin::Types::Blockchain::genesis_transaction_t,
+        TurtleCoin::Types::Blockchain::staker_reward_transaction_t>
+        block_transaction_t;
+
     enum block_digest_mode_t
     {
         BLOCK_DIGEST_FULL,
@@ -91,7 +98,21 @@ namespace TurtleCoin::Types::Blockchain
 
             block_index = reader.varint<uint64_t>();
 
-            staker_reward_tx.deserialize(reader);
+            {
+                const auto type = reader.varint<uint64_t>(true);
+
+                switch (type)
+                {
+                    case TurtleCoin::BaseTypes::TransactionType::GENESIS:
+                        reward_tx = genesis_transaction_t(reader);
+                        break;
+                    case TurtleCoin::BaseTypes::TransactionType::STAKER_REWARD:
+                        reward_tx = staker_reward_transaction_t(reader);
+                        break;
+                    default:
+                        throw std::invalid_argument("Invalid reward_tx type");
+                }
+            }
 
             // transactions
             {
@@ -155,9 +176,25 @@ namespace TurtleCoin::Types::Blockchain
 
             block_index = get_json_uint64_t(j, "block_index");
 
-            JSON_MEMBER_OR_THROW("staker_reward_tx");
+            JSON_MEMBER_OR_THROW("reward_tx");
 
-            staker_reward_tx = staker_reward_transaction_t(j, "staker_reward_tx");
+            {
+                const auto &elem = get_json_value(j, "reward_tx");
+
+                const auto type = detect_json_type(elem);
+
+                switch (type)
+                {
+                    case TurtleCoin::BaseTypes::TransactionType::GENESIS:
+                        reward_tx = genesis_transaction_t(elem);
+                        break;
+                    case TurtleCoin::BaseTypes::TransactionType::STAKER_REWARD:
+                        reward_tx = staker_reward_transaction_t(elem);
+                        break;
+                    default:
+                        throw std::invalid_argument("Invalid reward_tx type");
+                }
+            }
 
             JSON_MEMBER_OR_THROW("transactions");
 
@@ -267,7 +304,7 @@ namespace TurtleCoin::Types::Blockchain
 
             writer.varint(block_index);
 
-            staker_reward_tx.serialize(writer);
+            std::visit([&writer](auto &&arg) { arg.serialize(writer); }, reward_tx);
 
             writer.varint(transactions.size());
 
@@ -359,8 +396,8 @@ namespace TurtleCoin::Types::Blockchain
                 writer.Key("block_index");
                 writer.Uint64(block_index);
 
-                writer.Key("staker_reward_tx");
-                staker_reward_tx.toJSON(writer);
+                writer.Key("reward_tx");
+                std::visit([&writer](auto &&arg) { arg.toJSON(writer); }, reward_tx);
 
                 writer.Key("transactions");
                 writer.StartArray();
@@ -432,7 +469,24 @@ namespace TurtleCoin::Types::Blockchain
          */
         [[nodiscard]] bool validate_construction() const
         {
-            if (staker_reward_tx.staker_outputs.empty())
+            if (!std::visit(
+                    [](auto &&arg) {
+                        using T = std::decay_t<decltype(arg)>;
+
+                        if constexpr (std::is_same_v<T, Blockchain::genesis_transaction_t>)
+                        {
+                            return !arg.outputs.empty();
+                        }
+                        else if constexpr (std::is_same_v<T, Blockchain::staker_reward_transaction_t>)
+                        {
+                            return !arg.staker_outputs.empty();
+                        }
+                        else
+                        {
+                            return true;
+                        }
+                    },
+                    reward_tx))
             {
                 return false;
             }
@@ -517,7 +571,7 @@ namespace TurtleCoin::Types::Blockchain
 
         uint64_t version = 1, timestamp = 0, block_index = 0;
         crypto_hash_t previous_blockhash;
-        staker_reward_transaction_t staker_reward_tx;
+        Blockchain::block_transaction_t reward_tx;
 
         /**
          * Transaction hashes must be properly ordered in a block using standard sorting
@@ -532,6 +586,16 @@ namespace TurtleCoin::Types::Blockchain
          * to ensure consistency in the final block hash
          */
         std::map<crypto_public_key_t, crypto_signature_t> validator_signatures;
+
+      private:
+        uint64_t detect_json_type(const JSONValue &j)
+        {
+            JSON_OBJECT_OR_THROW();
+
+            JSON_MEMBER_OR_THROW("type");
+
+            return get_json_uint64_t(j, "type");
+        }
     };
 } // namespace TurtleCoin::Types::Blockchain
 
@@ -545,7 +609,11 @@ namespace std
            << "\tPrevious Blockhash: " << value.previous_blockhash << std::endl
            << "\tTimestamp: " << value.timestamp << std::endl
            << "\tBlock Index: " << value.block_index << std::endl
-           << "\tTransactions:" << std::endl;
+           << std::endl;
+
+        std::visit([&os](auto &&arg) { os << arg; }, value.reward_tx);
+
+        os << std::endl << std::endl << "\tBlock Transactions:" << std::endl;
 
         for (const auto &tx : value.transactions)
         {
