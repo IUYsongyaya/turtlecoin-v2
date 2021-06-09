@@ -9,11 +9,13 @@
 
 namespace TurtleCoin::Types::Blockchain
 {
-    struct genesis_transaction_t : TurtleCoin::BaseTypes::TransactionPrefix
+    struct genesis_transaction_t :
+        TurtleCoin::BaseTypes::TransactionPrefix,
+        virtual TurtleCoin::BaseTypes::IBlockchainSerializable
     {
         genesis_transaction_t()
         {
-            type = Configuration::Transaction::Types::GENESIS;
+            l_type = TurtleCoin::BaseTypes::TransactionType::GENESIS;
         }
 
         genesis_transaction_t(deserializer_t &reader)
@@ -46,7 +48,7 @@ namespace TurtleCoin::Types::Blockchain
 
         JSON_OBJECT_CONSTRUCTORS(genesis_transaction_t, fromJSON)
 
-        void deserialize(deserializer_t &reader)
+        void deserialize(deserializer_t &reader) override
         {
             deserialize_prefix(reader);
 
@@ -65,7 +67,7 @@ namespace TurtleCoin::Types::Blockchain
             }
         }
 
-        JSON_FROM_FUNC(fromJSON)
+        JSON_FROM_FUNC(fromJSON) override
         {
             JSON_OBJECT_OR_THROW();
 
@@ -85,14 +87,14 @@ namespace TurtleCoin::Types::Blockchain
             }
         }
 
-        [[nodiscard]] crypto_hash_t hash() const
+        [[nodiscard]] crypto_hash_t hash() const override
         {
             const auto bytes = serialize();
 
             return Crypto::Hashing::sha3(bytes.data(), bytes.size());
         }
 
-        void serialize(serializer_t &writer) const
+        void serialize(serializer_t &writer) const override
         {
             serialize_prefix(writer);
 
@@ -106,7 +108,7 @@ namespace TurtleCoin::Types::Blockchain
             }
         }
 
-        [[nodiscard]] std::vector<uint8_t> serialize() const
+        [[nodiscard]] std::vector<uint8_t> serialize() const override
         {
             serializer_t writer;
 
@@ -115,14 +117,14 @@ namespace TurtleCoin::Types::Blockchain
             return writer.vector();
         }
 
-        [[nodiscard]] size_t size() const
+        [[nodiscard]] size_t size() const override
         {
             const auto bytes = serialize();
 
             return bytes.size();
         }
 
-        void toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const
+        void toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const override
         {
             writer.StartObject();
             {
@@ -144,7 +146,7 @@ namespace TurtleCoin::Types::Blockchain
             writer.EndObject();
         }
 
-        [[nodiscard]] std::string to_string() const
+        [[nodiscard]] std::string to_string() const override
         {
             const auto bytes = serialize();
 

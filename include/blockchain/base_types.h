@@ -11,7 +11,38 @@
 
 namespace TurtleCoin::BaseTypes
 {
-    struct TransactionHeader
+    enum TransactionType
+    {
+        GENESIS,
+        STAKER_REWARD,
+        NORMAL,
+        STAKE,
+        RECALL_STAKE,
+        STAKE_REFUND
+    };
+
+    struct IBlockchainSerializable
+    {
+        virtual void deserialize(deserializer_t &reader) = 0;
+
+        virtual crypto_hash_t hash() const = 0;
+
+        virtual void fromJSON(const JSONValue &j) = 0;
+
+        virtual void serialize(serializer_t &write) const = 0;
+
+        virtual std::vector<uint8_t> serialize() const = 0;
+
+        virtual size_t size() const = 0;
+
+        virtual void toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const = 0;
+
+        virtual std::string to_string() const = 0;
+
+        virtual uint64_t type() const = 0;
+    };
+
+    struct TransactionHeader : virtual IBlockchainSerializable
     {
         TransactionHeader() {}
 
@@ -24,14 +55,14 @@ namespace TurtleCoin::BaseTypes
 
         void deserialize_header(deserializer_t &reader)
         {
-            type = reader.varint<uint64_t>();
+            l_type = reader.varint<uint64_t>();
 
             version = reader.varint<uint64_t>();
         }
 
         void serialize_header(serializer_t &writer) const
         {
-            writer.varint(type);
+            writer.varint(l_type);
 
             writer.varint(version);
         }
@@ -39,7 +70,7 @@ namespace TurtleCoin::BaseTypes
         void header_toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const
         {
             writer.Key("type");
-            writer.Uint64(type);
+            writer.Uint64(l_type);
 
             writer.Key("version");
             writer.Uint64(version);
@@ -51,17 +82,22 @@ namespace TurtleCoin::BaseTypes
 
             JSON_MEMBER_OR_THROW("type");
 
-            type = get_json_uint64_t(j, "type");
+            l_type = get_json_uint64_t(j, "type");
 
             JSON_MEMBER_OR_THROW("version");
 
             version = get_json_uint64_t(j, "version");
         }
 
+        uint64_t type() const override
+        {
+            return l_type;
+        }
+
         uint64_t version = 0;
 
       protected:
-        uint64_t type = 0;
+        uint64_t l_type = 0;
     };
 
     struct TransactionPrefix : TransactionHeader

@@ -49,6 +49,8 @@ namespace TurtleCoin::Types
             uncommitted_stake_transaction_t,
             uncommitted_recall_stake_transaction_t>
             uncommitted_transaction_t;
+
+        typedef BaseTypes::TransactionType TransactionType;
     } // namespace Blockchain
 
     namespace Network

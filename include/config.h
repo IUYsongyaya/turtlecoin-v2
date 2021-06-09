@@ -80,21 +80,6 @@ namespace TurtleCoin::Configuration
 
         const size_t MAXIMUM_OUTPUTS = 8;
 
-        namespace Types
-        {
-            const uint64_t GENESIS = 0;
-
-            const uint64_t STAKER_REWARD = 1;
-
-            const uint64_t NORMAL = 2;
-
-            const uint64_t STAKE = 3;
-
-            const uint64_t RECALL_STAKE = 4;
-
-            const uint64_t STAKE_REFUND = 5;
-        } // namespace Types
-
         namespace Fees
         {
             /**

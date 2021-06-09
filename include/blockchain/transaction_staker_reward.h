@@ -9,11 +9,13 @@
 
 namespace TurtleCoin::Types::Blockchain
 {
-    struct staker_reward_transaction_t : TurtleCoin::BaseTypes::TransactionHeader
+    struct staker_reward_transaction_t :
+        TurtleCoin::BaseTypes::TransactionHeader,
+        virtual TurtleCoin::BaseTypes::IBlockchainSerializable
     {
         staker_reward_transaction_t()
         {
-            type = Configuration::Transaction::Types::STAKER_REWARD;
+            l_type = TurtleCoin::BaseTypes::TransactionType::STAKER_REWARD;
         }
 
         staker_reward_transaction_t(deserializer_t &reader)
