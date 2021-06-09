@@ -68,17 +68,17 @@ namespace TurtleCoin::Core
 
         switch (type)
         {
-            case Configuration::Transaction::Types::GENESIS:
+            case TurtleCoin::Types::Blockchain::TransactionType::GENESIS:
                 return {true, Types::Blockchain::genesis_transaction_t(reader)};
-            case Configuration::Transaction::Types::STAKER_REWARD:
+            case TurtleCoin::Types::Blockchain::TransactionType::STAKER_REWARD:
                 return {true, Types::Blockchain::staker_reward_transaction_t(reader)};
-            case Configuration::Transaction::Types::NORMAL:
+            case TurtleCoin::Types::Blockchain::TransactionType::NORMAL:
                 return {true, Types::Blockchain::committed_normal_transaction_t(reader)};
-            case Configuration::Transaction::Types::STAKE:
+            case TurtleCoin::Types::Blockchain::TransactionType::STAKE:
                 return {true, Types::Blockchain::committed_stake_transaction_t(reader)};
-            case Configuration::Transaction::Types::RECALL_STAKE:
+            case TurtleCoin::Types::Blockchain::TransactionType::RECALL_STAKE:
                 return {true, Types::Blockchain::committed_recall_stake_transaction_t(reader)};
-            case Configuration::Transaction::Types::STAKE_REFUND:
+            case TurtleCoin::Types::Blockchain::TransactionType::STAKE_REFUND:
                 return {true, Types::Blockchain::stake_refund_transaction_t(reader)};
             default:
                 return {false, {}};
@@ -124,6 +124,45 @@ namespace TurtleCoin::Core
         }
 
         return get_block(block_hash);
+    }
+
+    bool BlockchainStorage::put_block(
+        const Types::Blockchain::block_t &block,
+        const std::vector<Types::Blockchain::transaction_t> &transactions)
+    {
+        std::scoped_lock lock(blocks_mutex);
+
+        auto db_tx = m_db_env->transaction();
+
+        db_tx->set_database(m_transactions);
+
+        for (const auto &transaction : transactions)
+        {
+            if (!std::visit([this, &db_tx](auto &&arg) { return put_transaction(db_tx, arg); }, transaction))
+            {
+                return false;
+            }
+        }
+
+        const auto block_hash = block.hash();
+
+        db_tx->set_database(m_blocks);
+
+        if (db_tx->put(block_hash, block.serialize()) != 0)
+        {
+            return false;
+        }
+
+        db_tx->set_database(m_block_heights);
+
+        if (db_tx->put(block.block_index, block_hash) != 0)
+        {
+            return false;
+        }
+
+        // TODO: there is additional information that still needs to be stored, but this is a good start
+
+        return db_tx->commit() == 0;
     }
 
     bool BlockchainStorage::mark_key_image_spent(const crypto_key_image_t &key_image)
