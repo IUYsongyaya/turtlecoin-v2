@@ -164,7 +164,7 @@ namespace TurtleCoin::Database
         throw std::invalid_argument("LMDB database not found");
     }
 
-    unsigned int LMDB::get_flags()
+    unsigned int LMDB::get_flags() const
     {
         if (!m_env)
         {
@@ -219,12 +219,12 @@ namespace TurtleCoin::Database
         return m_growth_factor;
     }
 
-    std::string LMDB::id()
+    std::string LMDB::id() const
     {
         return m_id;
     }
 
-    MDB_envinfo LMDB::info()
+    MDB_envinfo LMDB::info() const
     {
         if (!m_env)
         {
@@ -243,14 +243,14 @@ namespace TurtleCoin::Database
         return info;
     }
 
-    size_t LMDB::memory_to_pages(size_t memory)
+    size_t LMDB::memory_to_pages(size_t memory) const
     {
         const auto l_stats = stats();
 
         return size_t(ceil(double(memory) / double(l_stats.ms_psize)));
     }
 
-    size_t LMDB::max_key_size()
+    size_t LMDB::max_key_size() const
     {
         if (!m_env)
         {
@@ -260,7 +260,7 @@ namespace TurtleCoin::Database
         return mdb_env_get_maxkeysize(m_env);
     }
 
-    unsigned int LMDB::max_readers()
+    unsigned int LMDB::max_readers() const
     {
         if (!m_env)
         {
@@ -316,7 +316,7 @@ namespace TurtleCoin::Database
         }
     }
 
-    MDB_stat LMDB::stats()
+    MDB_stat LMDB::stats() const
     {
         if (!m_env)
         {
@@ -481,7 +481,7 @@ namespace TurtleCoin::Database
         return dbi_flags;
     }
 
-    std::string LMDBDatabase::id()
+    std::string LMDBDatabase::id() const
     {
         return m_id;
     }
@@ -557,7 +557,7 @@ namespace TurtleCoin::Database
         return std::make_unique<LMDBCursor>(m_txn, m_db, m_readonly);
     }
 
-    size_t LMDBTransaction::id()
+    size_t LMDBTransaction::id() const
     {
         if (!m_txn)
         {

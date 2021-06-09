@@ -106,7 +106,7 @@ namespace TurtleCoin::Database
          * Retrieves the LMDB environment flags
          * @return
          */
-        unsigned int get_flags();
+        unsigned int get_flags() const;
 
         /**
          * Retrieves an existing instance of an environment by its ID
@@ -141,25 +141,25 @@ namespace TurtleCoin::Database
          * Retrieves the environments ID
          * @return
          */
-        std::string id();
+        std::string id() const;
 
         /**
          * Retrieves the LMDB environment information
          * @return
          */
-        MDB_envinfo info();
+        MDB_envinfo info() const;
 
         /**
          * Retrieves the maximum byte size of a key in the LMDB environment
          * @return
          */
-        size_t max_key_size();
+        size_t max_key_size() const;
 
         /**
          * Retrieves the maximum number of readers for the LMDB environment
          * @return
          */
-        unsigned int max_readers();
+        unsigned int max_readers() const;
 
         /**
          * Opens a database (separate key space) in the environment as a logical
@@ -187,7 +187,7 @@ namespace TurtleCoin::Database
          * Retrieves the LMDB environment statistics
          * @return
          */
-        MDB_stat stats();
+        MDB_stat stats() const;
 
         /**
          * Opens a transaction in the database
@@ -226,7 +226,7 @@ namespace TurtleCoin::Database
          * @param memory
          * @return
          */
-        size_t memory_to_pages(size_t memory);
+        size_t memory_to_pages(size_t memory) const;
 
         std::string m_id;
 
@@ -398,7 +398,7 @@ namespace TurtleCoin::Database
          * Returns the ID of the database
          * @return
          */
-        std::string id();
+        std::string id() const;
 
         /**
          * Opens a transaction in the database
@@ -631,7 +631,7 @@ namespace TurtleCoin::Database
          * If a 0 value is returned, the transaction is complete [abort() or commit() has been used]
          * @return
          */
-        size_t id();
+        size_t id() const;
 
         /**
          * Puts the specified value with the specified key in the database using the specified flag(s)
