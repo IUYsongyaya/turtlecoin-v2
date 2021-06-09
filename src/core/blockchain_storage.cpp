@@ -19,6 +19,8 @@ namespace TurtleCoin::Core
         m_transactions = m_db_env->open_database("transactions");
 
         m_key_images = m_db_env->open_database("key_images");
+
+        m_global_indexes = m_db_env->open_database("global_indexes");
     }
 
     std::shared_ptr<BlockchainStorage> BlockchainStorage::getInstance(const std::string &db_path)
@@ -130,15 +132,44 @@ namespace TurtleCoin::Core
         const Types::Blockchain::block_t &block,
         const std::vector<Types::Blockchain::transaction_t> &transactions)
     {
-        std::scoped_lock lock(blocks_mutex);
+        /**
+         * Sanity check transaction order before write
+         */
+        {
+            std::vector<crypto_hash_t> block_tx_hashes, txn_hashes;
+
+            for (const auto &tx : block.transactions)
+            {
+                block_tx_hashes.push_back(tx);
+            }
+
+            for (const auto &tx : transactions)
+            {
+                std::visit([&txn_hashes](auto &&arg) { txn_hashes.push_back(arg.hash()); }, tx);
+            }
+
+            const auto block_hashes = Crypto::Hashing::sha3(block_tx_hashes);
+
+            const auto tx_hashes = Crypto::Hashing::sha3(txn_hashes);
+
+            if (block_hashes != tx_hashes)
+            {
+                return false;
+            }
+        }
+
+        std::scoped_lock lock(write_mutex);
 
         auto db_tx = m_db_env->transaction();
 
-        db_tx->set_database(m_transactions);
+        if (!std::visit([this, &db_tx](auto &&arg) { return put_transaction(db_tx, arg); }, block.reward_tx))
+        {
+            return false;
+        }
 
         for (const auto &transaction : transactions)
         {
-            if (!std::visit([this, &db_tx](auto &&arg) { return put_transaction(db_tx, arg); }, transaction))
+            if (!put_transaction(db_tx, transaction))
             {
                 return false;
             }
@@ -160,18 +191,55 @@ namespace TurtleCoin::Core
             return false;
         }
 
-        // TODO: there is additional information that still needs to be stored, but this is a good start
-
         return db_tx->commit() == 0;
     }
 
-    bool BlockchainStorage::mark_key_image_spent(const crypto_key_image_t &key_image)
+    bool BlockchainStorage::put_transaction(
+        std::unique_ptr<Database::LMDBTransaction> &db_tx,
+        const Types::Blockchain::transaction_t &transaction)
     {
-        return m_key_images->put<crypto_key_image_t, std::vector<uint8_t>>(key_image, {});
+        db_tx->set_database(m_transactions);
+
+        if (!std::visit(
+                [this, &db_tx](auto &&arg) {
+                    using T = std::decay_t<decltype(arg)>;
+
+                    if (db_tx->put(arg.hash(), arg.serialize()) != 0)
+                    {
+                        return false;
+                    }
+
+                    if constexpr (
+                        std::is_same_v<
+                            T,
+                            Types::Blockchain::
+                                committed_normal_transaction_t> || std::is_same_v<T, Types::Blockchain::committed_stake_transaction_t> || std::is_same_v<T, Types::Blockchain::committed_recall_stake_transaction_t>)
+                    {
+                        for (const auto &key_image : arg.key_images)
+                        {
+                            if (!put_key_image(db_tx, key_image))
+                            {
+                                return false;
+                            }
+                        }
+                    }
+
+                    return true;
+                },
+                transaction))
+        {
+            return false;
+        }
+
+        return true;
     }
 
-    bool BlockchainStorage::mark_key_image_spent(const std::vector<crypto_key_image_t> &key_images)
+    bool BlockchainStorage::put_key_image(
+        std::unique_ptr<Database::LMDBTransaction> &db_tx,
+        const crypto_key_image_t &key_image)
     {
-        return m_key_images->put<crypto_key_image_t, std::vector<uint8_t>>(key_images, {});
+        db_tx->set_database(m_key_images);
+
+        return db_tx->put<crypto_key_image_t, std::vector<uint8_t>>(key_image, {}) == 0;
     }
 } // namespace TurtleCoin::Core
