@@ -9,7 +9,7 @@
 
 namespace Types::Blockchain
 {
-    struct genesis_transaction_t : BaseTypes::TransactionPrefix, virtual BaseTypes::IBlockchainSerializable
+    struct genesis_transaction_t : BaseTypes::TransactionPrefix, virtual BaseTypes::IStorable
     {
         genesis_transaction_t()
         {
@@ -71,9 +71,7 @@ namespace Types::Blockchain
 
             prefix_fromJSON(j);
 
-            JSON_MEMBER_OR_THROW("tx_secret_key");
-
-            tx_secret_key = get_json_string(j, "tx_secret_key");
+            LOAD_KEY_FROM_JSON(tx_secret_key);
 
             JSON_MEMBER_OR_THROW("outputs");
 
@@ -122,14 +120,13 @@ namespace Types::Blockchain
             return bytes.size();
         }
 
-        void toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const override
+        JSON_TO_FUNC(toJSON) override
         {
             writer.StartObject();
             {
                 prefix_toJSON(writer);
 
-                writer.Key("tx_secret_key");
-                tx_secret_key.toJSON(writer);
+                KEY_TO_JSON(tx_secret_key);
 
                 writer.Key("outputs");
                 writer.StartArray();

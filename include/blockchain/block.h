@@ -158,21 +158,13 @@ namespace Types::Blockchain
         {
             JSON_OBJECT_OR_THROW();
 
-            JSON_MEMBER_OR_THROW("version");
+            LOAD_U64_FROM_JSON(version);
 
-            version = get_json_uint64_t(j, "version");
+            LOAD_KEY_FROM_JSON(previous_blockhash);
 
-            JSON_MEMBER_OR_THROW("previous_blockhash");
+            LOAD_U64_FROM_JSON(timestamp);
 
-            previous_blockhash = get_json_string(j, "previous_blockhash");
-
-            JSON_MEMBER_OR_THROW("timestamp");
-
-            timestamp = get_json_uint64_t(j, "timestamp");
-
-            JSON_MEMBER_OR_THROW("block_index");
-
-            block_index = get_json_uint64_t(j, "block_index");
+            LOAD_U64_FROM_JSON(block_index);
 
             JSON_MEMBER_OR_THROW("reward_tx");
 
@@ -205,7 +197,7 @@ namespace Types::Blockchain
                 transactions.insert(hash);
             }
 
-            JSON_IF_MEMBER("producer_signature")
+            if (has_member(j, "producer_signature"))
             {
                 const auto &elem = get_json_value(j, "producer_signature");
 
@@ -219,7 +211,7 @@ namespace Types::Blockchain
                 producer_signature = get_json_string(elem, "signature");
             }
 
-            JSON_IF_MEMBER("validator_signatures")
+            if (has_member(j, "validator_signatures"))
             {
                 validator_signatures.clear();
 
@@ -249,12 +241,34 @@ namespace Types::Blockchain
         }
 
         /**
-         * Provides the height of the block
+         * Provides the index of the block
          * @return
          */
-        [[nodiscard]] uint64_t height() const
+        [[nodiscard]] uint64_t index() const
         {
             return block_index;
+        }
+
+        /**
+         * Tells us if the block is a genesis block (contains a genesis transaction)
+         * @return
+         */
+        [[nodiscard]] bool is_genesis() const
+        {
+            return std::visit(
+                [](auto &&arg) {
+                    using T = std::decay_t<decltype(arg)>;
+
+                    if constexpr (std::is_same_v<T, genesis_transaction_t>)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                },
+                reward_tx);
         }
 
         /**
@@ -378,21 +392,17 @@ namespace Types::Blockchain
          * Serializes the block to JSON
          * @param writer
          */
-        void toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const
+        JSON_TO_FUNC(toJSON)
         {
             writer.StartObject();
             {
-                writer.Key("version");
-                writer.Uint64(version);
+                U64_TO_JSON(version);
 
-                writer.Key("previous_blockhash");
-                previous_blockhash.toJSON(writer);
+                KEY_TO_JSON(previous_blockhash);
 
-                writer.Key("timestamp");
-                writer.Uint64(timestamp);
+                U64_TO_JSON(timestamp);
 
-                writer.Key("block_index");
-                writer.Uint64(block_index);
+                U64_TO_JSON(block_index);
 
                 writer.Key("reward_tx");
                 std::visit([&writer](auto &&arg) { arg.toJSON(writer); }, reward_tx);
@@ -434,10 +444,10 @@ namespace Types::Blockchain
                             writer.StartObject();
                             {
                                 writer.Key("public_key");
-                                public_key.toJSON(writer);
+                                producer_public_key.toJSON(writer);
 
                                 writer.Key("signature");
-                                signature.toJSON(writer);
+                                producer_signature.toJSON(writer);
                             }
                             writer.EndObject();
                         }
@@ -569,7 +579,9 @@ namespace Types::Blockchain
 
         uint64_t version = 1, timestamp = 0, block_index = 0;
         crypto_hash_t previous_blockhash;
-        Blockchain::block_transaction_t reward_tx;
+
+        // default to a staker reward transaction as there should only ever be one genesis transaction
+        Blockchain::block_transaction_t reward_tx = staker_reward_transaction_t();
 
         /**
          * Transaction hashes must be properly ordered in a block using standard sorting
@@ -604,7 +616,7 @@ namespace std
         os << "Block [" << value.size() << " bytes]" << std::endl
            << "\tHash: " << value.hash() << std::endl
            << "\tVersion: " << value.version << std::endl
-           << "\tPrevious Blockhash: " << value.previous_blockhash << std::endl
+           << "\tPrevious Block Hash: " << value.previous_blockhash << std::endl
            << "\tTimestamp: " << value.timestamp << std::endl
            << "\tBlock Index: " << value.block_index << std::endl
            << std::endl;

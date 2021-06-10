@@ -6,19 +6,28 @@
 #define TURTLECOIN_NETWORK_BASE_TYPES_H
 
 #include <crypto.h>
+#include <serializable.h>
 
 namespace BaseTypes
 {
-    struct NetworkPacket
+    enum NetworkPacketTypes
     {
-        uint16_t type = 0;
+        NETWORK_HANDSHAKE = 1000,
+        NETWORK_KEEPALIVE = 1100,
+        NETWORK_PEER_EXCHANGE = 1200,
+        NETWORK_DATA = 3000
+    };
+
+    struct NetworkPacketBase
+    {
+        uint16_t l_type = 0;
         uint16_t version = 0;
     };
 } // namespace BaseTypes
 
 namespace Types::Network
 {
-    struct network_peer_t
+    struct network_peer_t : virtual BaseTypes::IStorable
     {
         network_peer_t() {}
 
@@ -34,7 +43,42 @@ namespace Types::Network
             deserialize(reader);
         }
 
-        void serialize(serializer_t &writer) const
+        JSON_OBJECT_CONSTRUCTORS(network_peer_t, fromJSON);
+
+        void deserialize(deserializer_t &reader) override
+        {
+            ip_address = reader.varint<uint32_t>();
+
+            port = reader.varint<uint16_t>();
+
+            const auto bytes = reader.varint<uint64_t>();
+
+            peer_id = reader.bytes(bytes);
+        }
+
+        JSON_FROM_FUNC(fromJSON) override
+        {
+            JSON_OBJECT_OR_THROW();
+
+            LOAD_U32_FROM_JSON(ip_address);
+
+            LOAD_U32_FROM_JSON(port);
+
+            JSON_MEMBER_OR_THROW("peer_id");
+
+            peer_id = Crypto::StringTools::from_hex(get_json_string(j, "peer_id"));
+        }
+
+        /**
+         * Calculates the hash of the structure
+         * @return
+         */
+        [[nodiscard]] crypto_hash_t hash() const override
+        {
+            return serialize();
+        }
+
+        void serialize(serializer_t &writer) const override
         {
             writer.varint(ip_address);
 
@@ -45,7 +89,7 @@ namespace Types::Network
             writer.bytes(peer_id);
         }
 
-        [[nodiscard]] std::vector<uint8_t> serialize() const
+        [[nodiscard]] std::vector<uint8_t> serialize() const override
         {
             auto writer = serializer_t();
 
@@ -54,33 +98,40 @@ namespace Types::Network
             return writer.vector();
         }
 
-        [[nodiscard]] size_t size() const
+        [[nodiscard]] size_t size() const override
         {
             return serialize().size();
         }
 
-        [[nodiscard]] std::string to_string() const
+        JSON_TO_FUNC(toJSON) override
+        {
+            writer.StartObject();
+            {
+                U32_TO_JSON(ip_address);
+
+                U32_TO_JSON(port);
+
+                writer.Key("peer_id");
+                writer.String(Crypto::StringTools::to_hex(peer_id.data(), peer_id.size()));
+            }
+            writer.EndObject();
+        }
+
+        [[nodiscard]] std::string to_string() const override
         {
             const auto bytes = serialize();
 
             return Crypto::StringTools::to_hex(bytes.data(), bytes.size());
         }
 
+        [[nodiscard]] uint64_t type() const override
+        {
+            return 0;
+        }
+
         uint32_t ip_address = 0;
         uint16_t port = 0;
         std::vector<uint8_t> peer_id;
-
-      private:
-        void deserialize(deserializer_t &reader)
-        {
-            ip_address = reader.varint<uint32_t>();
-
-            port = reader.varint<uint16_t>();
-
-            const auto bytes = reader.varint<uint64_t>();
-
-            peer_id = reader.bytes(bytes);
-        }
     };
 } // namespace Types::Network
 

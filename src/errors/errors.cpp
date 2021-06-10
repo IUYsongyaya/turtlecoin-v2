@@ -30,6 +30,8 @@ std::string Error::to_string() const
     {
         case SUCCESS:
             return "The operation completed successfully.";
+        case DB_EMPTY:
+            return "The database is empty";
         case BASE58_DECODE:
             return "Could not decode Base58 string.";
         case ADDRESS_PREFIX_MISMATCH:

@@ -7,10 +7,11 @@
 
 #include <config.h>
 #include <crypto.h>
+#include <serializable.h>
 
 namespace Types::Staking
 {
-    struct candidate_node_t
+    struct candidate_node_t : virtual BaseTypes::IStorable
     {
         candidate_node_t() {};
 
@@ -49,64 +50,9 @@ namespace Types::Staking
             deserialize(reader);
         }
 
-        void serialize(serializer_t &writer) const
-        {
-            writer.varint(record_version);
+        JSON_OBJECT_CONSTRUCTORS(candidate_node_t, fromJSON);
 
-            public_signing_key.serialize(writer);
-
-            public_view_key.serialize(writer);
-
-            public_spend_key.serialize(writer);
-
-            staking_hash.serialize(writer);
-
-            writer.varint(initial_stake);
-
-            writer.varint(block_production_assigned);
-
-            writer.varint(block_validation_assigned);
-
-            writer.varint(blocks_produced);
-
-            writer.varint(blocks_validated);
-        }
-
-        std::vector<uint8_t> serialize() const
-        {
-            serializer_t writer;
-
-            serialize(writer);
-
-            return writer.vector();
-        }
-
-        size_t size() const
-        {
-            return serialize().size();
-        }
-
-        [[nodiscard]] std::string to_string() const
-        {
-            const auto bytes = serialize();
-
-            return Crypto::StringTools::to_hex(bytes.data(), bytes.size());
-        }
-
-        uint64_t version() const
-        {
-            return record_version;
-        }
-
-        crypto_public_key_t public_signing_key, public_view_key, public_spend_key;
-
-        crypto_hash_t staking_hash;
-
-        uint64_t initial_stake = 0, blocks_produced = 0, blocks_validated = 0, block_production_assigned = 0,
-                 block_validation_assigned = 0;
-
-      private:
-        void deserialize(deserializer_t &reader)
+        void deserialize(deserializer_t &reader) override
         {
             record_version = reader.varint<uint64_t>();
 
@@ -129,6 +75,129 @@ namespace Types::Staking
             blocks_validated = reader.varint<uint64_t>();
         }
 
+        JSON_FROM_FUNC(fromJSON) override
+        {
+            JSON_OBJECT_OR_THROW();
+
+            LOAD_U64_FROM_JSON(record_version);
+
+            LOAD_KEY_FROM_JSON(public_signing_key);
+
+            LOAD_KEY_FROM_JSON(public_view_key);
+
+            LOAD_KEY_FROM_JSON(public_spend_key);
+
+            LOAD_KEY_FROM_JSON(staking_hash);
+
+            LOAD_U64_FROM_JSON(initial_stake);
+
+            LOAD_U64_FROM_JSON(block_production_assigned);
+
+            LOAD_U64_FROM_JSON(block_validation_assigned);
+
+            LOAD_U64_FROM_JSON(blocks_produced);
+
+            LOAD_U64_FROM_JSON(blocks_validated);
+        }
+
+        /**
+         * Calculates the hash of the structure
+         * @return
+         */
+        [[nodiscard]] crypto_hash_t hash() const override
+        {
+            return serialize();
+        }
+
+        void serialize(serializer_t &writer) const override
+        {
+            writer.varint(record_version);
+
+            public_signing_key.serialize(writer);
+
+            public_view_key.serialize(writer);
+
+            public_spend_key.serialize(writer);
+
+            staking_hash.serialize(writer);
+
+            writer.varint(initial_stake);
+
+            writer.varint(block_production_assigned);
+
+            writer.varint(block_validation_assigned);
+
+            writer.varint(blocks_produced);
+
+            writer.varint(blocks_validated);
+        }
+
+        std::vector<uint8_t> serialize() const override
+        {
+            serializer_t writer;
+
+            serialize(writer);
+
+            return writer.vector();
+        }
+
+        size_t size() const override
+        {
+            return serialize().size();
+        }
+
+        JSON_TO_FUNC(toJSON) override
+        {
+            writer.StartObject();
+            {
+                U64_TO_JSON(record_version);
+
+                KEY_TO_JSON(public_signing_key);
+
+                KEY_TO_JSON(public_view_key);
+
+                KEY_TO_JSON(public_spend_key);
+
+                KEY_TO_JSON(staking_hash);
+
+                U64_TO_JSON(initial_stake);
+
+                U64_TO_JSON(block_production_assigned);
+
+                U64_TO_JSON(block_validation_assigned);
+
+                U64_TO_JSON(blocks_produced);
+
+                U64_TO_JSON(blocks_validated);
+            }
+            writer.EndObject();
+        }
+
+        [[nodiscard]] std::string to_string() const override
+        {
+            const auto bytes = serialize();
+
+            return Crypto::StringTools::to_hex(bytes.data(), bytes.size());
+        }
+
+        [[nodiscard]] uint64_t type() const override
+        {
+            return 0;
+        }
+
+        uint64_t version() const
+        {
+            return record_version;
+        }
+
+        crypto_public_key_t public_signing_key, public_view_key, public_spend_key;
+
+        crypto_hash_t staking_hash;
+
+        uint64_t initial_stake = 0, blocks_produced = 0, blocks_validated = 0, block_production_assigned = 0,
+                 block_validation_assigned = 0;
+
+      private:
         /**
          * This allows us to signify updates to the record schema in the future
          */

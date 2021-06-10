@@ -64,11 +64,42 @@ namespace Core
             get_block(const uint64_t &block_index) const;
 
         /**
+         * Retrieve the NEXT closest block hash by timestamp using the specified timestamp
+         *
+         * @param timestamp
+         * @return
+         */
+        std::tuple<Error, uint64_t, crypto_hash_t> get_block_by_timestamp(const uint64_t &timestamp) const;
+
+        /**
+         * Retrieve the total number of blocks stored in the database
+         *
+         * @return
+         */
+        size_t get_block_count() const;
+
+        /**
+         * Retrieve the block hash for the given block index
+         *
+         * @param block_index
+         * @return
+         */
+        std::tuple<Error, crypto_hash_t> get_block_hash(const uint64_t &block_index) const;
+
+        /**
+         * Retrieve the block hash for the given block hash
+         *
+         * @param block_hash
+         * @return
+         */
+        std::tuple<Error, uint64_t> get_block_index(const crypto_hash_t &block_hash) const;
+
+        /**
          * Retrieves the maximum transaction output global index from the database
          *
          * @return
          */
-        uint64_t get_maximum_global_index() const;
+        std::tuple<Error, uint64_t> get_maximum_global_index() const;
 
         /**
          * Retrieves the transaction output for the specified global index
@@ -80,12 +111,22 @@ namespace Core
             get_output_by_global_index(const uint64_t &global_index) const;
 
         /**
+         * Retrieve the transaction outputs for the specified global indexes
+         *
+         * @param global_indexes
+         * @return
+         */
+        std::tuple<Error, std::map<uint64_t, Types::Blockchain::transaction_output_t>>
+            get_outputs_by_global_indexes(const std::vector<uint64_t> &global_indexes) const;
+
+        /**
          * Retrieves the transaction with the specified hash
          *
          * @param txn_hash
          * @return
          */
-        std::tuple<Error, Types::Blockchain::transaction_t> get_transaction(const crypto_hash_t &txn_hash) const;
+        std::tuple<Error, Types::Blockchain::transaction_t, crypto_hash_t>
+            get_transaction(const crypto_hash_t &txn_hash) const;
 
         /**
          * Retrieves the global indexes for the transaction with the specified hash
@@ -139,9 +180,22 @@ namespace Core
          * @param transaction
          * @return
          */
-        Error put_transaction(
+        std::tuple<Error, crypto_hash_t> put_transaction(
             std::unique_ptr<Database::LMDBTransaction> &db_tx,
             const Types::Blockchain::transaction_t &transaction);
+
+        /**
+         * Saves the specified block hash for the specified transaction hash
+         *
+         * @param db_tx
+         * @param txn_hash
+         * @param block_hash
+         * @return
+         */
+        Error put_transaction_block_hash(
+            std::unique_ptr<Database::LMDBTransaction> &db_tx,
+            const crypto_hash_t &txn_hash,
+            const crypto_hash_t &block_hash);
 
         /**
          * Saves the specified transaction indexes to the database
@@ -171,8 +225,8 @@ namespace Core
 
         std::shared_ptr<Database::LMDB> m_db_env;
 
-        std::shared_ptr<Database::LMDBDatabase> m_blocks, m_block_indexes, m_transactions, m_key_images,
-            m_global_indexes, m_transaction_indexes;
+        std::shared_ptr<Database::LMDBDatabase> m_blocks, m_block_indexes, m_block_timestamps, m_transactions,
+            m_key_images, m_global_indexes, m_transaction_indexes, m_transaction_block_hashes;
 
         std::mutex write_mutex;
     };

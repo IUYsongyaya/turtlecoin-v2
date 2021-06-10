@@ -9,7 +9,7 @@
 
 namespace Types::Blockchain
 {
-    struct staker_reward_transaction_t : BaseTypes::TransactionHeader, virtual BaseTypes::IBlockchainSerializable
+    struct staker_reward_transaction_t : BaseTypes::TransactionHeader, virtual BaseTypes::IStorable
     {
         staker_reward_transaction_t()
         {
@@ -114,7 +114,7 @@ namespace Types::Blockchain
             return bytes.size();
         }
 
-        void toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const
+        JSON_TO_FUNC(toJSON) override
         {
             writer.StartObject();
             {

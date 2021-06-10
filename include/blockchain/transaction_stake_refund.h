@@ -12,7 +12,7 @@ namespace Types::Blockchain
     struct stake_refund_transaction_t :
         BaseTypes::TransactionPrefix,
         BaseTypes::TransactionOutput,
-        virtual BaseTypes::IBlockchainSerializable
+        virtual BaseTypes::IStorable
     {
         stake_refund_transaction_t()
         {
@@ -66,13 +66,9 @@ namespace Types::Blockchain
 
             prefix_fromJSON(j);
 
-            JSON_MEMBER_OR_THROW("tx_secret_key");
+            LOAD_KEY_FROM_JSON(tx_secret_key);
 
-            tx_secret_key = get_json_string(j, "tx_secret_key");
-
-            JSON_MEMBER_OR_THROW("recall_stake_tx");
-
-            recall_stake_tx = get_json_string(j, "recall_stake_tx");
+            LOAD_KEY_FROM_JSON(recall_stake_tx);
 
             JSON_MEMBER_OR_THROW("output");
 
@@ -117,17 +113,15 @@ namespace Types::Blockchain
             return bytes.size();
         }
 
-        void toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const override
+        JSON_TO_FUNC(toJSON) override
         {
             writer.StartObject();
             {
                 prefix_toJSON(writer);
 
-                writer.Key("tx_secret_key");
-                tx_secret_key.toJSON(writer);
+                KEY_TO_JSON(tx_secret_key);
 
-                writer.Key("recall_stake_tx");
-                recall_stake_tx.toJSON(writer);
+                KEY_TO_JSON(recall_stake_tx);
 
                 writer.Key("output");
                 output_toJSON(writer);

@@ -14,7 +14,7 @@ namespace Types::Blockchain
         BaseTypes::TransactionUserBody,
         BaseTypes::NormalTransactionData,
         BaseTypes::CommittedTransactionSuffix,
-        virtual BaseTypes::IBlockchainSerializable
+        virtual BaseTypes::IStorable
     {
         committed_normal_transaction_t()
         {
@@ -139,7 +139,7 @@ namespace Types::Blockchain
             return bytes.size();
         }
 
-        void toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const override
+        JSON_TO_FUNC(toJSON) override
         {
             writer.StartObject();
             {
@@ -167,7 +167,7 @@ namespace Types::Blockchain
         BaseTypes::TransactionUserBody,
         BaseTypes::NormalTransactionData,
         BaseTypes::UncommittedTransactionSuffix,
-        virtual BaseTypes::IBlockchainSerializable
+        virtual BaseTypes::IStorable
     {
         uncommited_normal_transaction_t()
         {
@@ -374,7 +374,7 @@ namespace Types::Blockchain
             return tx;
         }
 
-        void toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const override
+        JSON_TO_FUNC(toJSON) override
         {
             writer.StartObject();
             {

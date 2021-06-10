@@ -11,6 +11,7 @@
 enum ErrorCode
 {
     SUCCESS = 0,
+    DB_EMPTY,
     BASE58_DECODE,
     ADDRESS_PREFIX_MISMATCH,
     NOT_A_PUBLIC_KEY,

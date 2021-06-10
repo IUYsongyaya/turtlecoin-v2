@@ -8,6 +8,7 @@
 #include "config.h"
 
 #include <crypto.h>
+#include <serializable.h>
 
 namespace BaseTypes
 {
@@ -21,28 +22,7 @@ namespace BaseTypes
         STAKE_REFUND
     };
 
-    struct IBlockchainSerializable
-    {
-        virtual void deserialize(deserializer_t &reader) = 0;
-
-        virtual crypto_hash_t hash() const = 0;
-
-        virtual void fromJSON(const JSONValue &j) = 0;
-
-        virtual void serialize(serializer_t &write) const = 0;
-
-        virtual std::vector<uint8_t> serialize() const = 0;
-
-        virtual size_t size() const = 0;
-
-        virtual void toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const = 0;
-
-        virtual std::string to_string() const = 0;
-
-        virtual uint64_t type() const = 0;
-    };
-
-    struct TransactionHeader : virtual IBlockchainSerializable
+    struct TransactionHeader : virtual BaseTypes::IStorable
     {
         TransactionHeader() {}
 
@@ -72,8 +52,7 @@ namespace BaseTypes
             writer.Key("type");
             writer.Uint64(l_type);
 
-            writer.Key("version");
-            writer.Uint64(version);
+            U64_TO_JSON(version);
         }
 
         JSON_FROM_FUNC(header_fromJSON)
@@ -84,9 +63,7 @@ namespace BaseTypes
 
             l_type = get_json_uint64_t(j, "type");
 
-            JSON_MEMBER_OR_THROW("version");
-
-            version = get_json_uint64_t(j, "version");
+            LOAD_U64_FROM_JSON(version);
         }
 
         uint64_t type() const override
@@ -129,15 +106,13 @@ namespace BaseTypes
             writer.key(tx_public_key);
         }
 
-        void prefix_toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const
+        JSON_TO_FUNC(prefix_toJSON)
         {
             header_toJSON(writer);
 
-            writer.Key("unlock_block");
-            writer.Uint64(unlock_block);
+            U64_TO_JSON(unlock_block);
 
-            writer.Key("tx_public_key");
-            tx_public_key.toJSON(writer);
+            KEY_TO_JSON(tx_public_key);
         }
 
         JSON_FROM_FUNC(prefix_fromJSON)
@@ -146,13 +121,9 @@ namespace BaseTypes
 
             header_fromJSON(j);
 
-            JSON_MEMBER_OR_THROW("unlock_block");
+            LOAD_U64_FROM_JSON(unlock_block);
 
-            unlock_block = get_json_uint64_t(j, "unlock_block");
-
-            JSON_MEMBER_OR_THROW("tx_public_key");
-
-            tx_public_key = get_json_string(j, "tx_public_key");
+            LOAD_KEY_FROM_JSON(tx_public_key);
         }
 
         uint64_t unlock_block = 0;
@@ -186,15 +157,13 @@ namespace BaseTypes
             writer.varint(amount);
         }
 
-        void output_toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const
+        JSON_TO_FUNC(output_toJSON)
         {
             writer.StartObject();
             {
-                writer.Key("staker_id");
-                staker_id.toJSON(writer);
+                KEY_TO_JSON(staker_id);
 
-                writer.Key("amount");
-                writer.Uint64(amount);
+                U64_TO_JSON(amount);
             }
             writer.EndObject();
         }
@@ -203,13 +172,9 @@ namespace BaseTypes
         {
             JSON_OBJECT_OR_THROW();
 
-            JSON_MEMBER_OR_THROW("staker_id");
+            LOAD_KEY_FROM_JSON(staker_id);
 
-            staker_id = get_json_string(j, "staker_id");
-
-            JSON_MEMBER_OR_THROW("amount");
-
-            amount = get_json_uint64_t(j, "amount");
+            LOAD_U64_FROM_JSON(amount);
         }
 
         crypto_hash_t staker_id;
@@ -269,18 +234,15 @@ namespace BaseTypes
             return writer.vector();
         }
 
-        void output_toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const
+        JSON_TO_FUNC(output_toJSON)
         {
             writer.StartObject();
             {
-                writer.Key("public_ephemeral");
-                public_ephemeral.toJSON(writer);
+                KEY_TO_JSON(public_ephemeral);
 
-                writer.Key("amount");
-                writer.Uint64(amount);
+                U64_TO_JSON(amount);
 
-                writer.Key("commitment");
-                commitment.toJSON(writer);
+                KEY_TO_JSON(commitment);
             }
             writer.EndObject();
         }
@@ -289,17 +251,11 @@ namespace BaseTypes
         {
             JSON_OBJECT_OR_THROW();
 
-            JSON_MEMBER_OR_THROW("public_ephemeral");
+            LOAD_KEY_FROM_JSON(public_ephemeral);
 
-            public_ephemeral = get_json_string(j, "public_ephemeral");
+            LOAD_U64_FROM_JSON(amount);
 
-            JSON_MEMBER_OR_THROW("amount");
-
-            amount = get_json_uint64_t(j, "amount");
-
-            JSON_MEMBER_OR_THROW("commitment");
-
-            commitment = get_json_string(j, "commitment");
+            LOAD_KEY_FROM_JSON(commitment);
         }
 
         crypto_public_key_t public_ephemeral;
@@ -348,23 +304,13 @@ namespace BaseTypes
             }
         }
 
-        void body_toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const
+        JSON_TO_FUNC(body_toJSON)
         {
-            writer.Key("nonce");
-            writer.Uint64(nonce);
+            U64_TO_JSON(nonce);
 
-            writer.Key("fee");
-            writer.Uint64(fee);
+            U64_TO_JSON(fee);
 
-            writer.Key("key_images");
-            writer.StartArray();
-            {
-                for (const auto &key_image : key_images)
-                {
-                    key_image.toJSON(writer);
-                }
-            }
-            writer.EndArray();
+            KEYV_TO_JSON(key_images);
 
             writer.Key("outputs");
             writer.StartArray();
@@ -381,22 +327,11 @@ namespace BaseTypes
         {
             JSON_OBJECT_OR_THROW();
 
-            JSON_MEMBER_OR_THROW("nonce");
+            LOAD_U64_FROM_JSON(nonce);
 
-            nonce = get_json_uint64_t(j, "nonce");
+            LOAD_U64_FROM_JSON(fee);
 
-            JSON_MEMBER_OR_THROW("fee");
-
-            fee = get_json_uint64_t(j, "fee");
-
-            JSON_MEMBER_OR_THROW("key_images");
-
-            key_images.clear();
-
-            for (const auto &elem : get_json_array(j, "key_images"))
-            {
-                key_images.emplace_back(elem);
-            }
+            LOAD_KEYV_FROM_JSON(key_images);
 
             JSON_MEMBER_OR_THROW("outputs");
 
@@ -463,7 +398,7 @@ namespace BaseTypes
             range_proof.serialize(writer);
         }
 
-        void suffix_toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const
+        JSON_TO_FUNC(suffix_toJSON)
         {
             writer.Key("offsets");
             writer.StartArray();
@@ -475,15 +410,7 @@ namespace BaseTypes
             }
             writer.EndArray();
 
-            writer.Key("signatures");
-            writer.StartArray();
-            {
-                for (const auto &signature : signatures)
-                {
-                    signature.toJSON(writer);
-                }
-            }
-            writer.EndArray();
+            KEYV_TO_JSON(signatures);
 
             writer.Key("range_proof");
             range_proof.toJSON(writer);
@@ -504,14 +431,7 @@ namespace BaseTypes
                 offsets.emplace_back(offset);
             }
 
-            JSON_MEMBER_OR_THROW("signatures");
-
-            signatures.clear();
-
-            for (const auto &elem : get_json_array(j, "signatures"))
-            {
-                signatures.emplace_back(elem);
-            }
+            LOAD_KEYV_FROM_JSON(signatures);
 
             JSON_MEMBER_OR_THROW("range_proof");
 
@@ -542,19 +462,16 @@ namespace BaseTypes
             writer.key(pruning_hash);
         }
 
-        void suffix_toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const
+        JSON_TO_FUNC(suffix_toJSON)
         {
-            writer.Key("pruning_hash");
-            pruning_hash.toJSON(writer);
+            KEY_TO_JSON(pruning_hash);
         }
 
         JSON_FROM_FUNC(suffix_fromJSON)
         {
             JSON_OBJECT_OR_THROW();
 
-            JSON_MEMBER_OR_THROW("pruning_hash");
-
-            pruning_hash = get_json_string(j, "pruning_hash");
+            LOAD_KEY_FROM_JSON(pruning_hash);
         }
 
         crypto_hash_t pruning_hash;
@@ -581,7 +498,7 @@ namespace BaseTypes
             writer.bytes(tx_extra);
         }
 
-        void data_toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const
+        JSON_TO_FUNC(data_toJSON)
         {
             writer.Key("tx_extra");
 
@@ -628,40 +545,28 @@ namespace BaseTypes
             writer.key(staker_public_spend_key);
         }
 
-        void data_toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const
+        JSON_TO_FUNC(data_toJSON)
         {
-            writer.Key("stake_amount");
-            writer.Uint64(stake_amount);
+            U64_TO_JSON(stake_amount);
 
-            writer.Key("candidate_public_key");
-            candidate_public_key.toJSON(writer);
+            KEY_TO_JSON(candidate_public_key);
 
-            writer.Key("staker_public_view_key");
-            staker_public_view_key.toJSON(writer);
+            KEY_TO_JSON(staker_public_view_key);
 
-            writer.Key("staker_public_spend_key");
-            staker_public_spend_key.toJSON(writer);
+            KEY_TO_JSON(staker_public_spend_key);
         }
 
         JSON_FROM_FUNC(data_fromJSON)
         {
             JSON_OBJECT_OR_THROW();
 
-            JSON_MEMBER_OR_THROW("stake_amount");
+            LOAD_U64_FROM_JSON(stake_amount);
 
-            stake_amount = get_json_uint64_t(j, "stake_amount");
+            LOAD_KEY_FROM_JSON(candidate_public_key);
 
-            JSON_MEMBER_OR_THROW("candidate_public_key");
+            LOAD_KEY_FROM_JSON(staker_public_view_key);
 
-            candidate_public_key = get_json_string(j, "candidate_public_key");
-
-            JSON_MEMBER_OR_THROW("staker_public_view_key");
-
-            staker_public_view_key = get_json_string(j, "staker_public_view_key");
-
-            JSON_MEMBER_OR_THROW("staker_public_spend_key");
-
-            staker_public_spend_key = get_json_string(j, "staker_public_spend_key");
+            LOAD_KEY_FROM_JSON(staker_public_spend_key);
         }
 
         uint64_t stake_amount = 0;
@@ -698,47 +603,32 @@ namespace BaseTypes
             writer.key(spend_signature);
         }
 
-        void data_toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const
+        JSON_TO_FUNC(data_toJSON)
         {
-            writer.Key("stake_amount");
-            writer.Uint64(stake_amount);
+            U64_TO_JSON(stake_amount);
 
-            writer.Key("candidate_public_key");
-            candidate_public_key.toJSON(writer);
+            KEY_TO_JSON(candidate_public_key);
 
-            writer.Key("staker_id");
-            staker_id.toJSON(writer);
+            KEY_TO_JSON(staker_id);
 
-            writer.Key("view_signature");
-            view_signature.toJSON(writer);
+            KEY_TO_JSON(view_signature);
 
-            writer.Key("spend_signature");
-            spend_signature.toJSON(writer);
+            KEY_TO_JSON(spend_signature);
         }
 
         JSON_FROM_FUNC(data_fromJSON)
         {
             JSON_OBJECT_OR_THROW();
 
-            JSON_MEMBER_OR_THROW("stake_amount");
+            LOAD_U64_FROM_JSON(stake_amount);
 
-            stake_amount = get_json_uint64_t(j, "stake_amount");
+            LOAD_KEY_FROM_JSON(candidate_public_key);
 
-            JSON_MEMBER_OR_THROW("candidate_public_key");
+            LOAD_KEY_FROM_JSON(staker_id);
 
-            candidate_public_key = get_json_string(j, "candidate_public_key");
+            LOAD_KEY_FROM_JSON(view_signature);
 
-            JSON_MEMBER_OR_THROW("staker_id");
-
-            staker_id = get_json_string(j, "staker_id");
-
-            JSON_MEMBER_OR_THROW("view_signature");
-
-            view_signature = get_json_string(j, "view_signature");
-
-            JSON_MEMBER_OR_THROW("spend_signature");
-
-            spend_signature = get_json_string(j, "spend_signature");
+            LOAD_KEY_FROM_JSON(spend_signature);
         }
 
         uint64_t stake_amount = 0;
