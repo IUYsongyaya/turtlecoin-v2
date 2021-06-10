@@ -82,6 +82,7 @@ namespace Database
          * Expands the memory map by the number of pages specified.
          * This requires that there are no open R/W transactions; otherwise, the method
          * will throw an exception.
+         *
          * @param pages
          */
         Error expand(size_t pages);
@@ -91,13 +92,16 @@ namespace Database
          * Data is always written to disk when a transaction is committed, but the operating system may keep it
          * buffered. LMDB always flushes the OS buffers upon commit as well, unless the environment was opened
          * with MDB_NOSYNC or in part MDB_NOMETASYNC.
+         *
          * This call is not valid if the environment was opened with MDB_RDONLY.
+         *
          * @param force a synchronous flush of the buffers to disk
          */
         Error flush(bool force = false);
 
         /**
          * Retrieves an already open database by its ID
+         *
          * @param id
          * @return
          */
@@ -105,12 +109,14 @@ namespace Database
 
         /**
          * Retrieves the LMDB environment flags
+         *
          * @return
          */
         std::tuple<Error, unsigned int> get_flags() const;
 
         /**
          * Retrieves an existing instance of an environment by its ID
+         *
          * @param id
          * @return
          */
@@ -118,6 +124,7 @@ namespace Database
 
         /**
          * Opens a LMDB environment using the specified parameters
+         *
          * @param path
          * @param flags
          * @param mode
@@ -134,30 +141,35 @@ namespace Database
 
         /**
          * Retrieves the current environment growth factor (in MB)
+         *
          * @return
          */
         size_t growth_factor() const;
 
         /**
          * Retrieves the environments ID
+         *
          * @return
          */
         std::string id() const;
 
         /**
          * Retrieves the LMDB environment information
+         *
          * @return
          */
         std::tuple<Error, MDB_envinfo> info() const;
 
         /**
          * Retrieves the maximum byte size of a key in the LMDB environment
+         *
          * @return
          */
         std::tuple<Error, size_t> max_key_size() const;
 
         /**
          * Retrieves the maximum number of readers for the LMDB environment
+         *
          * @return
          */
         std::tuple<Error, unsigned int> max_readers() const;
@@ -165,6 +177,7 @@ namespace Database
         /**
          * Opens a database (separate key space) in the environment as a logical
          * partitioning of data.
+         *
          * @param name
          * @param flags
          * @return
@@ -173,12 +186,14 @@ namespace Database
 
         /**
          * Returns the number of open R/W transactions in the environment
+         *
          * @return
          */
         size_t open_transactions();
 
         /**
          * Sets/changes the LMDB environment flags
+         *
          * @param flags
          * @param flag_state
          */
@@ -186,12 +201,14 @@ namespace Database
 
         /**
          * Retrieves the LMDB environment statistics
+         *
          * @return
          */
         std::tuple<Error, MDB_stat> stats() const;
 
         /**
          * Opens a transaction in the database
+         *
          * @param readonly
          * @return
          */
@@ -217,6 +234,7 @@ namespace Database
 
         /**
          * Retrieves the current LMDB library version
+         *
          * @return [major, minor, patch]
          */
         static std::tuple<int, int, int> version();
@@ -224,6 +242,7 @@ namespace Database
       private:
         /**
          * Converts the bytes of memory specified into LMDB pages (rounded up)
+         *
          * @param memory
          * @return
          */
@@ -265,6 +284,7 @@ namespace Database
 
         /**
          * Returns how many key/value pairs currently exist in the database
+         *
          * @return
          */
         size_t count();
@@ -300,6 +320,7 @@ namespace Database
 
         /**
          * Empties all of the key/value pairs from the database
+         *
          * @param delete_db if specified, also deletes the database from the environment
          * @return
          */
@@ -307,12 +328,14 @@ namespace Database
 
         /**
          * Returns the current LMDB environment associated with this database
+         *
          * @return
          */
         std::shared_ptr<LMDB> env();
 
         /**
          * Returns if the given key exists in the database
+         *
          * @tparam KeyType
          * @param key
          * @return
@@ -354,12 +377,14 @@ namespace Database
 
         /**
          * Retrieves the database flags
+         *
          * @return
          */
         std::tuple<Error, unsigned int> get_flags();
 
         /**
          * List all keys in the database
+         *
          * @tparam KeyType
          * @param ignore_duplicates whether we should ignore duplicate keys
          * @return
@@ -397,12 +422,14 @@ namespace Database
 
         /**
          * Returns the ID of the database
+         *
          * @return
          */
         std::string id() const;
 
         /**
          * Opens a transaction in the database
+         *
          * @param readonly
          * @return
          */
@@ -462,18 +489,21 @@ namespace Database
 
         /**
          * Commits the currently open transaction
+         *
          * @return
          */
         Error commit();
 
         /**
          * Opens a LMDB cursos within the transaction
+         *
          * @return
          */
         std::unique_ptr<LMDBCursor> cursor();
 
         /**
          * Deletes the provided key
+         *
          * @tparam KeyType
          * @param key
          * @return
@@ -489,6 +519,7 @@ namespace Database
 
         /**
          * Deletes the provided key
+         *
          * @param key
          * @return
          */
@@ -550,6 +581,7 @@ namespace Database
 
         /**
          * Checks if the given key exists in the database
+         *
          * @tparam KeyType
          * @param key
          * @return
@@ -567,6 +599,7 @@ namespace Database
 
         /**
          * Checks if the given key exists in the database
+         *
          * @param key
          * @return
          */
@@ -574,6 +607,7 @@ namespace Database
 
         /**
          * Retrieves the value stored with the specified key as the specified type
+         *
          * @tparam KeyType
          * @tparam ValueType
          * @param key
@@ -595,6 +629,7 @@ namespace Database
 
         /**
          * Retrieves the value stored with the specified key as the specified type
+         *
          * @tparam ValueType
          * @param key
          * @return
@@ -623,6 +658,7 @@ namespace Database
 
         /**
          * Retrieves the value stored with the specified key
+         *
          * @tparam KeyType
          * @param key
          * @return [found, value]
@@ -649,6 +685,7 @@ namespace Database
          * Returns the transaction ID
          *
          * If a 0 value is returned, the transaction is complete [abort() or commit() has been used]
+         *
          * @return
          */
         std::tuple<Error, size_t> id() const;
@@ -705,6 +742,7 @@ namespace Database
 
         /**
          * Returns if the transaction is readonly or not
+         *
          * @return
          */
         bool readonly() const;
@@ -723,6 +761,7 @@ namespace Database
 
         /**
          * Sets the current database for the transaction
+         *
          * @param db
          */
         void set_database(std::shared_ptr<LMDBDatabase> &db);
@@ -765,12 +804,14 @@ namespace Database
 
         /**
          * Return count of duplicates for current key.
+         *
          * @return
          */
         std::tuple<Error, size_t> count();
 
         /**
          * Delete current key/data pair.
+         *
          * @param flags
          * @return
          */
@@ -778,6 +819,7 @@ namespace Database
 
         /**
          * Retrieve key/data pairs by cursor.
+         *
          * @param op
          * @return [found, key, value]
          */
@@ -785,6 +827,7 @@ namespace Database
 
         /**
          * Retrieve key/data pairs by cursor.
+         *
          * @tparam KeyType
          * @tparam ValueType
          * @param op
@@ -936,6 +979,7 @@ namespace Database
 
         /**
          * Renews the cursor
+         *
          * @return
          */
         Error renew();
@@ -951,7 +995,8 @@ namespace Database
     };
 
     /**
-     * Complete the template forward declarations
+     * Complete the template forward declarations. Check the forward declarations for
+     * more information regarding each method
      */
 
     template<typename KeyType> Error LMDBDatabase::del(const KeyType &key)
@@ -961,7 +1006,7 @@ namespace Database
 
         auto result = txn->del(key);
 
-        if (result == LMDB_MAP_FULL)
+        if (result == LMDB_MAP_FULL || result == LMDB_TXN_FULL)
         {
             txn->abort();
 
@@ -972,7 +1017,7 @@ namespace Database
 
         result = txn->commit();
 
-        if (result == LMDB_MAP_FULL)
+        if (result == LMDB_MAP_FULL || result == LMDB_TXN_FULL)
         {
             txn->abort();
 
@@ -991,7 +1036,7 @@ namespace Database
 
         auto result = txn->del(key, value);
 
-        if (result == LMDB_MAP_FULL)
+        if (result == LMDB_MAP_FULL || result == LMDB_TXN_FULL)
         {
             txn->abort();
 
@@ -1002,7 +1047,7 @@ namespace Database
 
         result = txn->commit();
 
-        if (result == LMDB_MAP_FULL)
+        if (result == LMDB_MAP_FULL || result == LMDB_TXN_FULL)
         {
             txn->abort();
 
@@ -1099,7 +1144,7 @@ namespace Database
         {
             const auto result = txn->put(keys[i], values[i]);
 
-            if (result == LMDB_MAP_FULL)
+            if (result == LMDB_MAP_FULL || result == LMDB_TXN_FULL)
             {
                 txn->abort();
 
@@ -1111,7 +1156,7 @@ namespace Database
 
         const auto result = txn->commit();
 
-        if (result == LMDB_MAP_FULL)
+        if (result == LMDB_MAP_FULL || result == LMDB_TXN_FULL)
         {
             txn->abort();
 
@@ -1130,7 +1175,7 @@ namespace Database
 
         auto result = txn->put(key, value);
 
-        if (result == LMDB_MAP_FULL)
+        if (result == LMDB_MAP_FULL || result == LMDB_TXN_FULL)
         {
             txn->abort();
 
@@ -1141,7 +1186,7 @@ namespace Database
 
         result = txn->commit();
 
-        if (result == LMDB_MAP_FULL)
+        if (result == LMDB_MAP_FULL || result == LMDB_TXN_FULL)
         {
             txn->abort();
 

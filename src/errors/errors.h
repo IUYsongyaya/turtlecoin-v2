@@ -25,6 +25,12 @@ enum ErrorCode
     BLOCK_TXN_ORDER,
     STAKING_CANDIDATE_NOT_FOUND,
     STAKING_STAKER_NOT_FOUND,
+    DESERIALIZATION_ERROR,
+    BLOCK_TRANSACTIONS_MISMATCH,
+    /**
+     * Do not change LMDB values as they map directly to LMDB return codes
+     * See: http://www.lmdb.tech/doc/group__errors.html
+     */
     LMDB_KEYEXIST = -30799,
     LMDB_NOTFOUND = -30798,
     LMDB_PAGE_NOTFOUND = -30797,
@@ -113,8 +119,18 @@ class Error
         return m_error_code != SUCCESS;
     }
 
+    /**
+     * Returns the error code
+     *
+     * @return
+     */
     ErrorCode code() const;
 
+    /**
+     * Returns the error message of the instance
+     *
+     * @return
+     */
     std::string to_string() const;
 
   private:

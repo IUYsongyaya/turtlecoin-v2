@@ -216,5 +216,7 @@ int main()
         check_binary_serialization(structure, "network_peer_t");
     }
 
+    std::cout << std::endl;
+
     return 0;
 }

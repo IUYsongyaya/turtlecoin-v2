@@ -49,7 +49,7 @@ namespace Database
 
         /**
          * A transaction and its cursors must only be used by a single thread, and a thread may only have a single
-         * transaction at a time. If MDB_NOTLS is in use, this does not apply to read-only transactions.
+         * write transaction at a time. If MDB_NOTLS is in use, this does not apply to read-only transactions.
          */
         success = mdb_env_open(m_env, path.c_str(), flags | MDB_NOTLS, mode);
 

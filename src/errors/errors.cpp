@@ -49,6 +49,10 @@ std::string Error::to_string() const
             return "The staking candidate was not found in the database.";
         case STAKING_STAKER_NOT_FOUND:
             return "The staker was not found in the database.";
+        case DESERIALIZATION_ERROR:
+            return "Deserialization error encountered.";
+        case BLOCK_TRANSACTIONS_MISMATCH:
+            return "The transactions specified do not match those within the block.";
         default:
             return "Unknown error code supplied";
     }
