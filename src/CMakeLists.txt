@@ -7,6 +7,6 @@ add_subdirectory(logger)
 add_subdirectory(node)
 add_subdirectory(utilities)
 
-if(BUILD_TESTS)
+if(BUILD_UNIT_TESTS)
     add_subdirectory(tests)
 endif()
