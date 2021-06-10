@@ -404,6 +404,19 @@ namespace Database
         template<typename KeyType> std::vector<KeyType> list_keys(bool ignore_duplicates = true);
 
         /**
+         * Simplified put which opens a new transaction, puts the value, and then returns.
+         *
+         * If we encounter MDB_MAP_FULL, we will automatically retry the transaction after
+         * attempting to expand the database
+         *
+         * @tparam ValueType
+         * @param key
+         * @param value
+         * @return
+         */
+        template<typename ValueType> Error put(const uint64_t &key, const ValueType &value);
+
+        /**
          * Simplified batch put which opens a new transaction, puts the value, and then returns.
          *
          * If we encounter MDB_MAP_FULL, we will automatically retry the transaction after
@@ -877,6 +890,42 @@ namespace Database
          * Providing the key, allows for utilizing additional MDB_cursor_op values such as MDB_SET which will
          * retrieve the value for the specified key without changing the key value.
          *
+         * @param key
+         * @param op
+         * @return
+         */
+        std::tuple<Error, uint64_t, std::vector<uint8_t>> get(const uint64_t &key, const MDB_cursor_op &op = MDB_SET);
+
+        /**
+         * Retrieve key/data pairs by cursor.
+         *
+         * Providing the key, allows for utilizing additional MDB_cursor_op values such as MDB_SET which will
+         * retrieve the value for the specified key without changing the key value.
+         *
+         * @tparam ValueType
+         * @param key
+         * @param op
+         * @return
+         */
+        template<typename ValueType>
+        std::tuple<Error, uint64_t, ValueType> get(const uint64_t &key, const MDB_cursor_op &op = MDB_SET)
+        {
+            const auto [error, result_key, data] = get(key, op);
+
+            if (error)
+            {
+                return {error, 0, {}};
+            }
+
+            return {error, result_key, ValueType(data)};
+        }
+
+        /**
+         * Retrieve key/data pairs by cursor.
+         *
+         * Providing the key, allows for utilizing additional MDB_cursor_op values such as MDB_SET which will
+         * retrieve the value for the specified key without changing the key value.
+         *
          * @tparam KeyType
          * @param key
          * @param op
@@ -988,6 +1037,31 @@ namespace Database
         Error put(const KeyType &key, const ValueType &value, int flags = 0)
         {
             MDB_VAL(key, i_key);
+
+            MDB_VAL(value, i_value);
+
+            const auto result = mdb_cursor_put(m_cursor, &i_key, &i_value, flags);
+
+            return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
+        }
+
+        /**
+         * Puts the specified value with the specified key in the database using the specified flag(s)
+         * and places the cursor at the position of the new item or, near it upon failure.
+         *
+         * Note: You must check for MDB_MAP_FULL or MDB_TXN_FULL response values and handle those
+         * yourself as you will very likely need to abort the current transaction and expand
+         * the LMDB environment before re-attempting the transaction.
+         *
+         * @tparam ValueType
+         * @param key
+         * @param value
+         * @param flags
+         * @return
+         */
+        template<typename ValueType> Error put(const uint64_t &key, const ValueType &value, int flags = 0)
+        {
+            MDB_VAL_NUM(key, i_key);
 
             MDB_VAL(value, i_value);
 
@@ -1132,6 +1206,29 @@ namespace Database
         return results;
     }
 
+    template<typename ValueType> Error LMDBDatabase::put(const uint64_t &key, const ValueType &value)
+    {
+    try_again:
+        auto txn = transaction();
+
+        {
+            const auto error = txn->put(key, value);
+
+            MDB_CHECK_TXN_EXPAND(error, m_env, txn, try_again);
+
+            if (error)
+            {
+                return error;
+            }
+        }
+
+        const auto error = txn->commit();
+
+        MDB_CHECK_TXN_EXPAND(error, m_env, txn, try_again);
+
+        return error;
+    }
+
     template<typename KeyType, typename ValueType>
     Error LMDBDatabase::put(const std::vector<KeyType> &keys, const std::vector<ValueType> &values)
     {
@@ -1146,6 +1243,11 @@ namespace Database
             const auto error = txn->put(keys[i], values[i]);
 
             MDB_CHECK_TXN_EXPAND(error, m_env, txn, try_again);
+
+            if (error)
+            {
+                return error;
+            }
         }
 
         const auto error = txn->commit();

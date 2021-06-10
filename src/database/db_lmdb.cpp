@@ -699,6 +699,30 @@ namespace Database
         return {Error(result, MDB_STR_ERR(result), __LINE__, __FILE__), r_key, r_value};
     }
 
+    std::tuple<Error, uint64_t, std::vector<uint8_t>> LMDBCursor::get(const uint64_t &key, const MDB_cursor_op &op)
+    {
+        MDB_val i_value;
+
+        MDB_VAL_NUM(key, i_key);
+
+        const auto result = mdb_cursor_get(m_cursor, &i_key, &i_value, op);
+
+        std::vector<uint8_t> r_key, r_value;
+
+        uint64_t key_value = 0;
+
+        if (result == MDB_SUCCESS)
+        {
+            r_key = FROM_MDB_VAL(i_key);
+
+            r_value = FROM_MDB_VAL(i_value);
+
+            std::memcpy(&key_value, r_key.data(), sizeof(key_value));
+        }
+
+        return {Error(result, MDB_STR_ERR(result), __LINE__, __FILE__), key_value, r_value};
+    }
+
     Error LMDBCursor::renew()
     {
         if (!m_cursor || !m_readonly)
