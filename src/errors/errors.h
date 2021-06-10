@@ -62,17 +62,28 @@ class Error
      * Creates an error with the specified code
      *
      * @param code
+     * @param line_number
+     * @param file_name
      */
-    Error(const ErrorCode &code): m_error_code(code) {}
+    Error(const ErrorCode &code, size_t line_number = 0, const std::string file_name = ""):
+        m_error_code(code), m_line_number(line_number), m_file_name(file_name)
+    {
+    }
 
     /**
      * Creates an error with the specified code and a custom error message
      *
      * @param code
      * @param custom_message
+     * @param line_number
+     * @param file_name
      */
-    Error(const ErrorCode &code, const std::string &custom_message):
-        m_error_code(code), m_custom_error_message(custom_message)
+    Error(
+        const ErrorCode &code,
+        const std::string &custom_message,
+        size_t line_number = 0,
+        const std::string file_name = ""):
+        m_error_code(code), m_custom_error_message(custom_message), m_line_number(line_number), m_file_name(file_name)
     {
     }
 
@@ -80,17 +91,27 @@ class Error
      * Creates an error with the specified code
      *
      * @param code
+     * @param line_number
+     * @param file_name
      */
-    Error(const int &code): m_error_code(static_cast<ErrorCode>(code)) {}
+    Error(const int &code, size_t line_number = 0, const std::string file_name = ""):
+        m_error_code(static_cast<ErrorCode>(code)), m_line_number(line_number), m_file_name(file_name)
+    {
+    }
 
     /**
      * Creates an error with the specified code and a custom error message
      *
      * @param code
      * @param custom_message
+     * @param line_number
+     * @param file_name
      */
-    Error(const int &code, const std::string &custom_message):
-        m_error_code(static_cast<ErrorCode>(code)), m_custom_error_message(custom_message)
+    Error(const int &code, const std::string &custom_message, size_t line_number = 0, const std::string file_name = ""):
+        m_error_code(static_cast<ErrorCode>(code)),
+        m_custom_error_message(custom_message),
+        m_line_number(line_number),
+        m_file_name(file_name)
     {
     }
 
@@ -127,6 +148,20 @@ class Error
     ErrorCode code() const;
 
     /**
+     * Return the filename of the file where the error was created
+     *
+     * @return
+     */
+    std::string file_name() const;
+
+    /**
+     * Return the line number of the file where the error was created
+     *
+     * @return
+     */
+    size_t line() const;
+
+    /**
      * Returns the error message of the instance
      *
      * @return
@@ -136,11 +171,20 @@ class Error
   private:
     ErrorCode m_error_code;
 
+    size_t m_line_number;
+
+    std::string m_file_name;
+
     std::string m_custom_error_message;
 };
 
 inline std::ostream &operator<<(std::ostream &os, const Error &error)
 {
+    if (!error.file_name().empty())
+    {
+        os << error.file_name() << " L#" << error.line() << " ";
+    }
+
     os << "Error #" << std::to_string(error.code()) << ": " << error.to_string();
 
     return os;

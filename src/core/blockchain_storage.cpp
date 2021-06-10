@@ -237,12 +237,16 @@ namespace Core
 
         std::scoped_lock lock(write_mutex);
 
+    try_again:
+
         auto db_tx = m_db_env->transaction();
 
         // Push the block reward transaction into the database
         {
             auto error =
                 std::visit([this, &db_tx](auto &&arg) { return put_transaction(db_tx, arg); }, block.reward_tx);
+
+            MDB_CHECK_TXN_EXPAND(error, m_db_env, db_tx, try_again);
 
             if (error)
             {
@@ -254,6 +258,8 @@ namespace Core
         for (const auto &transaction : transactions)
         {
             auto error = put_transaction(db_tx, transaction);
+
+            MDB_CHECK_TXN_EXPAND(error, m_db_env, db_tx, try_again);
 
             if (error)
             {
@@ -269,6 +275,8 @@ namespace Core
 
             auto error = db_tx->put(block_hash, block.serialize());
 
+            MDB_CHECK_TXN_EXPAND(error, m_db_env, db_tx, try_again);
+
             if (error)
             {
                 return error;
@@ -281,13 +289,19 @@ namespace Core
 
             auto error = db_tx->put(block.block_index, block_hash);
 
+            MDB_CHECK_TXN_EXPAND(error, m_db_env, db_tx, try_again);
+
             if (error)
             {
                 return error;
             }
         }
 
-        return db_tx->commit();
+        auto error = db_tx->commit();
+
+        MDB_CHECK_TXN_EXPAND(error, m_db_env, db_tx, try_again);
+
+        return error;
     }
 
     Error BlockchainStorage::put_key_image(
@@ -385,8 +399,6 @@ namespace Core
                             {
                                 return error;
                             }
-
-                            std::cout << index << std::endl;
 
                             count++;
 

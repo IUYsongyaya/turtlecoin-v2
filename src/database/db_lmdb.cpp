@@ -154,7 +154,7 @@ namespace Database
 
         const auto result = mdb_env_set_mapsize(m_env, new_size);
 
-        return Error(result, MDB_STR_ERR(result));
+        return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
     }
 
     Error LMDB::flush(bool force)
@@ -166,7 +166,7 @@ namespace Database
 
         const auto result = mdb_env_sync(m_env, (force) ? 1 : 0);
 
-        return Error(result, MDB_STR_ERR(result));
+        return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
     }
 
     std::shared_ptr<LMDBDatabase> LMDB::get_database(const std::string &id)
@@ -190,7 +190,7 @@ namespace Database
 
         const auto result = mdb_env_get_flags(m_env, &env_flags);
 
-        return {Error(result, MDB_STR_ERR(result)), env_flags};
+        return {Error(result, MDB_STR_ERR(result), __LINE__, __FILE__), env_flags};
     }
 
     std::shared_ptr<LMDB> LMDB::get_instance(const std::string &id)
@@ -245,7 +245,7 @@ namespace Database
 
         const auto result = mdb_env_info(m_env, &info);
 
-        return {Error(result, MDB_STR_ERR(result)), info};
+        return {Error(result, MDB_STR_ERR(result), __LINE__, __FILE__), info};
     }
 
     std::tuple<Error, size_t> LMDB::memory_to_pages(size_t memory) const
@@ -278,7 +278,7 @@ namespace Database
 
         const auto result = mdb_env_get_maxreaders(m_env, &readers);
 
-        return {Error(result, MDB_STR_ERR(result)), readers};
+        return {Error(result, MDB_STR_ERR(result), __LINE__, __FILE__), readers};
     }
 
     std::shared_ptr<LMDBDatabase> LMDB::open_database(const std::string &name, int flags)
@@ -312,7 +312,7 @@ namespace Database
 
         const auto result = mdb_env_set_flags(m_env, flags, (flag_state) ? 1 : 0);
 
-        return Error(result, MDB_STR_ERR(result));
+        return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
     }
 
     std::tuple<Error, MDB_stat> LMDB::stats() const
@@ -326,7 +326,7 @@ namespace Database
 
         const auto result = mdb_env_stat(m_env, &stats);
 
-        return {Error(result, MDB_STR_ERR(result)), stats};
+        return {Error(result, MDB_STR_ERR(result), __LINE__, __FILE__), stats};
     }
 
     std::unique_ptr<LMDBTransaction> LMDB::transaction(bool readonly)
@@ -465,7 +465,7 @@ namespace Database
 
         const auto result = mdb_dbi_flags(*txn, m_dbi, &dbi_flags);
 
-        return {Error(result, MDB_STR_ERR(result)), dbi_flags};
+        return {Error(result, MDB_STR_ERR(result), __LINE__, __FILE__), dbi_flags};
     }
 
     std::string LMDBDatabase::id() const
@@ -536,12 +536,17 @@ namespace Database
 
         m_txn = nullptr;
 
-        return Error(result, MDB_STR_ERR(result));
+        return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
     }
 
     std::unique_ptr<LMDBCursor> LMDBTransaction::cursor()
     {
         return std::make_unique<LMDBCursor>(m_txn, m_db, m_readonly);
+    }
+
+    std::shared_ptr<LMDB> LMDBTransaction::env()
+    {
+        return m_env;
     }
 
     bool LMDBTransaction::exists(const uint64_t &key)
@@ -581,7 +586,7 @@ namespace Database
 
         const auto result = mdb_txn_renew(*m_txn);
 
-        return Error(result, MDB_STR_ERR(result));
+        return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
     }
 
     Error LMDBTransaction::reset()
@@ -593,7 +598,7 @@ namespace Database
 
         const auto result = mdb_txn_renew(*m_txn);
 
-        return Error(result, MDB_STR_ERR(result));
+        return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
     }
 
     void LMDBTransaction::set_database(std::shared_ptr<LMDBDatabase> &db)
@@ -666,14 +671,14 @@ namespace Database
 
         const auto result = mdb_cursor_count(m_cursor, &count);
 
-        return {Error(result, MDB_STR_ERR(result)), count};
+        return {Error(result, MDB_STR_ERR(result), __LINE__, __FILE__), count};
     }
 
     Error LMDBCursor::del(int flags)
     {
         const auto result = mdb_cursor_del(m_cursor, flags);
 
-        return Error(result, MDB_STR_ERR(result));
+        return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
     }
 
     std::tuple<Error, std::vector<uint8_t>, std::vector<uint8_t>> LMDBCursor::get(const MDB_cursor_op &op)
@@ -691,7 +696,7 @@ namespace Database
             r_value = FROM_MDB_VAL(i_value);
         }
 
-        return {Error(result, MDB_STR_ERR(result)), r_key, r_value};
+        return {Error(result, MDB_STR_ERR(result), __LINE__, __FILE__), r_key, r_value};
     }
 
     Error LMDBCursor::renew()
@@ -703,6 +708,6 @@ namespace Database
 
         const auto result = mdb_cursor_renew(*m_txn, m_cursor);
 
-        return Error(result, MDB_STR_ERR(result));
+        return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
     }
 } // namespace Database

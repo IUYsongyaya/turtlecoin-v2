@@ -20,6 +20,18 @@
     std::vector<uint8_t>(                                    \
         static_cast<const unsigned char *>((value).mv_data), \
         static_cast<const unsigned char *>((value).mv_data) + (value).mv_size)
+#define MDB_CHECK_TXN_EXPAND(error, env, txn, label)      \
+    if (error == LMDB_MAP_FULL || error == LMDB_TXN_FULL) \
+    {                                                     \
+        txn->abort();                                     \
+                                                          \
+        const auto exp_error = env->expand();             \
+                                                          \
+        if (!exp_error)                                   \
+        {                                                 \
+            goto label;                                   \
+        }                                                 \
+    }
 
 namespace Database
 {
@@ -502,6 +514,13 @@ namespace Database
         std::unique_ptr<LMDBCursor> cursor();
 
         /**
+         * Returns the transaction environment
+         *
+         * @return
+         */
+        std::shared_ptr<LMDB> env();
+
+        /**
          * Deletes the provided key
          *
          * @tparam KeyType
@@ -514,7 +533,7 @@ namespace Database
 
             const auto result = mdb_del(*m_txn, *m_db, &i_key, nullptr);
 
-            return Error(result, MDB_STR_ERR(result));
+            return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
         }
 
         /**
@@ -529,7 +548,7 @@ namespace Database
 
             const auto result = mdb_del(*m_txn, *m_db, &i_key, nullptr);
 
-            return Error(result, MDB_STR_ERR(result));
+            return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
         }
 
         /**
@@ -553,7 +572,7 @@ namespace Database
 
             const auto result = mdb_del(*m_txn, *m_db, &i_key, &i_value);
 
-            return Error(result, MDB_STR_ERR(result));
+            return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
         }
 
         /**
@@ -576,7 +595,7 @@ namespace Database
 
             const auto result = mdb_del(*m_txn, *m_db, &i_key, &i_value);
 
-            return Error(result, MDB_STR_ERR(result));
+            return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
         }
 
         /**
@@ -653,7 +672,7 @@ namespace Database
                 _value = ValueType(data);
             }
 
-            return {Error(result, MDB_STR_ERR(result)), _value};
+            return {Error(result, MDB_STR_ERR(result), __LINE__, __FILE__), _value};
         }
 
         /**
@@ -678,7 +697,7 @@ namespace Database
                 results = FROM_MDB_VAL(value);
             }
 
-            return {Error(result, MDB_STR_ERR(result)), results};
+            return {Error(result, MDB_STR_ERR(result), __LINE__, __FILE__), results};
         }
 
         /**
@@ -713,7 +732,7 @@ namespace Database
 
             const auto result = mdb_put(*m_txn, *m_db, &i_key, &i_value, flags);
 
-            return Error(result, MDB_STR_ERR(result));
+            return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
         }
 
         /**
@@ -737,7 +756,7 @@ namespace Database
 
             const auto result = mdb_put(*m_txn, *m_db, &i_key, &i_value, flags);
 
-            return Error(result, MDB_STR_ERR(result));
+            return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
         }
 
         /**
@@ -882,7 +901,7 @@ namespace Database
                 r_value = FROM_MDB_VAL(i_value);
             }
 
-            return {Error(result, MDB_STR_ERR(result)), r_key, r_value};
+            return {Error(result, MDB_STR_ERR(result), __LINE__, __FILE__), r_key, r_value};
         }
 
         /**
@@ -974,7 +993,7 @@ namespace Database
 
             const auto result = mdb_cursor_put(m_cursor, &i_key, &i_value, flags);
 
-            return Error(result, MDB_STR_ERR(result));
+            return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
         }
 
         /**
@@ -1004,29 +1023,20 @@ namespace Database
     try_again:
         auto txn = transaction();
 
-        auto result = txn->del(key);
+        auto error = txn->del(key);
 
-        if (result == LMDB_MAP_FULL || result == LMDB_TXN_FULL)
+        MDB_CHECK_TXN_EXPAND(error, m_env, txn, try_again);
+
+        if (error)
         {
-            txn->abort();
-
-            m_env->expand();
-
-            goto try_again;
+            return error;
         }
 
-        result = txn->commit();
+        error = txn->commit();
 
-        if (result == LMDB_MAP_FULL || result == LMDB_TXN_FULL)
-        {
-            txn->abort();
+        MDB_CHECK_TXN_EXPAND(error, m_env, txn, try_again);
 
-            m_env->expand();
-
-            goto try_again;
-        }
-
-        return result;
+        return error;
     }
 
     template<typename KeyType, typename ValueType> Error LMDBDatabase::del(const KeyType &key, const ValueType &value)
@@ -1034,29 +1044,20 @@ namespace Database
     try_again:
         auto txn = transaction();
 
-        auto result = txn->del(key, value);
+        auto error = txn->del(key, value);
 
-        if (result == LMDB_MAP_FULL || result == LMDB_TXN_FULL)
+        MDB_CHECK_TXN_EXPAND(error, m_env, txn, try_again);
+
+        if (error)
         {
-            txn->abort();
-
-            m_env->expand();
-
-            goto try_again;
+            return error;
         }
 
-        result = txn->commit();
+        error = txn->commit();
 
-        if (result == LMDB_MAP_FULL || result == LMDB_TXN_FULL)
-        {
-            txn->abort();
+        MDB_CHECK_TXN_EXPAND(error, m_env, txn, try_again);
 
-            m_env->expand();
-
-            goto try_again;
-        }
-
-        return result;
+        return error;
     }
 
     template<typename KeyType> bool LMDBDatabase::exists(const KeyType &key)
@@ -1142,30 +1143,16 @@ namespace Database
 
         for (size_t i = 0; i < keys.size(); ++i)
         {
-            const auto result = txn->put(keys[i], values[i]);
+            const auto error = txn->put(keys[i], values[i]);
 
-            if (result == LMDB_MAP_FULL || result == LMDB_TXN_FULL)
-            {
-                txn->abort();
-
-                m_env->expand();
-
-                goto try_again;
-            }
+            MDB_CHECK_TXN_EXPAND(error, m_env, txn, try_again);
         }
 
-        const auto result = txn->commit();
+        const auto error = txn->commit();
 
-        if (result == LMDB_MAP_FULL || result == LMDB_TXN_FULL)
-        {
-            txn->abort();
+        MDB_CHECK_TXN_EXPAND(error, m_env, txn, try_again);
 
-            m_env->expand();
-
-            goto try_again;
-        }
-
-        return result;
+        return error;
     }
 
     template<typename KeyType, typename ValueType> Error LMDBDatabase::put(const KeyType &key, const ValueType &value)
@@ -1173,29 +1160,20 @@ namespace Database
     try_again:
         auto txn = transaction();
 
-        auto result = txn->put(key, value);
+        auto error = txn->put(key, value);
 
-        if (result == LMDB_MAP_FULL || result == LMDB_TXN_FULL)
+        MDB_CHECK_TXN_EXPAND(error, m_env, txn, try_again);
+
+        if (error)
         {
-            txn->abort();
-
-            m_env->expand();
-
-            goto try_again;
+            return error;
         }
 
-        result = txn->commit();
+        error = txn->commit();
 
-        if (result == LMDB_MAP_FULL || result == LMDB_TXN_FULL)
-        {
-            txn->abort();
+        MDB_CHECK_TXN_EXPAND(error, m_env, txn, try_again);
 
-            m_env->expand();
-
-            goto try_again;
-        }
-
-        return result;
+        return error;
     }
 } // namespace Database
 

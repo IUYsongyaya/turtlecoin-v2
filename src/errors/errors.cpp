@@ -9,6 +9,16 @@ ErrorCode Error::code() const
     return m_error_code;
 }
 
+std::string Error::file_name() const
+{
+    return m_file_name;
+}
+
+size_t Error::line() const
+{
+    return m_line_number;
+}
+
 std::string Error::to_string() const
 {
     if (!m_custom_error_message.empty())
