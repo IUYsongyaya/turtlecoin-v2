@@ -20,8 +20,11 @@ namespace BaseTypes
 
     struct NetworkPacketBase
     {
+      public:
+        uint16_t version = 1;
+
+      protected:
         uint16_t l_type = 0;
-        uint16_t version = 0;
     };
 } // namespace BaseTypes
 
@@ -51,9 +54,7 @@ namespace Types::Network
 
             port = reader.varint<uint16_t>();
 
-            const auto bytes = reader.varint<uint64_t>();
-
-            peer_id = reader.bytes(bytes);
+            peer_id = reader.key<crypto_hash_t>();
         }
 
         JSON_FROM_FUNC(fromJSON) override
@@ -64,9 +65,7 @@ namespace Types::Network
 
             LOAD_U32_FROM_JSON(port);
 
-            JSON_MEMBER_OR_THROW("peer_id");
-
-            peer_id = Crypto::StringTools::from_hex(get_json_string(j, "peer_id"));
+            LOAD_KEY_FROM_JSON(peer_id);
         }
 
         /**
@@ -84,9 +83,7 @@ namespace Types::Network
 
             writer.varint(port);
 
-            writer.varint(peer_id.size());
-
-            writer.bytes(peer_id);
+            writer.key(peer_id);
         }
 
         [[nodiscard]] std::vector<uint8_t> serialize() const override
@@ -111,8 +108,7 @@ namespace Types::Network
 
                 U32_TO_JSON(port);
 
-                writer.Key("peer_id");
-                writer.String(Crypto::StringTools::to_hex(peer_id.data(), peer_id.size()));
+                KEY_TO_JSON(peer_id);
             }
             writer.EndObject();
         }
@@ -131,7 +127,7 @@ namespace Types::Network
 
         uint32_t ip_address = 0;
         uint16_t port = 0;
-        std::vector<uint8_t> peer_id;
+        crypto_hash_t peer_id;
     };
 } // namespace Types::Network
 
@@ -142,7 +138,7 @@ namespace std
         os << "\tPeer Entry: [" << value.size() << " bytes]" << std::endl
            << "\t\tIP Address: " << std::to_string(value.ip_address) << std::endl
            << "\t\tPort: " << std::to_string(value.port) << std::endl
-           << "\t\tPeer ID: " << Crypto::StringTools::to_hex(value.peer_id.data(), value.peer_id.size()) << std::endl;
+           << "\t\tPeer ID: " << value.peer_id << std::endl;
 
         return os;
     }

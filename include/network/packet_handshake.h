@@ -45,9 +45,7 @@ namespace Types::Network
 
             version = reader.varint<uint16_t>();
 
-            const auto peer_id_bytes = reader.varint<uint64_t>();
-
-            peer_id = reader.bytes(peer_id_bytes);
+            peer_id = reader.key<crypto_hash_t>();
 
             peer_port = reader.varint<uint16_t>();
 
@@ -73,9 +71,7 @@ namespace Types::Network
 
             LOAD_U32_FROM_JSON(version);
 
-            JSON_MEMBER_OR_THROW("peer_id");
-
-            peer_id = Crypto::StringTools::from_hex(get_json_string(j, "peer_id"));
+            LOAD_KEY_FROM_JSON(peer_id);
 
             JSON_MEMBER_OR_THROW("peer_port");
 
@@ -106,9 +102,7 @@ namespace Types::Network
 
             writer.varint(version);
 
-            writer.varint(peer_id.size());
-
-            writer.bytes(peer_id);
+            writer.key(peer_id);
 
             writer.varint(peer_port);
 
@@ -143,8 +137,7 @@ namespace Types::Network
 
                 U32_TO_JSON(version);
 
-                writer.Key("peer_id");
-                writer.String(Crypto::StringTools::to_hex(peer_id.data(), peer_id.size()));
+                KEY_TO_JSON(peer_id);
 
                 writer.Key("peer_port");
                 writer.Uint(peer_port);
@@ -174,7 +167,7 @@ namespace Types::Network
             return l_type;
         }
 
-        std::vector<uint8_t> peer_id;
+        crypto_hash_t peer_id;
         uint16_t peer_port = 0;
         std::vector<network_peer_t> peers;
     };
@@ -187,7 +180,8 @@ namespace std
         os << "Handshake Packet [" << value.size() << " bytes]" << std::endl
            << "\tType: " << std::to_string(value.type()) << std::endl
            << "\tVersion: " << std::to_string(value.version) << std::endl
-           << "\tPeer ID: " << Crypto::StringTools::to_hex(value.peer_id.data(), value.peer_id.size()) << std::endl
+           << "\tPeer ID: " << value.peer_id << std::endl
+           << "\tPeer Port: " << std::to_string(value.peer_port) << std::endl
            << "\tPeers: " << std::endl;
 
         for (const auto &peer : value.peers)

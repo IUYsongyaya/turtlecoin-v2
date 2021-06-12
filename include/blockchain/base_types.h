@@ -373,11 +373,7 @@ namespace BaseTypes
 
                 for (size_t i = 0; i < count; ++i)
                 {
-                    crypto_clsag_signature_t signature;
-
-                    signature.deserialize(reader);
-
-                    signatures.push_back(signature);
+                    signatures.push_back(reader);
                 }
             }
 

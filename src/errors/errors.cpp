@@ -32,6 +32,8 @@ std::string Error::to_string() const
             return "The operation completed successfully.";
         case DB_EMPTY:
             return "The database is empty";
+        case GENERIC_FAILURE:
+            return "A generic failure occurred";
         case BASE58_DECODE:
             return "Could not decode Base58 string.";
         case ADDRESS_PREFIX_MISMATCH:

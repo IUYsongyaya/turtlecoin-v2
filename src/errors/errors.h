@@ -8,10 +8,16 @@
 #include <sstream>
 #include <string>
 
+#define MAKE_ERROR(code) Error(code, __LINE__, __FILE__)
+#define MAKE_ERROR_MSG(code, message) Error(code, message, __LINE__, __FILE__)
+
 enum ErrorCode
 {
     SUCCESS = 0,
+    P2P_NO_START,
+    P2P_NO_DATA,
     DB_EMPTY,
+    GENERIC_FAILURE,
     BASE58_DECODE,
     ADDRESS_PREFIX_MISMATCH,
     NOT_A_PUBLIC_KEY,
@@ -28,6 +34,8 @@ enum ErrorCode
     STAKING_STAKER_NOT_FOUND,
     DESERIALIZATION_ERROR,
     BLOCK_TRANSACTIONS_MISMATCH,
+    ZMQ_SERVER_BIND_FAILURE,
+    ZMQ_CLIENT_CONNECT_FAILURE,
     /**
      * Do not change LMDB values as they map directly to LMDB return codes
      * See: http://www.lmdb.tech/doc/group__errors.html

@@ -38,7 +38,7 @@ static inline std::string get_cli_header()
 
 static inline void print_cli_header()
 {
-    std::cout << get_cli_header();
+    std::cout << get_cli_header() << std::flush;
 }
 
 #endif

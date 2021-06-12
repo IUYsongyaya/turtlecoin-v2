@@ -33,6 +33,13 @@ namespace Configuration
 
     const size_t MINTED_MONEY_UNLOCK_WINDOW = 60;
 
+    namespace P2P
+    {
+        const uint16_t DEFAULT_BIND_PORT = 12897;
+
+        const std::vector<std::string> SEED_NODES = {"127.0.0.2:12897"};
+    } // namespace P2P
+
     namespace Consensus
     {
         const size_t ELECTOR_TARGET_COUNT = 10;
