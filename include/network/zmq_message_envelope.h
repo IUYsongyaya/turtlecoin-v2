@@ -53,12 +53,18 @@ namespace Types::Network
             return to.size() + from.size() + peer_address.size() + payload.size();
         }
 
+        zmq::message_t subject_msg() const
+        {
+            return zmq::message_t(subject.data(), subject.size());
+        }
+
         zmq::message_t to_msg() const
         {
             return zmq::message_t(to.data(), to.size());
         }
 
-        crypto_hash_t to, from;
+
+        crypto_hash_t to, from, subject;
 
         std::string peer_address;
 
@@ -70,9 +76,10 @@ namespace std
 {
     inline ostream &operator<<(ostream &os, const Types::Network::zmq_message_envelope_t &value)
     {
-        os << "ZMQ Routable Message [" << value.size() << " bytes]" << std::endl
-           << "From: " << value.from << std::endl
+        os << "ZMQ Message Envelope [" << value.size() << " bytes]" << std::endl
            << "To: " << value.to << std::endl
+           << "From: " << value.from << std::endl
+           << "Subject: " << value.subject << std::endl
            << "Peer Address: " << value.peer_address << std::endl
            << "Payload [" << value.payload.size()
            << " bytes]: " << Crypto::StringTools::to_hex(value.payload.data(), value.payload.size()) << std::endl;

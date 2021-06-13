@@ -81,7 +81,7 @@ namespace Database
          * This requires that there are no open R/W transactions; otherwise, the method
          * will throw an exception.
          */
-        Error detect_map_size();
+        Error detect_map_size() const;
 
         /**
          * Expands the memory map by the growth factor supplied to the constructor
@@ -201,7 +201,7 @@ namespace Database
          *
          * @return
          */
-        size_t open_transactions();
+        size_t open_transactions() const;
 
         /**
          * Sets/changes the LMDB environment flags
@@ -266,7 +266,7 @@ namespace Database
 
         MDB_env *m_env;
 
-        std::mutex m_mutex, m_txn_mutex;
+        mutable std::mutex m_mutex, m_txn_mutex;
 
         std::map<std::string, std::shared_ptr<LMDBDatabase>> m_databases;
 
@@ -343,7 +343,7 @@ namespace Database
          *
          * @return
          */
-        std::shared_ptr<LMDB> env();
+        std::shared_ptr<LMDB> env() const;
 
         /**
          * Returns if the given key exists in the database
@@ -467,7 +467,7 @@ namespace Database
 
         MDB_dbi m_dbi;
 
-        std::mutex m_db_mutex;
+        mutable std::mutex m_db_mutex;
     };
 
     /**
@@ -531,7 +531,7 @@ namespace Database
          *
          * @return
          */
-        std::shared_ptr<LMDB> env();
+        std::shared_ptr<LMDB> env() const;
 
         /**
          * Deletes the provided key
@@ -546,7 +546,7 @@ namespace Database
 
             const auto result = mdb_del(*m_txn, *m_db, &i_key, nullptr);
 
-            return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
+            return MAKE_ERROR_MSG(result, MDB_STR_ERR(result));
         }
 
         /**
@@ -561,7 +561,7 @@ namespace Database
 
             const auto result = mdb_del(*m_txn, *m_db, &i_key, nullptr);
 
-            return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
+            return MAKE_ERROR_MSG(result, MDB_STR_ERR(result));
         }
 
         /**
@@ -585,7 +585,7 @@ namespace Database
 
             const auto result = mdb_del(*m_txn, *m_db, &i_key, &i_value);
 
-            return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
+            return MAKE_ERROR_MSG(result, MDB_STR_ERR(result));
         }
 
         /**
@@ -608,7 +608,7 @@ namespace Database
 
             const auto result = mdb_del(*m_txn, *m_db, &i_key, &i_value);
 
-            return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
+            return MAKE_ERROR_MSG(result, MDB_STR_ERR(result));
         }
 
         /**
@@ -685,7 +685,7 @@ namespace Database
                 _value = ValueType(data);
             }
 
-            return {Error(result, MDB_STR_ERR(result), __LINE__, __FILE__), _value};
+            return {MAKE_ERROR_MSG(result, MDB_STR_ERR(result)), _value};
         }
 
         /**
@@ -710,7 +710,7 @@ namespace Database
                 results = FROM_MDB_VAL(value);
             }
 
-            return {Error(result, MDB_STR_ERR(result), __LINE__, __FILE__), results};
+            return {MAKE_ERROR_MSG(result, MDB_STR_ERR(result)), results};
         }
 
         /**
@@ -745,7 +745,7 @@ namespace Database
 
             const auto result = mdb_put(*m_txn, *m_db, &i_key, &i_value, flags);
 
-            return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
+            return MAKE_ERROR_MSG(result, MDB_STR_ERR(result));
         }
 
         /**
@@ -769,7 +769,7 @@ namespace Database
 
             const auto result = mdb_put(*m_txn, *m_db, &i_key, &i_value, flags);
 
-            return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
+            return MAKE_ERROR_MSG(result, MDB_STR_ERR(result));
         }
 
         /**
@@ -950,7 +950,7 @@ namespace Database
                 r_value = FROM_MDB_VAL(i_value);
             }
 
-            return {Error(result, MDB_STR_ERR(result), __LINE__, __FILE__), r_key, r_value};
+            return {MAKE_ERROR_MSG(result, MDB_STR_ERR(result)), r_key, r_value};
         }
 
         /**
@@ -1042,7 +1042,7 @@ namespace Database
 
             const auto result = mdb_cursor_put(m_cursor, &i_key, &i_value, flags);
 
-            return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
+            return MAKE_ERROR_MSG(result, MDB_STR_ERR(result));
         }
 
         /**
@@ -1067,7 +1067,7 @@ namespace Database
 
             const auto result = mdb_cursor_put(m_cursor, &i_key, &i_value, flags);
 
-            return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
+            return MAKE_ERROR_MSG(result, MDB_STR_ERR(result));
         }
 
         /**

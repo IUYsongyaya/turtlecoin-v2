@@ -4,9 +4,12 @@
 
 #include "zmq_server.h"
 
+#include "zmq_addon.hpp"
+
 namespace Networking
 {
-    ZMQServer::ZMQServer(uint16_t bind_port): m_bind_port(bind_port), m_identity(Crypto::random_hash())
+    ZMQServer::ZMQServer(const uint16_t &bind_port):
+        m_bind_port(bind_port), m_identity(Crypto::random_hash()), m_running(false)
     {
         const auto identity = zmq::buffer(m_identity.data(), m_identity.size());
 
@@ -49,7 +52,7 @@ namespace Networking
         {
             m_socket.bind("tcp://*:" + std::to_string(m_bind_port));
 
-            return SUCCESS;
+            return MAKE_ERROR(SUCCESS);
         }
         catch (const zmq::error_t &e)
         {

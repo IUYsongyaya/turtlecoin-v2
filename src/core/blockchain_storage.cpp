@@ -52,11 +52,12 @@ namespace Core
     std::tuple<Error, Types::Blockchain::block_t, std::vector<Types::Blockchain::transaction_t>>
         BlockchainStorage::get_block(const crypto_hash_t &block_hash) const
     {
+        // go get the block
         const auto [error, block] = m_blocks->get<crypto_hash_t, Types::Blockchain::block_t>(block_hash);
 
         if (error)
         {
-            return {BLOCK_NOT_FOUND, {}, {}};
+            return {MAKE_ERROR(BLOCK_NOT_FOUND), {}, {}};
         }
 
         std::vector<Types::Blockchain::transaction_t> transactions;
@@ -64,27 +65,29 @@ namespace Core
         // loop through the transactions in the block and retrieve them
         for (const auto &txn : block.transactions)
         {
+            // retrieve the transaction
             const auto [txn_error, transaction, txn_block_hash] = get_transaction(txn);
 
             if (txn_error)
             {
-                return {TRANSACTION_NOT_FOUND, {}, {}};
+                return {MAKE_ERROR(TRANSACTION_NOT_FOUND), {}, {}};
             }
 
             transactions.push_back(transaction);
         }
 
-        return {SUCCESS, block, transactions};
+        return {MAKE_ERROR(SUCCESS), block, transactions};
     }
 
     std::tuple<Error, Types::Blockchain::block_t, std::vector<Types::Blockchain::transaction_t>>
         BlockchainStorage::get_block(const uint64_t &block_index) const
     {
+        // go get the block
         const auto [error, block_hash] = m_block_indexes->get<crypto_hash_t>(block_index);
 
         if (error)
         {
-            return {BLOCK_NOT_FOUND, {}, {}};
+            return {MAKE_ERROR(BLOCK_NOT_FOUND), {}, {}};
         }
 
         return get_block(block_hash);
@@ -97,11 +100,12 @@ namespace Core
 
         auto cursor = txn->cursor();
 
+        // go get the next closest (higher) timestamp information
         const auto [error, result_timestamp, block_hash] = cursor->get<crypto_hash_t>(timestamp, MDB_SET_RANGE);
 
         if (error)
         {
-            return {BLOCK_NOT_FOUND, 0, {}};
+            return {MAKE_ERROR(BLOCK_NOT_FOUND), 0, {}};
         }
 
         return {error, result_timestamp, block_hash};
@@ -114,11 +118,12 @@ namespace Core
 
     std::tuple<Error, crypto_hash_t> BlockchainStorage::get_block_hash(const uint64_t &block_index) const
     {
+        // go get the block hash from the indexes
         const auto [error, block_hash] = m_block_indexes->get<crypto_hash_t>(block_index);
 
         if (error)
         {
-            return {BLOCK_NOT_FOUND, {}};
+            return {MAKE_ERROR(BLOCK_NOT_FOUND), {}};
         }
 
         return {error, block_hash};
@@ -126,11 +131,12 @@ namespace Core
 
     std::tuple<Error, uint64_t> BlockchainStorage::get_block_index(const crypto_hash_t &block_hash) const
     {
+        // go get the block
         const auto [error, block] = m_blocks->get<crypto_hash_t, Types::Blockchain::block_t>(block_hash);
 
         if (error)
         {
-            return {BLOCK_NOT_FOUND, 0};
+            return {MAKE_ERROR(BLOCK_NOT_FOUND), 0};
         }
 
         return {error, block.block_index};
@@ -142,15 +148,16 @@ namespace Core
 
         if (count == 0)
         {
-            return {DB_EMPTY, 0};
+            return {MAKE_ERROR(DB_EMPTY), 0};
         }
 
-        return {SUCCESS, count - 1};
+        return {MAKE_ERROR(SUCCESS), count - 1};
     }
 
     std::tuple<Error, Types::Blockchain::transaction_output_t>
         BlockchainStorage::get_output_by_global_index(const uint64_t &global_index) const
     {
+        // go get the maximum global index number
         const auto [error, maximum_global_index] = get_maximum_global_index();
 
         if (error)
@@ -160,9 +167,10 @@ namespace Core
 
         if (global_index > maximum_global_index)
         {
-            return {GLOBAL_INDEX_OUT_OF_BOUNDS, {}};
+            return {MAKE_ERROR(GLOBAL_INDEX_OUT_OF_BOUNDS), {}};
         }
 
+        // go get the transaction output for the global index
         return m_global_indexes->get<Types::Blockchain::transaction_output_t>(global_index);
     }
 
@@ -171,8 +179,10 @@ namespace Core
     {
         std::map<uint64_t, Types::Blockchain::transaction_output_t> results;
 
+        // loop through the global indexes
         for (const auto &index : global_indexes)
         {
+            // go get the transaction output for the global index
             const auto [error, output] = get_output_by_global_index(index);
 
             if (error)
@@ -183,29 +193,32 @@ namespace Core
             results.insert({index, output});
         }
 
+        // if we did not get the same number of results as requested... fail
         if (results.size() != global_indexes.size())
         {
-            return {GLOBAL_INDEX_OUT_OF_BOUNDS, {}};
+            return {MAKE_ERROR(GLOBAL_INDEX_OUT_OF_BOUNDS), {}};
         }
 
-        return {SUCCESS, results};
+        return {MAKE_ERROR(SUCCESS), results};
     }
 
     std::tuple<Error, Types::Blockchain::transaction_t, crypto_hash_t>
         BlockchainStorage::get_transaction(const crypto_hash_t &txn_hash) const
     {
+        // go get the transaction
         const auto [error, txn_data] = m_transactions->get(txn_hash);
 
         if (error)
         {
-            return {TRANSACTION_NOT_FOUND, {}, {}};
+            return {MAKE_ERROR(TRANSACTION_NOT_FOUND), {}, {}};
         }
 
+        // go get the block hash the transaction is contained within
         const auto [txn_error, block_hash] = m_transaction_block_hashes->get<crypto_hash_t>(txn_hash);
 
         if (txn_error)
         {
-            return {BLOCK_NOT_FOUND, {}, {}};
+            return {MAKE_ERROR(BLOCK_NOT_FOUND), {}, {}};
         }
 
         deserializer_t reader(txn_data);
@@ -213,33 +226,36 @@ namespace Core
         // figure out what type of transaction it is
         const auto type = reader.varint<uint64_t>(true);
 
+        // depending on the transaction type, we'll return the proper structure
         switch (type)
         {
             case Types::Blockchain::TransactionType::GENESIS:
-                return {SUCCESS, Types::Blockchain::genesis_transaction_t(reader), block_hash};
+                return {MAKE_ERROR(SUCCESS), Types::Blockchain::genesis_transaction_t(reader), block_hash};
             case Types::Blockchain::TransactionType::STAKER_REWARD:
-                return {SUCCESS, Types::Blockchain::staker_reward_transaction_t(reader), block_hash};
+                return {MAKE_ERROR(SUCCESS), Types::Blockchain::staker_reward_transaction_t(reader), block_hash};
             case Types::Blockchain::TransactionType::NORMAL:
-                return {SUCCESS, Types::Blockchain::committed_normal_transaction_t(reader), block_hash};
+                return {MAKE_ERROR(SUCCESS), Types::Blockchain::committed_normal_transaction_t(reader), block_hash};
             case Types::Blockchain::TransactionType::STAKE:
-                return {SUCCESS, Types::Blockchain::committed_stake_transaction_t(reader), block_hash};
+                return {MAKE_ERROR(SUCCESS), Types::Blockchain::committed_stake_transaction_t(reader), block_hash};
             case Types::Blockchain::TransactionType::RECALL_STAKE:
-                return {SUCCESS, Types::Blockchain::committed_recall_stake_transaction_t(reader), block_hash};
+                return {
+                    MAKE_ERROR(SUCCESS), Types::Blockchain::committed_recall_stake_transaction_t(reader), block_hash};
             case Types::Blockchain::TransactionType::STAKE_REFUND:
-                return {SUCCESS, Types::Blockchain::stake_refund_transaction_t(reader), block_hash};
+                return {MAKE_ERROR(SUCCESS), Types::Blockchain::stake_refund_transaction_t(reader), block_hash};
             default:
-                return {UNKNOWN_TRANSACTION_TYPE, {}, block_hash};
+                return {MAKE_ERROR(UNKNOWN_TRANSACTION_TYPE), {}, block_hash};
         }
     }
 
     std::tuple<Error, std::vector<uint64_t>>
         BlockchainStorage::get_transaction_indexes(const crypto_hash_t &txn_hash) const
     {
+        // go get all of the transaction output global indexes for the specified transaction
         const auto [error, data] = m_transaction_indexes->get(txn_hash);
 
         if (error)
         {
-            return {TRANSACTION_NOT_FOUND, {}};
+            return {MAKE_ERROR(TRANSACTION_NOT_FOUND), {}};
         }
 
         std::vector<uint64_t> result;
@@ -255,11 +271,11 @@ namespace Core
             }
             catch (...)
             {
-                return {DESERIALIZATION_ERROR, {}};
+                return {MAKE_ERROR(DESERIALIZATION_ERROR), {}};
             }
         }
 
-        return {SUCCESS, result};
+        return {MAKE_ERROR(SUCCESS), result};
     }
 
     bool BlockchainStorage::key_image_exists(const crypto_key_image_t &key_image) const
@@ -274,8 +290,10 @@ namespace Core
 
         std::map<crypto_key_image_t, bool> results;
 
+        // loop through the requested key images
         for (const auto &key_image : key_images)
         {
+            // check to see if the key image exists
             const auto exists = txn->exists(key_image);
 
             results.insert({key_image, exists});
@@ -295,7 +313,7 @@ namespace Core
             // verify that the number of transactions match what is expected
             if (transactions.size() != block.transactions.size())
             {
-                return BLOCK_TRANSACTIONS_MISMATCH;
+                return MAKE_ERROR(BLOCK_TRANSACTIONS_MISMATCH);
             }
 
             // dump the transaction hashes into two vectors so that we can easily compare them
@@ -324,7 +342,7 @@ namespace Core
              */
             if (block_hashes != tx_hashes)
             {
-                return BLOCK_TXN_ORDER;
+                return MAKE_ERROR(BLOCK_TXN_ORDER);
             }
         }
 
@@ -486,7 +504,7 @@ namespace Core
                         }
                     }
 
-                    return Error(SUCCESS);
+                    return MAKE_ERROR(SUCCESS);
                 },
                 transaction);
 
@@ -580,7 +598,7 @@ namespace Core
                         }
                     }
 
-                    return Error(SUCCESS);
+                    return MAKE_ERROR(SUCCESS);
                 },
                 transaction);
 
@@ -590,7 +608,7 @@ namespace Core
             }
         }
 
-        return {SUCCESS, txn_hash};
+        return {MAKE_ERROR(SUCCESS), txn_hash};
     }
 
     Error BlockchainStorage::put_transaction_block_hash(
@@ -641,6 +659,6 @@ namespace Core
             return {error, 0};
         }
 
-        return {SUCCESS, index};
+        return {MAKE_ERROR(SUCCESS), index};
     }
 } // namespace Core

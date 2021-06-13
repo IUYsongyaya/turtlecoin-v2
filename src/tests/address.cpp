@@ -3,15 +3,17 @@
 // Please see the included LICENSE file for more information.
 
 #include <address_encoding.h>
-#include <cli_header.h>
 #include <crypto.h>
+#include <tools/cli_helper.h>
 #include <utilities.h>
 
 using namespace Utilities;
 
-int main()
+int main(int argc, char **argv)
 {
-    print_cli_header();
+    auto options = cli_setup_options(argv);
+
+    auto cli = cli_parse_options(argc, argv, options);
 
     std::cout << "Wallet Address Encoding Check" << std::endl << std::endl;
 

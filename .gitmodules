@@ -5,7 +5,7 @@
 [submodule "external/cxxopts"]
 	path = external/cxxopts
 	url = https://github.com/turtlecoin/cxxopts
-	branch = v2_2_1
+	branch = master
 [submodule "external/libzmq"]
 	path = external/libzmq
 	url = https://github.com/turtlecoin/libzmq.git

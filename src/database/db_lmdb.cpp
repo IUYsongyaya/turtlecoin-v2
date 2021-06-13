@@ -98,21 +98,21 @@ namespace Database
             l_environments.erase(m_id);
         }
 
-        return SUCCESS;
+        return MAKE_ERROR(SUCCESS);
     }
 
-    Error LMDB::detect_map_size()
+    Error LMDB::detect_map_size() const
     {
         std::scoped_lock lock(m_mutex);
 
         if (open_transactions() != 0)
         {
-            return Error(LMDB_ERROR, "Cannot detect LMDB environment map size while transactions are open");
+            return MAKE_ERROR_MSG(LMDB_ERROR, "Cannot detect LMDB environment map size while transactions are open");
         }
 
         const auto result = mdb_env_set_mapsize(m_env, 0);
 
-        return Error(result, MDB_STR_ERR(result));
+        return MAKE_ERROR_MSG(result, MDB_STR_ERR(result));
     }
 
     Error LMDB::expand()
@@ -133,7 +133,7 @@ namespace Database
 
         if (open_transactions() != 0)
         {
-            return Error(LMDB_ERROR, "Cannot expand LMDB environment map size while transactions are open");
+            return MAKE_ERROR_MSG(LMDB_ERROR, "Cannot expand LMDB environment map size while transactions are open");
         }
 
         const auto [info_error, l_info] = info();
@@ -154,19 +154,19 @@ namespace Database
 
         const auto result = mdb_env_set_mapsize(m_env, new_size);
 
-        return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
+        return MAKE_ERROR_MSG(result, MDB_STR_ERR(result));
     }
 
     Error LMDB::flush(bool force)
     {
         if (!m_env)
         {
-            return Error(LMDB_ERROR, "LMDB environment has been previously closed");
+            return MAKE_ERROR_MSG(LMDB_ERROR, "LMDB environment has been previously closed");
         }
 
         const auto result = mdb_env_sync(m_env, (force) ? 1 : 0);
 
-        return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
+        return MAKE_ERROR_MSG(result, MDB_STR_ERR(result));
     }
 
     std::shared_ptr<LMDBDatabase> LMDB::get_database(const std::string &id)
@@ -183,14 +183,14 @@ namespace Database
     {
         if (!m_env)
         {
-            return {Error(LMDB_ERROR, "LMDB environment has been previously closed."), 0};
+            return {MAKE_ERROR_MSG(LMDB_ERROR, "LMDB environment has been previously closed."), 0};
         }
 
         unsigned int env_flags;
 
         const auto result = mdb_env_get_flags(m_env, &env_flags);
 
-        return {Error(result, MDB_STR_ERR(result), __LINE__, __FILE__), env_flags};
+        return {MAKE_ERROR_MSG(result, MDB_STR_ERR(result)), env_flags};
     }
 
     std::shared_ptr<LMDB> LMDB::get_instance(const std::string &id)
@@ -240,45 +240,45 @@ namespace Database
 
         if (!m_env)
         {
-            return {Error(LMDB_ERROR, "LMDB environment has been previously closed"), info};
+            return {MAKE_ERROR_MSG(LMDB_ERROR, "LMDB environment has been previously closed"), info};
         }
 
         const auto result = mdb_env_info(m_env, &info);
 
-        return {Error(result, MDB_STR_ERR(result), __LINE__, __FILE__), info};
+        return {MAKE_ERROR_MSG(result, MDB_STR_ERR(result)), info};
     }
 
     std::tuple<Error, size_t> LMDB::memory_to_pages(size_t memory) const
     {
         const auto [error, l_stats] = stats();
 
-        return {SUCCESS, size_t(ceil(double(memory) / double(l_stats.ms_psize)))};
+        return {MAKE_ERROR(SUCCESS), size_t(ceil(double(memory) / double(l_stats.ms_psize)))};
     }
 
     std::tuple<Error, size_t> LMDB::max_key_size() const
     {
         if (!m_env)
         {
-            return {Error(LMDB_ERROR, "LMDB environment has been previously closed"), 0};
+            return {MAKE_ERROR_MSG(LMDB_ERROR, "LMDB environment has been previously closed"), 0};
         }
 
         const auto result = mdb_env_get_maxkeysize(m_env);
 
-        return {SUCCESS, result};
+        return {MAKE_ERROR(SUCCESS), result};
     }
 
     std::tuple<Error, unsigned int> LMDB::max_readers() const
     {
         if (!m_env)
         {
-            return {Error(LMDB_ERROR, "LMDB environment has been previously closed"), 0};
+            return {MAKE_ERROR_MSG(LMDB_ERROR, "LMDB environment has been previously closed"), 0};
         }
 
         unsigned int readers = 0;
 
         const auto result = mdb_env_get_maxreaders(m_env, &readers);
 
-        return {Error(result, MDB_STR_ERR(result), __LINE__, __FILE__), readers};
+        return {MAKE_ERROR_MSG(result, MDB_STR_ERR(result)), readers};
     }
 
     std::shared_ptr<LMDBDatabase> LMDB::open_database(const std::string &name, int flags)
@@ -299,7 +299,7 @@ namespace Database
         return db;
     }
 
-    size_t LMDB::open_transactions()
+    size_t LMDB::open_transactions() const
     {
         std::scoped_lock lock(m_txn_mutex);
 
@@ -312,7 +312,7 @@ namespace Database
 
         const auto result = mdb_env_set_flags(m_env, flags, (flag_state) ? 1 : 0);
 
-        return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
+        return MAKE_ERROR_MSG(result, MDB_STR_ERR(result));
     }
 
     std::tuple<Error, MDB_stat> LMDB::stats() const
@@ -321,12 +321,12 @@ namespace Database
 
         if (!m_env)
         {
-            return {Error(LMDB_ERROR, "LMDB enviroment has been previously closed"), stats};
+            return {MAKE_ERROR_MSG(LMDB_ERROR, "LMDB enviroment has been previously closed"), stats};
         }
 
         const auto result = mdb_env_stat(m_env, &stats);
 
-        return {Error(result, MDB_STR_ERR(result), __LINE__, __FILE__), stats};
+        return {MAKE_ERROR_MSG(result, MDB_STR_ERR(result)), stats};
     }
 
     std::unique_ptr<LMDBTransaction> LMDB::transaction(bool readonly)
@@ -452,7 +452,7 @@ namespace Database
         return txn->commit();
     }
 
-    std::shared_ptr<LMDB> LMDBDatabase::env()
+    std::shared_ptr<LMDB> LMDBDatabase::env() const
     {
         return m_env;
     }
@@ -465,7 +465,7 @@ namespace Database
 
         const auto result = mdb_dbi_flags(*txn, m_dbi, &dbi_flags);
 
-        return {Error(result, MDB_STR_ERR(result), __LINE__, __FILE__), dbi_flags};
+        return {MAKE_ERROR_MSG(result, MDB_STR_ERR(result)), dbi_flags};
     }
 
     std::string LMDBDatabase::id() const
@@ -527,7 +527,7 @@ namespace Database
     {
         if (!m_txn)
         {
-            return Error(LMDB_ERROR, MDB_STR_ERR(MDB_BAD_TXN));
+            return MAKE_ERROR_MSG(LMDB_ERROR, MDB_STR_ERR(MDB_BAD_TXN));
         }
 
         const auto result = mdb_txn_commit(*m_txn);
@@ -536,7 +536,7 @@ namespace Database
 
         m_txn = nullptr;
 
-        return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
+        return MAKE_ERROR_MSG(result, MDB_STR_ERR(result));
     }
 
     std::unique_ptr<LMDBCursor> LMDBTransaction::cursor()
@@ -544,7 +544,7 @@ namespace Database
         return std::make_unique<LMDBCursor>(m_txn, m_db, m_readonly);
     }
 
-    std::shared_ptr<LMDB> LMDBTransaction::env()
+    std::shared_ptr<LMDB> LMDBTransaction::env() const
     {
         return m_env;
     }
@@ -564,12 +564,12 @@ namespace Database
     {
         if (!m_txn)
         {
-            return {Error(LMDB_BAD_TXN, "Transaction does not exist"), 0};
+            return {MAKE_ERROR_MSG(LMDB_BAD_TXN, "Transaction does not exist"), 0};
         }
 
         const auto result = mdb_txn_id(*m_txn);
 
-        return {SUCCESS, result};
+        return {MAKE_ERROR(SUCCESS), result};
     }
 
     bool LMDBTransaction::readonly() const
@@ -581,24 +581,24 @@ namespace Database
     {
         if (!m_txn || !m_readonly)
         {
-            return Error(LMDB_BAD_TXN, "Transaction does not exist");
+            return MAKE_ERROR_MSG(LMDB_BAD_TXN, "Transaction does not exist");
         }
 
         const auto result = mdb_txn_renew(*m_txn);
 
-        return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
+        return MAKE_ERROR_MSG(result, MDB_STR_ERR(result));
     }
 
     Error LMDBTransaction::reset()
     {
         if (!m_txn || !m_readonly)
         {
-            return Error(LMDB_BAD_TXN, "Transaction does not exist or is readonly");
+            return MAKE_ERROR_MSG(LMDB_BAD_TXN, "Transaction does not exist or is readonly");
         }
 
         const auto result = mdb_txn_renew(*m_txn);
 
-        return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
+        return MAKE_ERROR_MSG(result, MDB_STR_ERR(result));
     }
 
     void LMDBTransaction::set_database(std::shared_ptr<LMDBDatabase> &db)
@@ -664,21 +664,21 @@ namespace Database
     {
         if (!m_cursor)
         {
-            return {Error(LMDB_ERROR, "Cursor does not exist"), 0};
+            return {MAKE_ERROR_MSG(LMDB_ERROR, "Cursor does not exist"), 0};
         }
 
         size_t count = 0;
 
         const auto result = mdb_cursor_count(m_cursor, &count);
 
-        return {Error(result, MDB_STR_ERR(result), __LINE__, __FILE__), count};
+        return {MAKE_ERROR_MSG(result, MDB_STR_ERR(result)), count};
     }
 
     Error LMDBCursor::del(int flags)
     {
         const auto result = mdb_cursor_del(m_cursor, flags);
 
-        return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
+        return MAKE_ERROR_MSG(result, MDB_STR_ERR(result));
     }
 
     std::tuple<Error, std::vector<uint8_t>, std::vector<uint8_t>> LMDBCursor::get(const MDB_cursor_op &op)
@@ -696,7 +696,7 @@ namespace Database
             r_value = FROM_MDB_VAL(i_value);
         }
 
-        return {Error(result, MDB_STR_ERR(result), __LINE__, __FILE__), r_key, r_value};
+        return {MAKE_ERROR_MSG(result, MDB_STR_ERR(result)), r_key, r_value};
     }
 
     std::tuple<Error, uint64_t, std::vector<uint8_t>> LMDBCursor::get(const uint64_t &key, const MDB_cursor_op &op)
@@ -720,18 +720,18 @@ namespace Database
             std::memcpy(&key_value, r_key.data(), sizeof(key_value));
         }
 
-        return {Error(result, MDB_STR_ERR(result), __LINE__, __FILE__), key_value, r_value};
+        return {MAKE_ERROR_MSG(result, MDB_STR_ERR(result)), key_value, r_value};
     }
 
     Error LMDBCursor::renew()
     {
         if (!m_cursor || !m_readonly)
         {
-            return Error(LMDB_ERROR, "Cursor does not exist or is read only.");
+            return MAKE_ERROR_MSG(LMDB_ERROR, "Cursor does not exist or is read only.");
         }
 
         const auto result = mdb_cursor_renew(*m_txn, m_cursor);
 
-        return Error(result, MDB_STR_ERR(result), __LINE__, __FILE__);
+        return MAKE_ERROR_MSG(result, MDB_STR_ERR(result));
     }
 } // namespace Database

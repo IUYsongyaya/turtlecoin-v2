@@ -19,7 +19,7 @@ template<typename T, typename Comparison = std::less<T>> class ThreadSafePriorit
      *
      * @return
      */
-    bool empty()
+    bool empty() const
     {
         std::scoped_lock lock(m_mutex);
 
@@ -75,7 +75,7 @@ template<typename T, typename Comparison = std::less<T>> class ThreadSafePriorit
      *
      * @return
      */
-    size_t size()
+    size_t size() const
     {
         std::scoped_lock lock(m_mutex);
 
@@ -87,7 +87,7 @@ template<typename T, typename Comparison = std::less<T>> class ThreadSafePriorit
      *
      * @return
      */
-    T top()
+    T top() const
     {
         std::scoped_lock lock(m_mutex);
 

@@ -4,9 +4,11 @@
 
 #include "zmq_client.h"
 
+#include <zmq_addon.hpp>
+
 namespace Networking
 {
-    ZMQClient::ZMQClient(): m_identity(Crypto::random_hash())
+    ZMQClient::ZMQClient(): m_identity(Crypto::random_hash()), m_running(false)
     {
         const auto identity = zmq::buffer(m_identity.data(), m_identity.size());
 
@@ -49,7 +51,7 @@ namespace Networking
         {
             m_socket.connect("tcp://" + host + ":" + std::to_string(port));
 
-            return SUCCESS;
+            return MAKE_ERROR(SUCCESS);
         }
         catch (const zmq::error_t &e)
         {

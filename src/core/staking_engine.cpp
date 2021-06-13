@@ -66,7 +66,7 @@ namespace Core
 
         if (error)
         {
-            return {STAKING_CANDIDATE_NOT_FOUND, {}};
+            return {MAKE_ERROR(STAKING_CANDIDATE_NOT_FOUND)};
         }
 
         return m_db_candidates->del(candidate_key);
@@ -80,7 +80,7 @@ namespace Core
 
         if (error)
         {
-            return {STAKING_STAKER_NOT_FOUND};
+            return {MAKE_ERROR(STAKING_STAKER_NOT_FOUND)};
         }
 
         return m_db_stakers->del(staker_id);
@@ -94,7 +94,7 @@ namespace Core
 
         if (error)
         {
-            return {STAKING_CANDIDATE_NOT_FOUND, {}};
+            return {MAKE_ERROR(STAKING_CANDIDATE_NOT_FOUND), {}};
         }
 
         return {error, candidate};
@@ -148,7 +148,7 @@ namespace Core
 
         if (error)
         {
-            return {Error(STAKING_STAKER_NOT_FOUND), {}};
+            return {MAKE_ERROR(STAKING_STAKER_NOT_FOUND), {}};
         }
 
         return {error, staker};
@@ -240,7 +240,7 @@ namespace Core
             // can't stake a candidate that does not exist
             if (error)
             {
-                return Error(STAKING_CANDIDATE_NOT_FOUND);
+                return MAKE_ERROR(STAKING_CANDIDATE_NOT_FOUND);
             }
         }
 

@@ -20,7 +20,7 @@ template<typename T> class ThreadSafeDeque
      * @param position
      * @return
      */
-    T operator[](size_t position)
+    T operator[](size_t position) const
     {
         std::scoped_lock lock(m_mutex);
 
@@ -33,7 +33,7 @@ template<typename T> class ThreadSafeDeque
      * @param position
      * @return
      */
-    T at(size_t position)
+    T at(size_t position) const
     {
         std::scoped_lock lock(m_mutex);
 
@@ -45,7 +45,7 @@ template<typename T> class ThreadSafeDeque
      *
      * @return
      */
-    T back()
+    T back() const
     {
         std::scoped_lock lock(m_mutex);
 
@@ -67,7 +67,7 @@ template<typename T> class ThreadSafeDeque
      *
      * @return
      */
-    bool empty()
+    bool empty() const
     {
         std::scoped_lock lock(m_mutex);
 
@@ -79,7 +79,7 @@ template<typename T> class ThreadSafeDeque
      *
      * @return
      */
-    T front()
+    T front() const
     {
         std::scoped_lock lock(m_mutex);
 
@@ -91,7 +91,7 @@ template<typename T> class ThreadSafeDeque
      *
      * @return
      */
-    size_t max_size()
+    size_t max_size() const
     {
         std::scoped_lock lock(m_mutex);
 
@@ -260,7 +260,7 @@ template<typename T> class ThreadSafeDeque
      *
      * @return
      */
-    size_t size()
+    size_t size() const
     {
         std::scoped_lock lock(m_mutex);
 

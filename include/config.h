@@ -33,6 +33,11 @@ namespace Configuration
 
     const size_t MINTED_MONEY_UNLOCK_WINDOW = 60;
 
+    namespace Notifier
+    {
+        const uint16_t DEFAULT_BIND_PORT = 12899;
+    }
+
     namespace P2P
     {
         const uint16_t DEFAULT_BIND_PORT = 12897;

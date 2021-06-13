@@ -12,7 +12,6 @@
 #include <thread>
 #include <tools/thread_safe_queue.h>
 #include <zmq.hpp>
-#include <zmq_addon.hpp>
 
 using namespace Types::Network;
 
@@ -20,7 +19,7 @@ namespace Networking
 {
     /**
      * Simple ZMQ Client of the DEALER type that is designed to talk to a SINGLE
-     * ROUTER client (ie. ZMQServer). If connections to additional servers are
+     * ROUTER server (ie. ZMQServer). If connections to additional servers are
      * required a separate instance should be created.
      *
      * Incoming messages are delivered into a queue that can be processed in the
@@ -57,7 +56,7 @@ namespace Networking
          * @param port
          * @return
          */
-        Error connect(const std::string &host, const uint16_t &port);
+        Error connect(const std::string &host, const uint16_t &port = Configuration::P2P::DEFAULT_BIND_PORT);
 
         /**
          * Returns the identity of the client that is used in the message envelopes
@@ -95,7 +94,6 @@ namespace Networking
          * NOTE: this does not connect the client to anything, it only starts
          * the reading and writing threads
          *
-         * @return
          */
         void start();
 

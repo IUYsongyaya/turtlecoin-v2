@@ -12,7 +12,6 @@
 #include <thread>
 #include <tools/thread_safe_queue.h>
 #include <zmq.hpp>
-#include <zmq_addon.hpp>
 
 using namespace Types::Network;
 
@@ -36,11 +35,9 @@ namespace Networking
          * Creates a new instance and sets it up to bind to the specified port and
          * auto-starts the threads
          *
-         *
-         *
          * @param bind_port
          */
-        ZMQServer(uint16_t bind_port = Configuration::P2P::DEFAULT_BIND_PORT);
+        ZMQServer(const uint16_t &bind_port = Configuration::P2P::DEFAULT_BIND_PORT);
 
         /**
          * Destroying the instance auto-stops the threads and closes the socket
@@ -101,7 +98,7 @@ namespace Networking
         /**
          * Starts the server
          *
-         * NOTE: this does not bind the server to anything, it only starts
+         * NOTE: This does not bind the server to anything, it only starts
          * the reading and writing threads
          *
          * @return

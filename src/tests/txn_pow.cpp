@@ -3,15 +3,17 @@
 // Please see the included LICENSE file for more information.
 
 #include <benchmark.h>
-#include <cli_header.h>
 #include <config.h>
+#include <tools/cli_helper.h>
 #include <types.h>
 
 #define POW_TEST_ITERATIONS 10
 
-int main()
+int main(int argc, char **argv)
 {
-    print_cli_header();
+    auto options = cli_setup_options(argv);
+
+    auto cli = cli_parse_options(argc, argv, options);
 
     benchmark_header(40, 25);
 

@@ -19,7 +19,7 @@ template<typename T> class ThreadSafeQueue
      *
      * @return
      */
-    T back()
+    T back() const
     {
         std::scoped_lock lock(m_mutex);
 
@@ -41,7 +41,7 @@ template<typename T> class ThreadSafeQueue
      *
      * @return
      */
-    bool empty()
+    bool empty() const
     {
         std::scoped_lock lock(m_mutex);
 
@@ -53,7 +53,7 @@ template<typename T> class ThreadSafeQueue
      *
      * @return
      */
-    T front()
+    T front() const
     {
         std::scoped_lock lock(m_mutex);
 
@@ -109,7 +109,7 @@ template<typename T> class ThreadSafeQueue
      *
      * @return
      */
-    size_t size()
+    size_t size() const
     {
         std::scoped_lock lock(m_mutex);
 

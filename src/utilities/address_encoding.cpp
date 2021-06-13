@@ -14,7 +14,7 @@ namespace Utilities
 
         if (!success)
         {
-            return {Error(BASE58_DECODE), {}, {}};
+            return {MAKE_ERROR(BASE58_DECODE), {}, {}};
         }
 
         // extract the public keys from the result
@@ -24,18 +24,18 @@ namespace Utilities
 
             if (prefix != Configuration::PUBLIC_ADDRESS_PREFIX)
             {
-                return {Error(ADDRESS_PREFIX_MISMATCH), {}, {}};
+                return {MAKE_ERROR(ADDRESS_PREFIX_MISMATCH), {}, {}};
             }
 
             const auto public_spend = decoded.key<crypto_public_key_t>();
 
             const auto public_view = decoded.key<crypto_public_key_t>();
 
-            return {SUCCESS, public_spend, public_view};
+            return {MAKE_ERROR(SUCCESS), public_spend, public_view};
         }
         catch (...)
         {
-            return {Error(NOT_A_PUBLIC_KEY), {}, {}};
+            return {MAKE_ERROR(NOT_A_PUBLIC_KEY), {}, {}};
         }
     }
 

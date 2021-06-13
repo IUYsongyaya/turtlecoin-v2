@@ -47,8 +47,8 @@ if(BUILD_UNIT_TESTS)
 endif()
 
 if(NOT MSVC)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -O3 -static-libgcc -static")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -O3 -static-libstdc++ -static")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -O3 -static-libgcc -static -Wuninitialized")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -O3 -static-libstdc++ -static -Wuninitialized")
 endif()
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/external)

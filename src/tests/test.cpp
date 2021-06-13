@@ -1,8 +1,10 @@
-#include <cli_header.h>
+#include <tools/cli_helper.h>
 
-int main()
+int main(int argc, char **argv)
 {
-    print_cli_header();
+    auto options = cli_setup_options(argv);
+
+    auto cli = cli_parse_options(argc, argv, options);
 
     return 0;
 }

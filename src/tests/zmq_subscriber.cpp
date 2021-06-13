@@ -3,17 +3,15 @@
 // Please see the included LICENSE file for more information.
 
 #include <tools/cli_helper.h>
-#include <types.h>
-#include <zmq_client.h>
+#include <zmq_subscriber.h>
 
 using namespace Networking;
-using namespace Types::Network;
 
 int main(int argc, char **argv)
 {
     std::string server_host = "127.0.0.2";
 
-    uint16_t server_port = Configuration::P2P::DEFAULT_BIND_PORT;
+    uint16_t server_port = Configuration::Notifier::DEFAULT_BIND_PORT;
 
     auto options = cli_setup_options(argv);
 
@@ -27,9 +25,11 @@ int main(int argc, char **argv)
 
     auto cli = cli_parse_options(argc, argv, options);
 
-    auto client = ZMQClient();
+    auto client = ZMQSubscriber();
 
-    std::cout << "Client Identity: " << client.identity() << std::endl << std::endl;
+    const auto subject = crypto_hash_t("bf15572be229a849020316b597609fcaa30a5d0ad07048ba301d13e1ccdca90b");
+
+    client.subscribe(subject);
 
     std::cout << "Connecting to: " << server_host << ":" << std::to_string(server_port) << "..." << std::endl
               << std::endl;
@@ -45,25 +45,15 @@ int main(int argc, char **argv)
         }
     }
 
-    auto msg = packet_handshake_t();
-
-    msg.peers.resize(10);
-
-    const auto outgoing = zmq_message_envelope_t(msg.serialize());
-
-    client.send(outgoing);
-
     while (true)
     {
         while (!client.messages().empty())
         {
-            auto msg = client.messages().pop();
+            const auto msg = client.messages().pop();
 
-            std::cout << msg << std::endl;
+            std::cout << "Recv >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << std::endl << msg << std::endl;
 
-            msg.to = msg.from;
-
-            client.send(msg);
+            THREAD_SLEEP(50);
         }
     }
 }
