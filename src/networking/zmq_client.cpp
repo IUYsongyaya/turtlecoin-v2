@@ -172,9 +172,15 @@ namespace Networking
         {
             m_running = false;
 
-            m_thread_outgoing.join();
+            if (m_thread_outgoing.joinable())
+            {
+                m_thread_outgoing.join();
+            }
 
-            m_thread_incoming.join();
+            if (m_thread_incoming.joinable())
+            {
+                m_thread_incoming.join();
+            }
         }
     }
 } // namespace Networking

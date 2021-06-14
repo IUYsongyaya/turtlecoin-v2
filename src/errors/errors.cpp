@@ -19,6 +19,24 @@ size_t Error::line() const
     return m_line_number;
 }
 
+JSON_TO_FUNC(Error::toJSON)
+{
+    writer.StartObject();
+    {
+        writer.Key("error");
+        writer.StartObject();
+        {
+            writer.Key("code");
+            writer.Uint(m_error_code);
+
+            writer.Key("message");
+            writer.String(to_string());
+        }
+        writer.EndObject();
+    }
+    writer.EndObject();
+}
+
 std::string Error::to_string() const
 {
     if (!m_custom_error_message.empty())

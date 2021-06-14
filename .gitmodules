@@ -25,3 +25,6 @@
 [submodule "external/miniupnp"]
 	path = external/miniupnp
 	url = https://github.com/turtlecoin/miniupnp
+[submodule "external/cpphttplib"]
+	path = external/cpphttplib
+	url = https://github.com/turtlecoin/cpp-httplib

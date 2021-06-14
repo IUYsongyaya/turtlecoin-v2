@@ -5,6 +5,7 @@
 #ifndef TURTLECOIN_ERRORS_H
 #define TURTLECOIN_ERRORS_H
 
+#include <json_helper.h>
 #include <sstream>
 #include <string>
 
@@ -36,6 +37,8 @@ enum ErrorCode
     BLOCK_TRANSACTIONS_MISMATCH,
     ZMQ_SERVER_BIND_FAILURE,
     ZMQ_CLIENT_CONNECT_FAILURE,
+    JSON_DESERIALIZATION_ERROR,
+    HTTP_BODY_REQUIRED_BUT_NOT_FOUND,
     /**
      * Do not change LMDB values as they map directly to LMDB return codes
      * See: http://www.lmdb.tech/doc/group__errors.html
@@ -169,6 +172,13 @@ class Error
      * @return
      */
     size_t line() const;
+
+    /**
+     * Provides the error as a JSON object
+     *
+     * @param writer
+     */
+    JSON_TO_FUNC(toJSON);
 
     /**
      * Returns the error message of the instance

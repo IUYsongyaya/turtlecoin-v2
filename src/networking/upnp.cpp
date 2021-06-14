@@ -6,7 +6,6 @@
 
 #include <miniupnpc.h>
 #include <upnpcommands.h>
-#include <utility>
 
 namespace Networking
 {
@@ -21,13 +20,20 @@ namespace Networking
     {
         int result;
 
-        m_device_list = upnpDiscover(m_timeout, nullptr, nullptr, 0, (m_v6) ? 1 : 0, 2, &result);
+        UPNPDev *device_list = upnpDiscover(m_timeout, nullptr, nullptr, 0, (m_v6) ? 1 : 0, 2, &result);
+
+        if (device_list == nullptr || result != 0)
+        {
+            freeUPNPDevlist(device_list);
+
+            return;
+        }
 
         char lan_address[64] = {0};
 
-        result = UPNP_GetValidIGD(m_device_list, &m_gateway_urls, &m_upnp_data, lan_address, sizeof(lan_address));
+        result = UPNP_GetValidIGD(device_list, &m_gateway_urls, &m_upnp_data, lan_address, sizeof(lan_address));
 
-        freeUPNPDevlist(m_device_list);
+        freeUPNPDevlist(device_list);
 
         if (result != 1)
         {

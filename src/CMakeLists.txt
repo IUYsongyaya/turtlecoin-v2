@@ -1,8 +1,9 @@
+include_directories(${CMAKE_SOURCE_DIR}/external/cpphttplib)
+
 add_subdirectory(common)
 add_subdirectory(core)
 add_subdirectory(database)
 add_subdirectory(errors)
-add_subdirectory(http)
 add_subdirectory(logger)
 add_subdirectory(networking)
 add_subdirectory(node)
@@ -10,5 +11,6 @@ add_subdirectory(p2p)
 add_subdirectory(utilities)
 
 if(BUILD_UNIT_TESTS)
+    message(STATUS "Activating the build of Unit Tests")
     add_subdirectory(tests)
 endif()

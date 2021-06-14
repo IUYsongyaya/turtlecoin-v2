@@ -100,8 +100,6 @@ namespace Networking
 
         uint16_t m_port;
 
-        UPNPDev *m_device_list;
-
         UPNPUrls m_gateway_urls;
 
         IGDdatas m_upnp_data;

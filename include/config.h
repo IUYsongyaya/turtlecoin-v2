@@ -45,6 +45,13 @@ namespace Configuration
         const std::vector<std::string> SEED_NODES = {"127.0.0.2:12897"};
     } // namespace P2P
 
+    namespace API
+    {
+        const uint16_t DEFAULT_NODE_BIND_PORT = 12898;
+
+        const uint16_t DEFAULT_WALLET_BIND_PORT = 18070;
+    } // namespace API
+
     namespace Consensus
     {
         const size_t ELECTOR_TARGET_COUNT = 10;

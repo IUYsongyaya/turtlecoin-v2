@@ -1,4 +1,6 @@
 file(GLOB test_files "*.cpp")
+
+# Doing it in this way probably isn't the best way, but it does work
 foreach(test_file ${test_files})
     get_filename_component(TEST_NAME ${test_file} NAME_WE)
     get_filename_component(TEST_FILE ${test_file} NAME)
