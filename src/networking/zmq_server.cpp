@@ -19,7 +19,7 @@ namespace Networking
 
         m_socket.set(zmq::sockopt::router_mandatory, true);
 
-        m_socket.set(zmq::sockopt::ipv6, true);
+        m_socket.set(zmq::sockopt::ipv6, false);
 
         m_socket.set(zmq::sockopt::linger, 0);
 
@@ -33,7 +33,7 @@ namespace Networking
             stop();
         }
 
-        m_socket.close();
+        close();
     }
 
     void ZMQServer::add_connection(const crypto_hash_t &identity)
@@ -50,6 +50,8 @@ namespace Networking
     {
         try
         {
+            m_upnp_helper = std::make_unique<UPNP>(m_bind_port, Configuration::Version::PROJECT_NAME + ": 0MQ Server");
+
             m_socket.bind("tcp://*:" + std::to_string(m_bind_port));
 
             return MAKE_ERROR(SUCCESS);
@@ -62,6 +64,8 @@ namespace Networking
 
     void ZMQServer::close()
     {
+        m_upnp_helper.reset();
+
         return m_socket.close();
     }
 
@@ -85,6 +89,16 @@ namespace Networking
         {
             m_connections.erase(identity);
         }
+    }
+
+    std::string ZMQServer::external_address() const
+    {
+        if (!m_upnp_helper)
+        {
+            return std::string();
+        }
+
+        return m_upnp_helper->external_address();
     }
 
     crypto_hash_t ZMQServer::identity() const
@@ -134,6 +148,11 @@ namespace Networking
     ThreadSafeQueue<zmq_message_envelope_t> &ZMQServer::messages()
     {
         return m_incoming_msgs;
+    }
+
+    uint16_t ZMQServer::port() const
+    {
+        return m_bind_port;
     }
 
     void ZMQServer::outgoing_thread()
@@ -233,5 +252,15 @@ namespace Networking
 
             m_thread_incoming.join();
         }
+    }
+
+    bool ZMQServer::upnp_active() const
+    {
+        if (!m_upnp_helper)
+        {
+            return false;
+        }
+
+        return m_upnp_helper->active();
     }
 } // namespace Networking

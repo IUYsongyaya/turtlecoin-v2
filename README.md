@@ -1,15 +1,5 @@
 # v2
 
-## dependencies
-- cppcheck
-- clangtidy
-
-For example, on ubuntu/debian:
-
-```bash
-sudo apt install cppcheck clangtidy -y
-```
-
 ## compilation
 
 ```bash

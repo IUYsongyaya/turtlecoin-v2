@@ -38,6 +38,13 @@ int main(int argc, char **argv)
         }
     }
 
+    if (server.upnp_active())
+    {
+        std::cout << "External address: " << server.external_address() << ":" << std::to_string(server.port())
+                  << std::endl
+                  << std::endl;
+    }
+
     while (true)
     {
         while (!server.messages().empty())

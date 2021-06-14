@@ -22,3 +22,6 @@
 [submodule "external/cppzmq"]
 	path = external/cppzmq
 	url = https://github.com/turtlecoin/cppzmq
+[submodule "external/miniupnp"]
+	path = external/miniupnp
+	url = https://github.com/turtlecoin/miniupnp

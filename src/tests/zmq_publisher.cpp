@@ -34,6 +34,13 @@ int main(int argc, char **argv)
         exit(1);
     }
 
+    if (server.upnp_active())
+    {
+        std::cout << "External address: " << server.external_address() << ":" << std::to_string(server.port())
+                  << std::endl
+                  << std::endl;
+    }
+
     while (true)
     {
         const auto hash = Crypto::random_hash();

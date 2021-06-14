@@ -5,6 +5,8 @@
 #ifndef TURTLECOIN_NETWORKING_ZMQ_PUBLISHER_H
 #define TURTLECOIN_NETWORKING_ZMQ_PUBLISHER_H
 
+#include "upnp.h"
+
 #include <atomic>
 #include <config.h>
 #include <errors.h>
@@ -54,6 +56,20 @@ namespace Networking
         void close();
 
         /**
+         * Returns the external IP address for the service (if detected)
+         *
+         * @return
+         */
+        std::string external_address() const;
+
+        /**
+         * Returns the port of this server
+         *
+         * @return
+         */
+        uint16_t port() const;
+
+        /**
          * Returns whether the server is running or not
          *
          * @return
@@ -81,6 +97,13 @@ namespace Networking
          */
         void stop();
 
+        /**
+         * Returns whether UPnP is active for this instance
+         *
+         * @return
+         */
+        bool upnp_active() const;
+
       private:
         /**
          * The thread that writes to the ZMQ socket
@@ -98,6 +121,8 @@ namespace Networking
         std::thread m_thread_outgoing;
 
         ThreadSafeQueue<zmq_message_envelope_t> m_outgoing_msgs;
+
+        std::unique_ptr<UPNP> m_upnp_helper;
     };
 } // namespace Networking
 

@@ -16,7 +16,7 @@ namespace Networking
 
         m_socket.set(zmq::sockopt::routing_id, identity);
 
-        m_socket.set(zmq::sockopt::ipv6, true);
+        m_socket.set(zmq::sockopt::ipv6, false);
 
         m_socket.set(zmq::sockopt::linger, 0);
 
