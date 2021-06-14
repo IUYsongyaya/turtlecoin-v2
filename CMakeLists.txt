@@ -51,6 +51,12 @@ if(NOT MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -O3 -static-libstdc++ -static -Wuninitialized")
 endif()
 
+# makes the credits file includable in source code
+file(READ CREDITS credits_content)
+set(credits_delimiter "\"\"\"")
+set(credits_content "const auto program_credits = R\"${credits_delimiter}(\n${credits_content})${credits_delimiter}\";")
+file(WRITE include/credits.h "${credits_content}")
+
 add_subdirectory(${CMAKE_SOURCE_DIR}/external)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)

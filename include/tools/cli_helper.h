@@ -5,6 +5,8 @@
 #ifndef CLI_HEADER_H
 #define CLI_HEADER_H
 
+#include "../credits.h"
+
 #include <ascii.h>
 #include <config.h>
 #include <cxxopts.hpp>
@@ -49,6 +51,7 @@ static inline cxxopts::Options cli_setup_options(const std::string &path)
     // clang-format off
     options.add_options("")
         ("h,help", "Display this help message", cxxopts::value<bool>()->implicit_value("true"))
+        ("credits", "Display a full listing of the program credits", cxxopts::value<bool>()->implicit_value("true"))
         ("v,version", "Display the software version information", cxxopts::value<bool>()->implicit_value("true"));
     // clang-format on
 
@@ -69,6 +72,14 @@ static inline cxxopts::ParseResult cli_parse_options(int argc, char **argv, cxxo
         if (result.count("help") > 0)
         {
             std::cout << options.help({}) << std::endl;
+
+            exit(0);
+        }
+        else if (result.count("credits") > 0)
+        {
+            print_cli_header();
+
+            std::cout << program_credits << std::endl << std::endl;
 
             exit(0);
         }
