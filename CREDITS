@@ -13,6 +13,9 @@ cppzmq: Copyright (c) The cppzmq authors
 cxxfolders: Copyright (c) 2015 Poul Sander
 cxxopts: Copyright (c) 2014 Jarryd Beck
 RapidJSON: Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip.
+Base58: Copyright (c) 2009-2010 Satoshi Nakamoto
+        Copyright (c) 2014-2020 The Bitcoin Core Developers
+CNBase58: Copyright (c) 2011-2016 The Cryptonote Developers
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
