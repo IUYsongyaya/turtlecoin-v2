@@ -16,6 +16,11 @@ namespace Types::Network
             l_type = BaseTypes::NETWORK_PEER_EXCHANGE;
         }
 
+        packet_peer_exchange_t(const crypto_hash_t &peer_id, uint16_t peer_port): peer_id(peer_id), peer_port(peer_port)
+        {
+            l_type = BaseTypes::NETWORK_PEER_EXCHANGE;
+        }
+
         packet_peer_exchange_t(deserializer_t &reader)
         {
             deserialize(reader);
@@ -45,6 +50,10 @@ namespace Types::Network
 
             version = reader.varint<uint16_t>();
 
+            peer_id = reader.key<crypto_hash_t>();
+
+            peer_port = reader.varint<uint16_t>();
+
             const auto peer_count = reader.varint<uint64_t>();
 
             peers.clear();
@@ -67,6 +76,12 @@ namespace Types::Network
 
             LOAD_U32_FROM_JSON(version);
 
+            LOAD_KEY_FROM_JSON(peer_id);
+
+            JSON_MEMBER_OR_THROW("peer_port");
+
+            peer_port = static_cast<uint16_t>(get_json_uint32_t(j, "peer_port"));
+
             JSON_MEMBER_OR_THROW("peers");
 
             peers.clear();
@@ -83,7 +98,9 @@ namespace Types::Network
          */
         [[nodiscard]] crypto_hash_t hash() const override
         {
-            return serialize();
+            const auto data = serialize();
+
+            return Crypto::Hashing::sha3(data.data(), data.size());
         }
 
         void serialize(serializer_t &writer) const override
@@ -91,6 +108,10 @@ namespace Types::Network
             writer.varint(l_type);
 
             writer.varint(version);
+
+            writer.key(peer_id);
+
+            writer.varint(peer_port);
 
             writer.varint(peers.size());
 
@@ -123,6 +144,11 @@ namespace Types::Network
 
                 U32_TO_JSON(version);
 
+                KEY_TO_JSON(peer_id);
+
+                writer.Key("peer_port");
+                writer.Uint(peer_port);
+
                 writer.Key("peers");
                 writer.StartArray();
                 {
@@ -148,6 +174,8 @@ namespace Types::Network
             return l_type;
         }
 
+        crypto_hash_t peer_id;
+        uint16_t peer_port = 0;
         std::vector<network_peer_t> peers;
     };
 } // namespace Types::Network
@@ -156,9 +184,11 @@ namespace std
 {
     inline ostream &operator<<(ostream &os, const Types::Network::packet_peer_exchange_t &value)
     {
-        os << "Handshake Packet [" << value.size() << " bytes]" << std::endl
+        os << "Peer Exchange Packet [" << value.size() << " bytes]" << std::endl
            << "\tType: " << std::to_string(value.type()) << std::endl
            << "\tVersion: " << std::to_string(value.version) << std::endl
+           << "\tPeer ID: " << value.peer_id << std::endl
+           << "\tPeer Port: " << std::to_string(value.peer_port) << std::endl
            << "\tPeers: " << std::endl;
 
         for (const auto &peer : value.peers)

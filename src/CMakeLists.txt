@@ -1,5 +1,3 @@
-include_directories(${CMAKE_SOURCE_DIR}/external/cpphttplib)
-
 add_subdirectory(common)
 add_subdirectory(core)
 add_subdirectory(database)

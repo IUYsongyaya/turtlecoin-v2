@@ -51,6 +51,10 @@ namespace Configuration
 
     namespace P2P
     {
+        const size_t MAXIMUM_PEERS_EXCHANGED = 200;
+
+        const uint64_t PEER_PRUNE_TIME = 86400; // 1 day
+
         const uint16_t DEFAULT_BIND_PORT = 12897;
 
         const std::vector<SeedNode> SEED_NODES = {{"127.0.0.2", 12897}};

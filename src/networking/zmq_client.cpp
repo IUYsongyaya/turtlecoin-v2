@@ -14,15 +14,13 @@ namespace Networking
 
         m_socket = zmq::socket_t(m_context, zmq::socket_type::dealer);
 
-        m_monitor.init(m_socket, "inproc://monitor-" + m_identity.to_string(), ZMQ_EVENT_ALL);
-
-        m_monitor.start();
+        m_monitor.start(m_socket, ZMQ_EVENT_ALL);
 
         m_socket.set(zmq::sockopt::connect_timeout, timeout);
 
         m_socket.set(zmq::sockopt::routing_id, identity);
 
-        m_socket.set(zmq::sockopt::ipv6, false);
+        m_socket.set(zmq::sockopt::ipv6, true);
 
         m_socket.set(zmq::sockopt::linger, 0);
 
@@ -50,11 +48,14 @@ namespace Networking
     {
         try
         {
+            std::unique_lock lock(m_connecting);
+
             m_socket.connect("tcp://" + host + ":" + std::to_string(port));
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(m_timeout));
+            const auto timeout = m_monitor.cv_connected.wait_for(
+                lock, std::chrono::milliseconds(Configuration::DEFAULT_ZMQ_CONNECTION_TIMEOUT));
 
-            if (m_monitor.connected().empty())
+            if (timeout == std::cv_status::timeout)
             {
                 return MAKE_ERROR_MSG(
                     ZMQ_CLIENT_CONNECT_FAILURE, "Could not connect to " + host + ":" + std::to_string(port));

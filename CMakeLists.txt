@@ -62,5 +62,7 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/external)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/cxxopts/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/cppzmq)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/cpphttplib)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/ipv6-parse/include)
 
 add_subdirectory(src)

@@ -7,41 +7,61 @@
 
 using namespace Types;
 
-template<typename T> static inline void check_json_serialization(const T &value, const std::string &name = "")
+template<typename T> static inline void check_json_serialization(const T &value, const std::string &name = "Unknown")
 {
-    std::cout << "Checking [" << name << "] JSON serialization: ";
+    std::cout << "Checking [" << name << "] JSON serialization: " << std::flush;
 
-    JSON_INIT_BUFFER(buffer, writer);
+    std::string temp;
 
-    value.toJSON(writer);
-
-    JSON_DUMP_BUFFER(buffer, encoded);
-
-    STR_TO_JSON(encoded, json_document);
-
-    const auto check_value = T(json_document);
-
-    if (value.hash() != check_value.hash())
+    try
     {
+        JSON_INIT_BUFFER(buffer, writer);
+
+        value.toJSON(writer);
+
+        JSON_DUMP_BUFFER(buffer, encoded);
+
+        temp = encoded;
+
+        STR_TO_JSON(encoded, json_document);
+
+        const auto check_value = T(json_document);
+
+        if (value.hash() != check_value.hash())
+        {
+            std::cout << "Failed" << std::endl;
+
+            std::cout << value << std::endl << std::endl;
+
+            std::cout << check_value << std::endl << std::endl;
+
+            std::cout << encoded << std::endl;
+
+            exit(1);
+        }
+        else
+        {
+            std::cout << "Passed" << std::endl;
+        }
+    }
+    catch (const std::invalid_argument &e)
+    {
+        std::cout << std::endl << std::endl;
+
         std::cout << "Failed" << std::endl;
 
-        std::cout << value << std::endl << std::endl;
+        std::cout << temp << std::endl;
 
-        std::cout << check_value << std::endl << std::endl;
-
-        std::cout << encoded << std::endl;
+        std::cout << e.what() << std::endl;
 
         exit(1);
     }
-    else
-    {
-        std::cout << "Passed" << std::endl;
-    }
 }
 
-template<typename T> static inline void check_binary_json_serialization(const T &value, const std::string &name = "")
+template<typename T>
+static inline void check_binary_json_serialization(const T &value, const std::string &name = "Unknown")
 {
-    std::cout << "Checking [" << name << "] binary serialization: ";
+    std::cout << "Checking [" << name << "] binary serialization: " << std::flush;
 
     const auto encoded = value.serialize();
 
@@ -208,6 +228,20 @@ int main(int argc, char **argv)
         auto structure = Network::network_peer_t();
 
         check_binary_json_serialization(structure, "network_peer_t");
+    }
+
+    // IP Address
+    {
+        auto structure = ip_address_t("255.255.255.255");
+
+        check_binary_json_serialization(structure, "ip_address_t[v4]");
+    }
+
+    // IP Address
+    {
+        auto structure = ip_address_t("1234:1234:1234:1234:1234:1234:1234:1234");
+
+        check_binary_json_serialization(structure, "ip_address_t[v6]");
     }
 
     std::cout << std::endl;

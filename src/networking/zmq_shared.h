@@ -6,6 +6,8 @@
 #define TURTLECOIN_NETWORKING_ZMQ_SHARED_H
 
 #include <atomic>
+#include <condition_variable>
+#include <crypto.h>
 #include <iostream>
 #include <mutex>
 #include <set>
@@ -36,6 +38,8 @@ namespace Networking
             m_delayed_peers.erase(addr);
 
             m_retried_peers.erase(addr);
+
+            cv_connected.notify_all();
         }
 
         void on_event_connect_delayed(const zmq_event_t &event, const char *addr) override
@@ -79,7 +83,6 @@ namespace Networking
             m_connected_peers.erase(addr);
         }
 
-
         void on_event_disconnected(const zmq_event_t &event, const char *addr) override
         {
             std::scoped_lock lock(m_mutex);
@@ -87,6 +90,11 @@ namespace Networking
             m_connected_peers.erase(addr);
         }
 
+        /**
+         * Returns the connections (outgoing or incoming) currently associated with the socket
+         *
+         * @return
+         */
         std::set<std::string> connected() const
         {
             std::scoped_lock lock(m_mutex);
@@ -94,6 +102,11 @@ namespace Networking
             return m_connected_peers;
         }
 
+        /**
+         * Returns the outgoing connections that are currently in a delayed state
+         *
+         * @return
+         */
         std::set<std::string> delayed() const
         {
             std::scoped_lock lock(m_mutex);
@@ -101,21 +114,21 @@ namespace Networking
             return m_delayed_peers;
         }
 
-        void join()
-        {
-            m_running = false;
-
-            if (m_poller.joinable())
-            {
-                m_poller.join();
-            }
-        }
-
-        bool listening()
+        /**
+         * Returns whether the socket is in a listening state
+         *
+         * @return
+         */
+        bool listening() const
         {
             return m_listening;
         }
 
+        /**
+         * Returns the outgoing connections that are currently being retried by the socket
+         *
+         * @return
+         */
         std::set<std::string> retried() const
         {
             std::scoped_lock lock(m_mutex);
@@ -123,12 +136,38 @@ namespace Networking
             return m_retried_peers;
         }
 
-        void start()
+        /**
+         * Returns whether the monitor is currently running
+         *
+         * @return
+         */
+        bool running() const
         {
-            m_running = true;
-
-            m_poller = std::thread(&zmq_connection_monitor::listener, this);
+            return m_running;
         }
+
+        /**
+         * Starts the monitor on the given socket
+         *
+         * @param socket
+         * @param addr
+         * @param events
+         */
+        void start(zmq::socket_t &socket, int events = ZMQ_EVENT_ALL)
+        {
+            if (!m_running)
+            {
+                const auto guid = Crypto::random_hash();
+
+                init(socket, "inproc://monitor-" + guid.to_string(), events);
+
+                m_running = true;
+
+                m_poller = std::thread(&zmq_connection_monitor::listener, this);
+            }
+        }
+
+        std::condition_variable cv_connected;
 
       private:
         void listener()

@@ -27,9 +27,16 @@ namespace Types::Network
 
         zmq_message_envelope_t(const std::vector<uint8_t> &payload): payload(payload) {}
 
+        template<typename T> zmq_message_envelope_t(const T &payload): payload(payload.serialize()) {}
+
         zmq_message_envelope_t(const crypto_hash_t &to, const crypto_hash_t &from): to(to), from(from) {}
 
         zmq_message_envelope_t(const crypto_hash_t &to, const std::vector<uint8_t> &payload): to(to), payload(payload)
+        {
+        }
+
+        template<typename T>
+        zmq_message_envelope_t(const crypto_hash_t &to, const T &payload): to(to), payload(payload.serialize())
         {
         }
 

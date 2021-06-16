@@ -67,7 +67,9 @@ namespace Types::Staking
          */
         [[nodiscard]] crypto_hash_t hash() const override
         {
-            return serialize();
+            const auto data = serialize();
+
+            return Crypto::Hashing::sha3(data.data(), data.size());
         }
 
         crypto_hash_t id() const

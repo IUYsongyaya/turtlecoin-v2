@@ -16,6 +16,11 @@ namespace Types::Network
             l_type = BaseTypes::NETWORK_KEEPALIVE;
         }
 
+        packet_keepalive_t(const crypto_hash_t &peer_id): peer_id(peer_id)
+        {
+            l_type = BaseTypes::NETWORK_KEEPALIVE;
+        }
+
         packet_keepalive_t(deserializer_t &reader)
         {
             deserialize(reader);
@@ -44,6 +49,8 @@ namespace Types::Network
             l_type = reader.varint<uint16_t>();
 
             version = reader.varint<uint16_t>();
+
+            peer_id = reader.key<crypto_hash_t>();
         }
 
         JSON_FROM_FUNC(fromJSON) override
@@ -55,6 +62,8 @@ namespace Types::Network
             l_type = get_json_uint32_t(j, "type");
 
             LOAD_U32_FROM_JSON(version);
+
+            LOAD_KEY_FROM_JSON(peer_id);
         }
 
         /**
@@ -63,7 +72,9 @@ namespace Types::Network
          */
         [[nodiscard]] crypto_hash_t hash() const override
         {
-            return serialize();
+            const auto data = serialize();
+
+            return Crypto::Hashing::sha3(data.data(), data.size());
         }
 
         void serialize(serializer_t &writer) const override
@@ -71,6 +82,8 @@ namespace Types::Network
             writer.varint(l_type);
 
             writer.varint(version);
+
+            writer.key(peer_id);
         }
 
         [[nodiscard]] std::vector<uint8_t> serialize() const override
@@ -95,6 +108,8 @@ namespace Types::Network
                 writer.Uint(l_type);
 
                 U32_TO_JSON(version);
+
+                KEY_TO_JSON(peer_id);
             }
             writer.EndObject();
         }
@@ -110,6 +125,8 @@ namespace Types::Network
         {
             return l_type;
         }
+
+        crypto_hash_t peer_id;
     };
 } // namespace Types::Network
 
@@ -119,7 +136,8 @@ namespace std
     {
         os << "Keepalive Packet [" << value.size() << " bytes]" << std::endl
            << "\tType: " << std::to_string(value.type()) << std::endl
-           << "\tVersion: " << std::to_string(value.version) << std::endl;
+           << "\tVersion: " << std::to_string(value.version) << std::endl
+           << "\tPeer ID: " << value.peer_id << std::endl;
 
         return os;
     }

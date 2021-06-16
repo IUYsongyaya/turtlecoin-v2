@@ -15,15 +15,13 @@ namespace Networking
 
         m_socket = zmq::socket_t(m_context, zmq::socket_type::router);
 
-        m_monitor.init(m_socket, "inproc://monitor-" + m_identity.to_string(), ZMQ_EVENT_ALL);
-
-        m_monitor.start();
+        m_monitor.start(m_socket, ZMQ_EVENT_ALL);
 
         m_socket.set(zmq::sockopt::routing_id, identity);
 
         m_socket.set(zmq::sockopt::router_mandatory, true);
 
-        m_socket.set(zmq::sockopt::ipv6, false);
+        m_socket.set(zmq::sockopt::ipv6, true);
 
         m_socket.set(zmq::sockopt::linger, 0);
     }
@@ -61,19 +59,13 @@ namespace Networking
     {
         try
         {
-            m_upnp_helper = std::make_unique<UPNP>(m_bind_port, Configuration::Version::PROJECT_NAME + ": 0MQ Server");
-
             m_socket.bind("tcp://*:" + std::to_string(m_bind_port));
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(Configuration::DEFAULT_ZMQ_CONNECTION_TIMEOUT));
-
-            if (!m_monitor.listening())
-            {
-                return MAKE_ERROR_MSG(ZMQ_SERVER_BIND_FAILURE, "Could not bind to socket in time");
-            }
 
             if (!m_running)
             {
+                m_upnp_helper =
+                    std::make_unique<UPNP>(m_bind_port, Configuration::Version::PROJECT_NAME + ": 0MQ Server");
+
                 m_running = true;
 
                 m_thread_incoming = std::thread(&ZMQServer::incoming_thread, this);

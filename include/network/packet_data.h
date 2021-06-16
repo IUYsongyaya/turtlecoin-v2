@@ -79,7 +79,9 @@ namespace Types::Network
          */
         [[nodiscard]] crypto_hash_t hash() const override
         {
-            return serialize();
+            const auto data = serialize();
+
+            return Crypto::Hashing::sha3(data.data(), data.size());
         }
 
         void serialize(serializer_t &writer) const override
@@ -150,7 +152,7 @@ namespace std
 {
     inline ostream &operator<<(ostream &os, const Types::Network::packet_data_t &value)
     {
-        os << "Handshake Packet [" << value.size() << " bytes]" << std::endl
+        os << "Data Packet [" << value.size() << " bytes]" << std::endl
            << "\tType: " << std::to_string(value.type()) << std::endl
            << "\tVersion: " << std::to_string(value.version) << std::endl
            << "\tNetwork ID: " << Crypto::StringTools::to_hex(value.network_id.data(), value.network_id.size())

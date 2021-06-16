@@ -12,6 +12,8 @@ cpp-httplib: Copyright (c) 2017 yhirose
 cppzmq: Copyright (c) The cppzmq authors
 cxxfolders: Copyright (c) 2015 Poul Sander
 cxxopts: Copyright (c) 2014 Jarryd Beck
+ipv6-parse: Copyright (c) 2017-2020 jacobrepp@gmail.com
+            Copyright (c) 2020, The TurtleCoin Developers
 RapidJSON: Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip.
 Base58: Copyright (c) 2009-2010 Satoshi Nakamoto
         Copyright (c) 2014-2020 The Bitcoin Core Developers

@@ -55,11 +55,6 @@ namespace Networking
         Error bind();
 
         /**
-         * Closes the socket (unbinds it from the interfaces and IP addresses)
-         */
-        void close();
-
-        /**
          * Returns the number of connections to the instance
          *
          * @return

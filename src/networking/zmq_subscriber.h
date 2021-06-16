@@ -115,6 +115,8 @@ namespace Networking
 
         int m_timeout;
 
+        std::mutex m_connecting;
+
         zmq::context_t m_context;
 
         std::atomic<bool> m_running;

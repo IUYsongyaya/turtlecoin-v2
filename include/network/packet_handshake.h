@@ -16,6 +16,11 @@ namespace Types::Network
             l_type = BaseTypes::NETWORK_HANDSHAKE;
         }
 
+        packet_handshake_t(const crypto_hash_t &peer_id, uint16_t peer_port): peer_id(peer_id), peer_port(peer_port)
+        {
+            l_type = BaseTypes::NETWORK_HANDSHAKE;
+        }
+
         packet_handshake_t(deserializer_t &reader)
         {
             deserialize(reader);
@@ -93,7 +98,9 @@ namespace Types::Network
          */
         [[nodiscard]] crypto_hash_t hash() const override
         {
-            return serialize();
+            const auto data = serialize();
+
+            return Crypto::Hashing::sha3(data.data(), data.size());
         }
 
         void serialize(serializer_t &writer) const override
