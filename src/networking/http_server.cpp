@@ -9,40 +9,44 @@ namespace Networking
     HTTPServer::HTTPServer(std::string cors_domain): m_cors_domain(std::move(cors_domain)), m_port(0)
     {
         // auto set proper security headers
-        set_post_routing_handler([this](const auto &req, auto &res) {
-            res.set_header("Access-Control-Allow-Origin", m_cors_domain);
+        set_post_routing_handler(
+            [this](const auto &req, auto &res)
+            {
+                res.set_header("Access-Control-Allow-Origin", m_cors_domain);
 
-            res.set_header("X-Requested-With", "*");
+                res.set_header("X-Requested-With", "*");
 
-            res.set_header(
-                "Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, User-Agent");
+                res.set_header(
+                    "Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, User-Agent");
 
-            res.set_header("Access-Control-Allow-Methods", "GET, DELETE, HEAD, POST, PUT, PATCH, OPTIONS");
+                res.set_header("Access-Control-Allow-Methods", "GET, DELETE, HEAD, POST, PUT, PATCH, OPTIONS");
 
-            res.set_header("Referrer-Policy", "no-referrer");
+                res.set_header("Referrer-Policy", "no-referrer");
 
-            res.set_header("Content-Security-Policy", "default-src 'none'");
+                res.set_header("Content-Security-Policy", "default-src 'none'");
 
-            res.set_header(
-                "Feature-Policy",
-                "geolocation none;midi none;notifications none;push none;sync-xhr none;microphone none;camera "
-                "none;magnetometer none;gyroscope none;speaker self;vibrate none;fullscreen self;payment none;");
+                res.set_header(
+                    "Feature-Policy",
+                    "geolocation none;midi none;notifications none;push none;sync-xhr none;microphone none;camera "
+                    "none;magnetometer none;gyroscope none;speaker self;vibrate none;fullscreen self;payment none;");
 
-            res.set_header(
-                "Permissions-Policy",
-                "geolocation=(), midi=(), notifications=(), push=(), sync-xhr=(), microphone=(), camera=(), "
-                "magnetometer=(), gyroscope=(), speaker=(self), vibrate=(), fullscreen=(self), payment=()");
+                res.set_header(
+                    "Permissions-Policy",
+                    "geolocation=(), midi=(), notifications=(), push=(), sync-xhr=(), microphone=(), camera=(), "
+                    "magnetometer=(), gyroscope=(), speaker=(self), vibrate=(), fullscreen=(self), payment=()");
 
-            res.set_header("X-Frame-Options", "SAMEORIGIN");
+                res.set_header("X-Frame-Options", "SAMEORIGIN");
 
-            res.set_header("X-Content-Type-Options", "nosniff");
-        });
+                res.set_header("X-Content-Type-Options", "nosniff");
+            });
 
-        set_exception_handler([](const auto &request, auto &response, const std::exception &e) {
-            response.status = 500;
+        set_exception_handler(
+            [](const auto &request, auto &response, const std::exception &e)
+            {
+                response.status = 500;
 
-            response.set_content("500 Internal Server Error", "text/plain");
-        });
+                response.set_content("500 Internal Server Error", "text/plain");
+            });
     }
 
     HTTPServer::~HTTPServer()

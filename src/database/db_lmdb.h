@@ -69,7 +69,7 @@ namespace Database
 
         ~LMDB();
 
-        operator MDB_env * &();
+        operator MDB_env *&();
 
         /**
          * Closes the environment
@@ -388,6 +388,34 @@ namespace Database
         template<typename KeyType> std::tuple<Error, std::vector<uint8_t>> get(const KeyType &key);
 
         /**
+         * Simplifies retrieval of all keys and values in the database
+         *
+         * WARNING: Very likely slow with large key sets
+         *
+         * @tparam KeyType
+         * @tparam ValueType
+         * @return
+         */
+        template<typename KeyType, typename ValueType> std::vector<ValueType> get_all()
+        {
+            std::vector<ValueType> results;
+
+            const auto keys = list_keys<KeyType>();
+
+            for (const auto &key : keys)
+            {
+                const auto [error, value] = get<KeyType, ValueType>(key);
+
+                if (!error)
+                {
+                    results.push_back(value);
+                }
+            }
+
+            return results;
+        }
+
+        /**
          * Retrieves the database flags
          *
          * @return
@@ -505,7 +533,7 @@ namespace Database
 
         ~LMDBTransaction();
 
-        operator MDB_txn * &();
+        operator MDB_txn *&();
 
         /**
          * Aborts the currently open transaction
@@ -832,7 +860,7 @@ namespace Database
 
         ~LMDBCursor();
 
-        operator MDB_cursor * &();
+        operator MDB_cursor *&();
 
         /**
          * Return count of duplicates for current key.

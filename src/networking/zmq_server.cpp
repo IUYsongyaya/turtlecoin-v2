@@ -15,6 +15,10 @@ namespace Networking
 
         m_socket = zmq::socket_t(m_context, zmq::socket_type::router);
 
+        m_monitor.init(m_socket, "inproc://monitor-" + m_identity.to_string(), ZMQ_EVENT_ALL);
+
+        m_monitor.start();
+
         m_socket.set(zmq::sockopt::routing_id, identity);
 
         m_socket.set(zmq::sockopt::router_mandatory, true);
@@ -22,18 +26,25 @@ namespace Networking
         m_socket.set(zmq::sockopt::ipv6, false);
 
         m_socket.set(zmq::sockopt::linger, 0);
-
-        start();
     }
 
     ZMQServer::~ZMQServer()
     {
-        if (m_running)
+        m_running = false;
+
+        if (m_thread_outgoing.joinable())
         {
-            stop();
+            m_thread_outgoing.join();
         }
 
-        close();
+        if (m_thread_incoming.joinable())
+        {
+            m_thread_incoming.join();
+        }
+
+        m_upnp_helper.reset();
+
+        m_socket.close();
     }
 
     void ZMQServer::add_connection(const crypto_hash_t &identity)
@@ -54,19 +65,28 @@ namespace Networking
 
             m_socket.bind("tcp://*:" + std::to_string(m_bind_port));
 
+            std::this_thread::sleep_for(std::chrono::milliseconds(Configuration::DEFAULT_ZMQ_CONNECTION_TIMEOUT));
+
+            if (!m_monitor.listening())
+            {
+                return MAKE_ERROR_MSG(ZMQ_SERVER_BIND_FAILURE, "Could not bind to socket in time");
+            }
+
+            if (!m_running)
+            {
+                m_running = true;
+
+                m_thread_incoming = std::thread(&ZMQServer::incoming_thread, this);
+
+                m_thread_outgoing = std::thread(&ZMQServer::outgoing_thread, this);
+            }
+
             return MAKE_ERROR(SUCCESS);
         }
         catch (const zmq::error_t &e)
         {
             return MAKE_ERROR_MSG(ZMQ_SERVER_BIND_FAILURE, e.what());
         }
-    }
-
-    void ZMQServer::close()
-    {
-        m_upnp_helper.reset();
-
-        return m_socket.close();
     }
 
     size_t ZMQServer::connections() const
@@ -112,7 +132,7 @@ namespace Networking
         {
             try
             {
-                zmq::multipart_t messages(m_socket);
+                zmq::multipart_t messages(m_socket, ZMQ_DONTWAIT);
 
                 // we expect exactly two message parts and the second part should not be empty
                 if (messages.size() == 2 && !messages.back().empty())
@@ -225,38 +245,6 @@ namespace Networking
         if (!message.payload.empty() && m_running)
         {
             m_outgoing_msgs.push(message);
-        }
-    }
-
-    void ZMQServer::start()
-    {
-        if (m_running)
-        {
-            return;
-        }
-
-        m_running = true;
-
-        m_thread_incoming = std::thread(&ZMQServer::incoming_thread, this);
-
-        m_thread_outgoing = std::thread(&ZMQServer::outgoing_thread, this);
-    }
-
-    void ZMQServer::stop()
-    {
-        if (m_running)
-        {
-            m_running = false;
-
-            if (m_thread_outgoing.joinable())
-            {
-                m_thread_outgoing.join();
-            }
-
-            if (m_thread_incoming.joinable())
-            {
-                m_thread_incoming.join();
-            }
         }
     }
 

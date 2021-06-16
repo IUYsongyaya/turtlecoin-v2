@@ -8,6 +8,14 @@
 #include <crypto.h>
 #include <cstdint>
 
+struct SeedNode
+{
+    SeedNode(const std::string &host, const uint16_t &port): host(host), port(port) {}
+
+    std::string host;
+    uint16_t port;
+};
+
 namespace Configuration
 {
     namespace Version
@@ -27,6 +35,9 @@ namespace Configuration
         const size_t BUILD = 0;
     } // namespace Version
 
+    // time expressed in milliseconds
+    const int DEFAULT_ZMQ_CONNECTION_TIMEOUT = 2000;
+
     const uint64_t GENESIS_BLOCK_TIMESTAMP = 1634788800;
 
     const uint64_t PUBLIC_ADDRESS_PREFIX = 0x6bb3b1d;
@@ -42,7 +53,7 @@ namespace Configuration
     {
         const uint16_t DEFAULT_BIND_PORT = 12897;
 
-        const std::vector<std::string> SEED_NODES = {"127.0.0.2:12897"};
+        const std::vector<SeedNode> SEED_NODES = {{"127.0.0.2", 12897}};
     } // namespace P2P
 
     namespace API

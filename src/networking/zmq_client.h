@@ -5,6 +5,8 @@
 #ifndef TURTLECOIN_NETWORKING_ZMQ_CLIENT_H
 #define TURTLECOIN_NETWORKING_ZMQ_CLIENT_H
 
+#include "zmq_shared.h"
+
 #include <atomic>
 #include <config.h>
 #include <errors.h>
@@ -33,19 +35,16 @@ namespace Networking
     {
       public:
         /**
-         * Creates a new instance and auto-starts the threads
+         * Creates a new instance
+         *
+         * @param timeout in milliseconds
          */
-        ZMQClient();
+        ZMQClient(int timeout = Configuration::DEFAULT_ZMQ_CONNECTION_TIMEOUT);
 
         /**
          * Destroying the instance auto-stops the threads and closes the socket
          */
         ~ZMQClient();
-
-        /**
-         * Closes the socket
-         */
-        void close();
 
         /**
          * Connects the client to the specified host and port
@@ -57,6 +56,13 @@ namespace Networking
          * @return
          */
         Error connect(const std::string &host, const uint16_t &port = Configuration::P2P::DEFAULT_BIND_PORT);
+
+        /**
+         * Returns if the client is connected
+         *
+         * @return
+         */
+        bool connected() const;
 
         /**
          * Returns the identity of the client that is used in the message envelopes
@@ -88,20 +94,6 @@ namespace Networking
          */
         void send(const zmq_message_envelope_t &message);
 
-        /**
-         * Starts the client
-         *
-         * NOTE: this does not connect the client to anything, it only starts
-         * the reading and writing threads
-         *
-         */
-        void start();
-
-        /**
-         * Stops the client
-         */
-        void stop();
-
       private:
         /**
          * The thread that reads from the ZMQ socket
@@ -112,6 +104,8 @@ namespace Networking
          * The thread that writes to the ZMQ socket
          */
         void outgoing_thread();
+
+        int m_timeout;
 
         zmq::context_t m_context;
 
@@ -124,6 +118,8 @@ namespace Networking
         crypto_hash_t m_identity;
 
         ThreadSafeQueue<zmq_message_envelope_t> m_incoming_msgs, m_outgoing_msgs;
+
+        zmq_connection_monitor m_monitor;
     };
 } // namespace Networking
 

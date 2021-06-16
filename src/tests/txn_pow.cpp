@@ -20,7 +20,8 @@ int main(int argc, char **argv)
     for (size_t i = 0; i < Configuration::Transaction::Fees::MAXIMUM_POW_ZEROS; ++i)
     {
         benchmark(
-            [&i]() {
+            [&i]()
+            {
                 Types::Blockchain::uncommited_normal_transaction_t tx;
 
                 tx.tx_public_key = Crypto::random_point();

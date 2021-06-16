@@ -8,23 +8,31 @@ namespace Networking
 {
     ZMQPublisher::ZMQPublisher(const uint16_t &bind_port): m_bind_port(bind_port), m_running(false)
     {
+        const auto identity = Crypto::random_hash();
+
         m_socket = zmq::socket_t(m_context, zmq::socket_type::pub);
+
+        m_monitor.init(m_socket, "inproc://monitor-" + identity.to_string(), ZMQ_EVENT_ALL);
+
+        m_monitor.start();
 
         m_socket.set(zmq::sockopt::ipv6, false);
 
         m_socket.set(zmq::sockopt::linger, 0);
-
-        start();
     }
 
     ZMQPublisher::~ZMQPublisher()
     {
-        if (m_running)
+        m_running = false;
+
+        if (m_thread_outgoing.joinable())
         {
-            stop();
+            m_thread_outgoing.join();
         }
 
-        close();
+        m_upnp_helper.reset();
+
+        m_socket.close();
     }
 
     Error ZMQPublisher::bind()
@@ -36,19 +44,26 @@ namespace Networking
 
             m_socket.bind("tcp://*:" + std::to_string(m_bind_port));
 
+            std::this_thread::sleep_for(std::chrono::milliseconds(Configuration::DEFAULT_ZMQ_CONNECTION_TIMEOUT));
+
+            if (!m_monitor.listening())
+            {
+                return MAKE_ERROR_MSG(ZMQ_SERVER_BIND_FAILURE, "Could not bind to socket in time");
+            }
+
+            if (!m_running)
+            {
+                m_running = true;
+
+                m_thread_outgoing = std::thread(&ZMQPublisher::outgoing_thread, this);
+            }
+
             return MAKE_ERROR(SUCCESS);
         }
         catch (const zmq::error_t &e)
         {
             return MAKE_ERROR_MSG(ZMQ_SERVER_BIND_FAILURE, e.what());
         }
-    }
-
-    void ZMQPublisher::close()
-    {
-        m_upnp_helper.reset();
-
-        return m_socket.close();
     }
 
     std::string ZMQPublisher::external_address() const
@@ -112,31 +127,6 @@ namespace Networking
         if (!message.payload.empty() && m_running)
         {
             m_outgoing_msgs.push(message);
-        }
-    }
-
-    void ZMQPublisher::start()
-    {
-        if (m_running)
-        {
-            return;
-        }
-
-        m_running = true;
-
-        m_thread_outgoing = std::thread(&ZMQPublisher::outgoing_thread, this);
-    }
-
-    void ZMQPublisher::stop()
-    {
-        if (m_running)
-        {
-            m_running = false;
-
-            if (m_thread_outgoing.joinable())
-            {
-                m_thread_outgoing.join();
-            }
         }
     }
 

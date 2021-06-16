@@ -5,6 +5,8 @@
 #ifndef TURTLECOIN_NETWORKING_ZMQ_SUBSCRIBER_H
 #define TURTLECOIN_NETWORKING_ZMQ_SUBSCRIBER_H
 
+#include "zmq_shared.h"
+
 #include <atomic>
 #include <config.h>
 #include <errors.h>
@@ -31,19 +33,16 @@ namespace Networking
     {
       public:
         /**
-         * Creates a new instance and auto-starts the thread
+         * Creates a new instance
+         *
+         * @param timeout in milliseconds
          */
-        ZMQSubscriber();
+        ZMQSubscriber(int timeout = Configuration::DEFAULT_ZMQ_CONNECTION_TIMEOUT);
 
         /**
          * Destroying the instance auto-stops the threads and closes the socket
          */
         ~ZMQSubscriber();
-
-        /**
-         * Closes the socket
-         */
-        void close();
 
         /**
          * Connects the subscriber to the specified host and port
@@ -55,6 +54,13 @@ namespace Networking
          * @return
          */
         Error connect(const std::string &host, const uint16_t &port = Configuration::Notifier::DEFAULT_BIND_PORT);
+
+        /**
+         * Returns if the client is connected
+         *
+         * @return
+         */
+        bool connected() const;
 
         /**
          * Disconnects the subscriber from the specified host and port
@@ -88,20 +94,6 @@ namespace Networking
         bool running() const;
 
         /**
-         * Starts the subscriber
-         *
-         * NOTE: This does not connect the subscriber to anything, it only starts
-         * the reading thread
-         *
-         */
-        void start();
-
-        /**
-         * Stops the subscriber
-         */
-        void stop();
-
-        /**
          * Subscribe to messages of the specified subject
          *
          * @param subject
@@ -121,6 +113,8 @@ namespace Networking
          */
         void incoming_thread();
 
+        int m_timeout;
+
         zmq::context_t m_context;
 
         std::atomic<bool> m_running;
@@ -132,6 +126,8 @@ namespace Networking
         std::thread m_thread_incoming;
 
         ThreadSafeQueue<zmq_message_envelope_t> m_incoming_msgs;
+
+        zmq_connection_monitor m_monitor;
     };
 } // namespace Networking
 

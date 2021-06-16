@@ -470,7 +470,8 @@ namespace Core
          */
         {
             auto error = std::visit(
-                [this, &db_tx, &txn_hash](auto &&arg) {
+                [this, &db_tx, &txn_hash](auto &&arg)
+                {
                     using T = std::decay_t<decltype(arg)>;
 
                     {
@@ -522,7 +523,8 @@ namespace Core
          */
         {
             auto error = std::visit(
-                [this, &count, &db_tx](auto &&arg) {
+                [this, &count, &db_tx](auto &&arg)
+                {
                     using T = std::decay_t<decltype(arg)>;
 
                     // handle the different types of transactions

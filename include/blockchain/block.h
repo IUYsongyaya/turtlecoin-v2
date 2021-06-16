@@ -256,7 +256,8 @@ namespace Types::Blockchain
         [[nodiscard]] bool is_genesis() const
         {
             return std::visit(
-                [](auto &&arg) {
+                [](auto &&arg)
+                {
                     using T = std::decay_t<decltype(arg)>;
 
                     if constexpr (std::is_same_v<T, genesis_transaction_t>)
@@ -478,7 +479,8 @@ namespace Types::Blockchain
         [[nodiscard]] bool validate_construction() const
         {
             if (!std::visit(
-                    [](auto &&arg) {
+                    [](auto &&arg)
+                    {
                         using T = std::decay_t<decltype(arg)>;
 
                         if constexpr (std::is_same_v<T, Blockchain::genesis_transaction_t>)

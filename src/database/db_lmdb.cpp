@@ -66,7 +66,7 @@ namespace Database
         close();
     }
 
-    LMDB::operator MDB_env * &()
+    LMDB::operator MDB_env *&()
     {
         if (!m_env)
         {
@@ -504,7 +504,7 @@ namespace Database
         abort();
     }
 
-    LMDBTransaction::operator MDB_txn * &()
+    LMDBTransaction::operator MDB_txn *&()
     {
         return *m_txn;
     }
@@ -655,7 +655,7 @@ namespace Database
         mdb_cursor_close(m_cursor);
     }
 
-    LMDBCursor::operator MDB_cursor * &()
+    LMDBCursor::operator MDB_cursor *&()
     {
         return m_cursor;
     }

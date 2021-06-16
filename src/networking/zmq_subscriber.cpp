@@ -8,42 +8,53 @@
 
 namespace Networking
 {
-    ZMQSubscriber::ZMQSubscriber(): m_identity(Crypto::random_hash()), m_running(false)
+    ZMQSubscriber::ZMQSubscriber(int timeout): m_identity(Crypto::random_hash()), m_running(false), m_timeout(timeout)
     {
         m_socket = zmq::socket_t(m_context, zmq::socket_type::sub);
+
+        m_monitor.init(m_socket, "inproc://monitor-" + m_identity.to_string(), ZMQ_EVENT_ALL);
+
+        m_monitor.start();
+
+        m_socket.set(zmq::sockopt::connect_timeout, timeout);
 
         m_socket.set(zmq::sockopt::ipv6, false);
 
         m_socket.set(zmq::sockopt::linger, 0);
-
-        start();
     }
 
     ZMQSubscriber::~ZMQSubscriber()
     {
-        if (m_running)
+        m_running = false;
+
+        if (m_thread_incoming.joinable())
         {
-            stop();
+            m_thread_incoming.join();
         }
 
         m_socket.close();
     }
 
-    void ZMQSubscriber::close()
-    {
-        return m_socket.close();
-    }
-
     Error ZMQSubscriber::connect(const std::string &host, const uint16_t &port)
     {
-        if (!m_running)
-        {
-            return MAKE_ERROR_MSG(ZMQ_CLIENT_CONNECT_FAILURE, "Client not running.");
-        }
-
         try
         {
             m_socket.connect("tcp://" + host + ":" + std::to_string(port));
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(m_timeout));
+
+            if (m_monitor.connected().empty())
+            {
+                return MAKE_ERROR_MSG(
+                    ZMQ_CLIENT_CONNECT_FAILURE, "Could not connect to " + host + ":" + std::to_string(port));
+            }
+
+            if (!m_running)
+            {
+                m_running = true;
+
+                m_thread_incoming = std::thread(&ZMQSubscriber::incoming_thread, this);
+            }
 
             return MAKE_ERROR(SUCCESS);
         }
@@ -51,6 +62,11 @@ namespace Networking
         {
             return MAKE_ERROR_MSG(ZMQ_CLIENT_CONNECT_FAILURE, e.what());
         }
+    }
+
+    bool ZMQSubscriber::connected() const
+    {
+        return !m_monitor.connected().empty();
     }
 
     void ZMQSubscriber::disconnect(const std::string &host, const uint16_t &port)
@@ -76,7 +92,7 @@ namespace Networking
         {
             try
             {
-                zmq::multipart_t messages(m_socket);
+                zmq::multipart_t messages(m_socket, ZMQ_DONTWAIT);
 
                 // we expect exactly two message parts and the second part should not be empty
                 if (messages.size() == 2 && !messages.back().empty())
@@ -117,31 +133,6 @@ namespace Networking
     bool ZMQSubscriber::running() const
     {
         return m_running;
-    }
-
-    void ZMQSubscriber::start()
-    {
-        if (m_running)
-        {
-            return;
-        }
-
-        m_running = true;
-
-        m_thread_incoming = std::thread(&ZMQSubscriber::incoming_thread, this);
-    }
-
-    void ZMQSubscriber::stop()
-    {
-        if (m_running)
-        {
-            m_running = false;
-
-            if (m_thread_incoming.joinable())
-            {
-                m_thread_incoming.join();
-            }
-        }
     }
 
     void ZMQSubscriber::subscribe(const crypto_hash_t &subject)

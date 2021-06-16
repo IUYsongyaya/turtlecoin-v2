@@ -28,17 +28,20 @@ int main(int argc, char **argv)
 
     auto server = std::make_shared<HTTPServer>();
 
-    server->Get("/", [](const auto &request, auto &response) {
-        auto sig = crypto_clsag_signature_t();
+    server->Get(
+        "/",
+        [](const auto &request, auto &response)
+        {
+            auto sig = crypto_clsag_signature_t();
 
-        JSON_INIT_BUFFER(buffer, writer);
+            JSON_INIT_BUFFER(buffer, writer);
 
-        sig.toJSON(writer);
+            sig.toJSON(writer);
 
-        JSON_DUMP_BUFFER(buffer, result);
+            JSON_DUMP_BUFFER(buffer, result);
 
-        return response.set_content(result, "application/json");
-    });
+            return response.set_content(result, "application/json");
+        });
 
     std::cout << "Binding server to: *:" << std::to_string(server_port) << "..." << std::endl << std::endl;
 

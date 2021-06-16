@@ -6,6 +6,7 @@
 #define TURTLECOIN_NETWORKING_ZMQ_SERVER_H
 
 #include "upnp.h"
+#include "zmq_shared.h"
 
 #include <atomic>
 #include <config.h>
@@ -34,8 +35,7 @@ namespace Networking
     {
       public:
         /**
-         * Creates a new instance and sets it up to bind to the specified port and
-         * auto-starts the threads
+         * Creates a new instance and sets it up to bind to the specified port
          *
          * @param bind_port
          */
@@ -112,21 +112,6 @@ namespace Networking
         void send(const zmq_message_envelope_t &message);
 
         /**
-         * Starts the server
-         *
-         * NOTE: This does not bind the server to anything, it only starts
-         * the reading and writing threads
-         *
-         * @return
-         */
-        void start();
-
-        /**
-         * Stops the server
-         */
-        void stop();
-
-        /**
          * Returns whether UPnP is active for this instance
          *
          * @return
@@ -184,6 +169,8 @@ namespace Networking
         ThreadSafeQueue<zmq_message_envelope_t> m_incoming_msgs, m_outgoing_msgs;
 
         std::unique_ptr<UPNP> m_upnp_helper;
+
+        zmq_connection_monitor m_monitor;
     };
 } // namespace Networking
 
