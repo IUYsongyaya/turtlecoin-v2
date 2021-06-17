@@ -8,10 +8,6 @@
 #include <crypto.h>
 #include <zmq.hpp>
 
-#ifndef THREAD_SLEEP
-#define THREAD_SLEEP(ms) std::this_thread::sleep_for(std::chrono::milliseconds(ms))
-#endif
-
 #define ZMQ_GETS(payload, property) std::string((payload).gets(property))
 #define ZMQ_MSG_TO_VECTOR(message) \
     std::vector<uint8_t>((message).data<uint8_t>(), (message).data<uint8_t>() + (message).size())

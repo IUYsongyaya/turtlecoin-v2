@@ -4,6 +4,9 @@
 
 #include "peer_database.h"
 
+#include <algorithm>
+#include <random>
+
 // static entry that we can use to lookup our own peer id in the database
 static const auto PEER_ID_IDENTIFIER =
     crypto_hash_t("5440dd9b6683e3b2b0805eec3514ff3e23b7edea1bf29b434cd7a8447687650d");
@@ -16,6 +19,10 @@ namespace P2P
 
         m_database = m_env->open_database("peerlist");
 
+        /**
+         * try to retrieve our already generated peer id from the database
+         * otherwise generate a new one and stick it in the database
+         */
         auto info = m_env->open_database("local");
 
         const auto [error, value] = info->get<crypto_hash_t, crypto_hash_t>(PEER_ID_IDENTIFIER);
@@ -36,7 +43,7 @@ namespace P2P
     {
         if (entry.peer_id == m_peer_id)
         {
-            return MAKE_ERROR_MSG(GENERIC_FAILURE, "We do not add ourselves to the peer list.");
+            return MAKE_ERROR_MSG(GENERIC_FAILURE, "Error adding self to peer database.");
         }
 
         const auto prune_time = (time(nullptr)) - Configuration::P2P::PEER_PRUNE_TIME;
@@ -46,27 +53,44 @@ namespace P2P
             return MAKE_ERROR_MSG(GENERIC_FAILURE, "Peer last seen too far in the past.");
         }
 
+        std::scoped_lock lock(m_mutex);
+
         return m_database->put(entry.peer_id, entry.serialize());
     }
 
     size_t PeerDB::count() const
     {
+        std::scoped_lock lock(m_mutex);
+
         return m_database->count();
     }
 
     Error PeerDB::del(const network_peer_t &entry)
     {
+        std::scoped_lock lock(m_mutex);
+
         return m_database->del(entry.peer_id);
     }
 
     Error PeerDB::del(const crypto_hash_t &peer_id)
     {
+        std::scoped_lock lock(m_mutex);
+
         return m_database->del(peer_id);
     }
 
     bool PeerDB::exists(const crypto_hash_t &peer_id)
     {
+        std::scoped_lock lock(m_mutex);
+
         return m_database->exists(peer_id);
+    }
+
+    std::tuple<Error, network_peer_t> PeerDB::get(const crypto_hash_t &peer_id)
+    {
+        std::scoped_lock lock(m_mutex);
+
+        return m_database->get<crypto_hash_t, network_peer_t>(peer_id);
     }
 
     crypto_hash_t PeerDB::peer_id() const
@@ -76,15 +100,31 @@ namespace P2P
 
     std::vector<crypto_hash_t> PeerDB::peer_ids() const
     {
+        std::scoped_lock lock(m_mutex);
+
         return m_database->list_keys<crypto_hash_t>();
     }
 
-    std::vector<network_peer_t> PeerDB::peers() const
+    std::vector<network_peer_t> PeerDB::peers(size_t count) const
     {
-        return m_database->get_all<crypto_hash_t, network_peer_t>();
+        std::scoped_lock lock(m_mutex);
+
+        auto peers = m_database->get_all<crypto_hash_t, network_peer_t>();
+
+        const auto seed = std::chrono::system_clock::now().time_since_epoch().count();
+
+        // shuffle the peers around that we received using a random iterator
+        std::shuffle(peers.begin(), peers.end(), std::default_random_engine(seed));
+
+        if (count != 0 && peers.size() > count)
+        {
+            peers.resize(count);
+        }
+
+        return std::move(peers);
     }
 
-    Error PeerDB::prune()
+    void PeerDB::prune()
     {
         const auto all_peers = peers();
 
@@ -94,21 +134,15 @@ namespace P2P
         {
             if (peer.last_seen < prune_time)
             {
-                auto error = del(peer.hash());
-
-                if (error)
-                {
-                    return error;
-                }
+                // ignore the possible error returned here because we really don't care
+                del(peer.hash());
             }
         }
-
-        return MAKE_ERROR(SUCCESS);
     }
 
     Error PeerDB::touch(const crypto_hash_t &peer_id)
     {
-        auto [error_get, peer] = m_database->get<crypto_hash_t, network_peer_t>(peer_id);
+        auto [error_get, peer] = get(peer_id);
 
         if (error_get)
         {
@@ -117,6 +151,6 @@ namespace P2P
 
         peer.last_seen = time(nullptr);
 
-        return m_database->put(peer.peer_id, peer.serialize());
+        return add(peer);
     }
 } // namespace P2P

@@ -39,7 +39,7 @@ namespace Networking
          *
          * @param timeout in milliseconds
          */
-        ZMQClient(int timeout = Configuration::DEFAULT_ZMQ_CONNECTION_TIMEOUT);
+        ZMQClient(int timeout = Configuration::DEFAULT_CONNECTION_TIMEOUT);
 
         /**
          * Destroying the instance auto-stops the threads and closes the socket
@@ -107,7 +107,7 @@ namespace Networking
 
         int m_timeout;
 
-        std::mutex m_connecting;
+        mutable std::mutex m_connecting, m_socket_mutex;
 
         zmq::context_t m_context;
 

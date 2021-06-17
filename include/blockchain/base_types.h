@@ -5,6 +5,8 @@
 #ifndef TURTLECOIN_BLOCKCHAIN_BASE_TYPES_H
 #define TURTLECOIN_BLOCKCHAIN_BASE_TYPES_H
 
+#pragma warning(disable : 4250)
+
 #include "config.h"
 
 #include <crypto.h>

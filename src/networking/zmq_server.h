@@ -155,7 +155,7 @@ namespace Networking
 
         std::thread m_thread_incoming, m_thread_outgoing;
 
-        mutable std::mutex m_mutex;
+        mutable std::mutex m_socket_mutex, m_mutex;
 
         std::set<crypto_hash_t> m_connections;
 

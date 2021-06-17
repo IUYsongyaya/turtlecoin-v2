@@ -53,6 +53,6 @@ int main(int argc, char **argv)
 
         std::cout << "Sent >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << std::endl << msg << std::endl;
 
-        THREAD_SLEEP(2000);
+        THREAD_SLEEP_MS(2000);
     }
 }

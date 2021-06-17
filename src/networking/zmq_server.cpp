@@ -42,6 +42,8 @@ namespace Networking
 
         m_upnp_helper.reset();
 
+        std::scoped_lock lock(m_socket_mutex);
+
         m_socket.close();
     }
 
@@ -59,6 +61,8 @@ namespace Networking
     {
         try
         {
+            std::scoped_lock lock(m_socket_mutex);
+
             m_socket.bind("tcp://*:" + std::to_string(m_bind_port));
 
             if (!m_running)
@@ -124,6 +128,8 @@ namespace Networking
         {
             try
             {
+                std::scoped_lock lock(m_socket_mutex);
+
                 zmq::multipart_t messages(m_socket, ZMQ_DONTWAIT);
 
                 // we expect exactly two message parts and the second part should not be empty
@@ -153,7 +159,7 @@ namespace Networking
                 // TODO: we should do something
             }
 
-            THREAD_SLEEP(50);
+            THREAD_SLEEP();
         }
     }
 
@@ -198,6 +204,8 @@ namespace Networking
                         {
                             message.to = to;
 
+                            std::scoped_lock socket_lock(m_socket_mutex);
+
                             m_socket.send(message.to_msg(), zmq::send_flags::sndmore);
 
                             m_socket.send(message.payload_msg(), zmq::send_flags::dontwait);
@@ -212,6 +220,8 @@ namespace Networking
                 {
                     try
                     {
+                        std::scoped_lock socket_lock(m_socket_mutex);
+
                         m_socket.send(message.to_msg(), zmq::send_flags::sndmore);
 
                         m_socket.send(message.payload_msg(), zmq::send_flags::dontwait);
@@ -223,7 +233,7 @@ namespace Networking
                 }
             }
 
-            THREAD_SLEEP(50);
+            THREAD_SLEEP();
         }
     }
 

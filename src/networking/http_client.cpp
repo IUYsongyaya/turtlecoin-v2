@@ -11,7 +11,7 @@ namespace Networking
         const uint16_t &port,
         const bool &keepalive,
         const bool &ssl,
-        const std::chrono::milliseconds &timeout)
+        int timeout)
     {
         std::shared_ptr<httplib::Client> client;
 
@@ -28,7 +28,7 @@ namespace Networking
         }
 #endif
 
-        client->set_connection_timeout(timeout);
+        client->set_connection_timeout(std::chrono::milliseconds(timeout));
 
         client->set_keep_alive(keepalive);
 

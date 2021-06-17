@@ -53,8 +53,9 @@ endif()
 
 # makes the credits file includable in source code
 file(READ CREDITS credits_content)
-set(credits_delimiter "\"\"\"")
-set(credits_content "const auto program_credits = R\"${credits_delimiter}(\n${credits_content})${credits_delimiter}\";")
+string(REPLACE "\"" "\\\"" credits_content "${credits_content}")
+string(REPLACE "\n" "\\n\"\n\"" credits_content "${credits_content}")
+set(credits_content "const auto program_credits = \n\"${credits_content}\";")
 file(WRITE include/credits.h "${credits_content}")
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/external)

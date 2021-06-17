@@ -8,6 +8,7 @@
 #include "http_shared.h"
 
 #include <chrono>
+#include <config.h>
 #include <errors.h>
 #include <httplib.h>
 
@@ -33,7 +34,7 @@ namespace Networking
          * @param host
          * @param port
          * @param ssl
-         * @param timeout
+         * @param timeout in milliseconds
          * @return
          */
         static std::shared_ptr<httplib::Client> create_client(
@@ -41,7 +42,7 @@ namespace Networking
             const uint16_t &port,
             const bool &keepalive = true,
             const bool &ssl = false,
-            const std::chrono::milliseconds &timeout = std::chrono::milliseconds(2000));
+            int timeout = Configuration::DEFAULT_CONNECTION_TIMEOUT);
 
         /**
          * Parses the result body and returns the json document if it can be parsed

@@ -548,7 +548,7 @@ namespace Database
         Error commit();
 
         /**
-         * Opens a LMDB cursos within the transaction
+         * Opens a LMDB cursor within the transaction
          *
          * @return
          */
@@ -1110,7 +1110,7 @@ namespace Database
 
         std::shared_ptr<MDB_txn *> m_txn;
 
-        MDB_cursor *m_cursor;
+        MDB_cursor *m_cursor = nullptr;
 
         bool m_readonly;
     };
@@ -1203,8 +1203,6 @@ namespace Database
 
         auto cursor = txn->cursor();
 
-        auto db_cursor = *cursor;
-
         std::vector<KeyType> results;
 
         MDB_val key, value;
@@ -1213,7 +1211,7 @@ namespace Database
 
         auto last_key = std::string();
 
-        while (mdb_cursor_get(db_cursor, &key, &value, count ? MDB_NEXT : MDB_FIRST) == MDB_SUCCESS)
+        while (mdb_cursor_get(*cursor, &key, &value, count ? MDB_NEXT : MDB_FIRST) == MDB_SUCCESS)
         {
             const auto bytes = FROM_MDB_VAL(key);
 

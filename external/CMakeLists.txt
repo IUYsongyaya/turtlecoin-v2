@@ -1,6 +1,12 @@
 set(UPNPC_BUILD_STATIC ON CACHE BOOL "Build static library")
 set(UPNPC_BUILD_SHARED OFF CACHE BOOL "Build shared library")
 set(UPNPC_BUILD_TESTS OFF CACHE BOOL "Build test executables")
+set(WITH_TLS OFF CACHE BOOL "[ZMQ] Use TLS for WSS support")
+set(WITH_LIBSODIUM OFF CACHE BOOL "[ZMQ] Use libsodium intead of build-in tweetnacl")
+set(WITH_DOC OFF CACHE BOOL "[ZMQ] Build Reference Guide documentation(requires DocBook)")
+set(WITH_DOCS OFF CACHE BOOL "[ZMQ] Build html docs")
+set(BUILD_SHARED OFF CACHE BOOL "[ZMQ] Whether or not to build teh shared object")
+set(BUILD_TESTS OFF CACHE BOOL "[ZMQ] Whether or not to build tests")
 
 add_subdirectory(cppfs)
 add_subdirectory(crypto)

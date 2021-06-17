@@ -7,6 +7,15 @@
 
 #include <crypto.h>
 #include <cstdint>
+#include <thread>
+
+#ifndef THREAD_SLEEP
+#define THREAD_SLEEP() std::this_thread::sleep_for(std::chrono::milliseconds(Configuration::THREAD_POLLING_INTERVAL))
+#endif
+
+#ifndef THREAD_SLEEP_MS
+#define THREAD_SLEEP_MS(ms) std::this_thread::sleep_for(std::chrono::milliseconds(ms))
+#endif
 
 struct SeedNode
 {
@@ -35,14 +44,17 @@ namespace Configuration
         const size_t BUILD = 0;
     } // namespace Version
 
-    // time expressed in milliseconds
-    const int DEFAULT_ZMQ_CONNECTION_TIMEOUT = 2000;
+    /**
+     * defines how long the threads sleep between polling intervals
+     * the longer the interval, the slower data may be processed
+     */
+    const int THREAD_POLLING_INTERVAL = 50; // expressed in milliseconds
+
+    const int DEFAULT_CONNECTION_TIMEOUT = 2'000; // expressed in milliseconds
 
     const uint64_t GENESIS_BLOCK_TIMESTAMP = 1634788800;
 
     const uint64_t PUBLIC_ADDRESS_PREFIX = 0x6bb3b1d;
-
-    const size_t MINTED_MONEY_UNLOCK_WINDOW = 60;
 
     namespace Notifier
     {
@@ -51,13 +63,21 @@ namespace Configuration
 
     namespace P2P
     {
+        const size_t KEEPALIVE_INTERVAL = 30'000; // expressed in milliseconds
+
+        const size_t PEER_EXCHANGE_INTERVAL = 120'000; // expressed in milliseconds
+
+        const size_t CONNECTION_MANAGER_INTERVAL = 30'000; // expressed in milliseconds
+
         const size_t MAXIMUM_PEERS_EXCHANGED = 200;
 
-        const uint64_t PEER_PRUNE_TIME = 86400; // 1 day
+        const uint64_t PEER_PRUNE_TIME = 86'400; // 1 day
 
         const uint16_t DEFAULT_BIND_PORT = 12897;
 
         const std::vector<SeedNode> SEED_NODES = {{"127.0.0.2", 12897}};
+
+        const size_t DEFAULT_CONNECTION_COUNT = SEED_NODES.size() + 8;
     } // namespace P2P
 
     namespace API
@@ -158,9 +178,9 @@ namespace Configuration
          */
         namespace ProofOfWork
         {
-            const size_t ITERATIONS = 2048;
+            const size_t ITERATIONS = 2'048;
 
-            const size_t MEMORY = 1024; // 1MB
+            const size_t MEMORY = 1'024; // expressed in kilobytes (1MB)
 
             const size_t THREADS = 1;
         } // namespace ProofOfWork

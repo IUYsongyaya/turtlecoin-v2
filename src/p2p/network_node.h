@@ -41,6 +41,13 @@ namespace P2P
         crypto_hash_t peer_id() const;
 
         /**
+         * Returns the instance of the peer database
+         *
+         * @return
+         */
+        std::shared_ptr<PeerDB> peers() const;
+
+        /**
          * Returns if the P2P network node is running
          *
          * @return
@@ -84,6 +91,11 @@ namespace P2P
          * @return
          */
         Error connect(const std::string &host, const uint16_t &port);
+
+        /**
+         * The connection manager thread
+         */
+        void connection_manager();
 
         /**
          * Handles all incoming messages from both the server and the clients
@@ -181,11 +193,11 @@ namespace P2P
 
         std::vector<std::shared_ptr<Networking::ZMQClient>> m_clients;
 
-        std::set<crypto_hash_t> m_completed_handshake;
+        std::set<crypto_hash_t> m_completed_handshake, m_clients_connected;
 
-        std::thread m_poller_thread, m_keepalive_thread, m_peer_exchange_thread;
+        std::thread m_poller_thread, m_keepalive_thread, m_peer_exchange_thread, m_connection_manager_thread;
 
-        mutable std::mutex m_mutex, m_mutex2;
+        mutable std::mutex m_mutex_clients, m_mutex_handshake_completed;
     };
 } // namespace P2P
 

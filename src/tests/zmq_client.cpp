@@ -65,5 +65,7 @@ int main(int argc, char **argv)
 
             client.send(msg);
         }
+
+        THREAD_SLEEP();
     }
 }

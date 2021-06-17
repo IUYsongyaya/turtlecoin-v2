@@ -9,7 +9,6 @@
 [submodule "external/libzmq"]
 	path = external/libzmq
 	url = https://github.com/turtlecoin/libzmq.git
-	branch = v4.3.4
 [submodule "external/cxxfolders"]
 	path = external/cxxfolders
 	url = https://github.com/turtlecoin/cxxfolders

@@ -57,5 +57,7 @@ int main(int argc, char **argv)
 
             server.send(msg);
         }
+
+        THREAD_SLEEP();
     }
 }

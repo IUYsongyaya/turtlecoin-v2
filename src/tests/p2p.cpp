@@ -34,6 +34,14 @@ int main(int argc, char **argv)
 
     while (server.running())
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        std::cout << "Outgoing: " << server.outgoing_connections() << std::endl
+                  << "Incoming: " << server.incoming_connections() << std::endl
+                  << std::endl;
+
+        THREAD_SLEEP_MS(15000);
     }
+
+    std::cout << "Normal Exit" << std::endl;
+
+    return 0;
 }

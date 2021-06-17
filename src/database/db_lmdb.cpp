@@ -416,13 +416,11 @@ namespace Database
 
         auto cursor = txn->cursor();
 
-        auto db_cursor = *cursor;
-
         MDB_val key, value;
 
         size_t count = 0;
 
-        while (mdb_cursor_get(db_cursor, &key, &value, count ? MDB_NEXT : MDB_FIRST) == MDB_SUCCESS)
+        while (mdb_cursor_get(*cursor, &key, &value, count ? MDB_NEXT : MDB_FIRST) == MDB_SUCCESS)
         {
             count++;
         }
@@ -647,12 +645,14 @@ namespace Database
 
     LMDBCursor::~LMDBCursor()
     {
-        if (!m_cursor)
+        if (m_cursor == nullptr || !m_readonly)
         {
             return;
         }
 
         mdb_cursor_close(m_cursor);
+
+        m_cursor = nullptr;
     }
 
     LMDBCursor::operator MDB_cursor *&()
@@ -662,7 +662,7 @@ namespace Database
 
     std::tuple<Error, size_t> LMDBCursor::count()
     {
-        if (!m_cursor)
+        if (m_cursor == nullptr)
         {
             return {MAKE_ERROR_MSG(LMDB_ERROR, "Cursor does not exist"), 0};
         }
@@ -676,6 +676,11 @@ namespace Database
 
     Error LMDBCursor::del(int flags)
     {
+        if (m_cursor == nullptr)
+        {
+            return MAKE_ERROR_MSG(LMDB_ERROR, "Cursor does not exist");
+        }
+
         const auto result = mdb_cursor_del(m_cursor, flags);
 
         return MAKE_ERROR_MSG(result, MDB_STR_ERR(result));
@@ -683,6 +688,11 @@ namespace Database
 
     std::tuple<Error, std::vector<uint8_t>, std::vector<uint8_t>> LMDBCursor::get(const MDB_cursor_op &op)
     {
+        if (m_cursor == nullptr)
+        {
+            return {MAKE_ERROR_MSG(LMDB_ERROR, "Cursor does not exist"), {}, {}};
+        }
+
         MDB_val i_key, i_value;
 
         const auto result = mdb_cursor_get(m_cursor, &i_key, &i_value, op);
@@ -701,6 +711,11 @@ namespace Database
 
     std::tuple<Error, uint64_t, std::vector<uint8_t>> LMDBCursor::get(const uint64_t &key, const MDB_cursor_op &op)
     {
+        if (m_cursor == nullptr)
+        {
+            return {MAKE_ERROR_MSG(LMDB_ERROR, "Cursor does not exist"), 0, {}};
+        }
+
         MDB_val i_value;
 
         MDB_VAL_NUM(key, i_key);
@@ -725,7 +740,7 @@ namespace Database
 
     Error LMDBCursor::renew()
     {
-        if (!m_cursor || !m_readonly)
+        if (m_cursor == nullptr || !m_readonly)
         {
             return MAKE_ERROR_MSG(LMDB_ERROR, "Cursor does not exist or is read only.");
         }

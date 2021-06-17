@@ -30,6 +30,8 @@ namespace Networking
 
         m_upnp_helper.reset();
 
+        std::scoped_lock lock(m_socket_mutex);
+
         m_socket.close();
     }
 
@@ -37,6 +39,8 @@ namespace Networking
     {
         try
         {
+            std::scoped_lock lock(m_socket_mutex);
+
             m_socket.bind("tcp://*:" + std::to_string(m_bind_port));
 
             if (!m_running)
@@ -94,6 +98,8 @@ namespace Networking
 
                 try
                 {
+                    std::scoped_lock lock(m_socket_mutex);
+
                     m_socket.send(message.subject_msg(), zmq::send_flags::sndmore);
 
                     m_socket.send(message.payload_msg(), zmq::send_flags::dontwait);
@@ -104,7 +110,7 @@ namespace Networking
                 }
             }
 
-            THREAD_SLEEP(50);
+            THREAD_SLEEP();
         }
     }
 

@@ -30,6 +30,8 @@ namespace Networking
             m_thread_incoming.join();
         }
 
+        std::unique_lock lock(m_socket_mutex);
+
         m_socket.close();
     }
 
@@ -37,12 +39,12 @@ namespace Networking
     {
         try
         {
-            std::unique_lock lock(m_connecting);
+            std::unique_lock lock(m_socket_mutex);
 
             m_socket.connect("tcp://" + host + ":" + std::to_string(port));
 
             const auto timeout = m_monitor.cv_connected.wait_for(
-                lock, std::chrono::milliseconds(Configuration::DEFAULT_ZMQ_CONNECTION_TIMEOUT));
+                lock, std::chrono::milliseconds(Configuration::DEFAULT_CONNECTION_TIMEOUT));
 
             if (timeout == std::cv_status::timeout)
             {
@@ -74,6 +76,8 @@ namespace Networking
     {
         try
         {
+            std::unique_lock lock(m_socket_mutex);
+
             m_socket.disconnect("tcp://" + host + ":" + std::to_string(port));
         }
         catch (...)
@@ -93,6 +97,8 @@ namespace Networking
         {
             try
             {
+                std::unique_lock lock(m_socket_mutex);
+
                 zmq::multipart_t messages(m_socket, ZMQ_DONTWAIT);
 
                 // we expect exactly two message parts and the second part should not be empty
@@ -122,7 +128,7 @@ namespace Networking
                 // TODO: we should do something
             }
 
-            THREAD_SLEEP(50);
+            THREAD_SLEEP();
         }
     }
 

@@ -91,6 +91,8 @@ namespace Networking
          */
         void outgoing_thread();
 
+        mutable std::mutex m_socket_mutex;
+
         zmq::context_t m_context;
 
         uint16_t m_bind_port;

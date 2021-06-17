@@ -52,8 +52,8 @@ int main(int argc, char **argv)
             const auto msg = client.messages().pop();
 
             std::cout << "Recv >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << std::endl << msg << std::endl;
-
-            THREAD_SLEEP(50);
         }
+
+        THREAD_SLEEP();
     }
 }
