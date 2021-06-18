@@ -7,6 +7,7 @@ set(WITH_DOC OFF CACHE BOOL "[ZMQ] Build Reference Guide documentation(requires 
 set(WITH_DOCS OFF CACHE BOOL "[ZMQ] Build html docs")
 set(BUILD_SHARED OFF CACHE BOOL "[ZMQ] Whether or not to build teh shared object")
 set(BUILD_TESTS OFF CACHE BOOL "[ZMQ] Whether or not to build tests")
+set(BUILD_TEST OFF CACHE BOOL "Build external test")
 
 add_subdirectory(cppfs)
 add_subdirectory(crypto)

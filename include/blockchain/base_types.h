@@ -218,6 +218,13 @@ namespace BaseTypes
             commitment = reader.key<crypto_pedersen_commitment_t>();
         }
 
+        [[nodiscard]] crypto_hash_t hash() const
+        {
+            const auto data = serialize_output();
+
+            return Crypto::Hashing::sha3(data.data(), data.size());
+        }
+
         void serialize_output(serializer_t &writer) const
         {
             writer.key(public_ephemeral);

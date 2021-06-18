@@ -47,26 +47,6 @@ namespace Database
     class LMDB
     {
       public:
-        /**
-         * Constructs an new instance of the LMDB wrapper.
-         *
-         * DO NOT USE THIS METHOD: Please use the static method getInstance to ensure
-         * that an environment is only opened once in the entire process otherwise
-         * you will run into issues.
-         *
-         * @param path
-         * @param flags
-         * @param mode
-         * @param growth_factor in MB
-         * @param max_databases
-         */
-        LMDB(
-            const std::string &path,
-            int flags = 0,
-            int mode = 0600,
-            size_t growth_factor = 8,
-            unsigned int max_databases = 8);
-
         ~LMDB();
 
         operator MDB_env *&();
@@ -146,7 +126,7 @@ namespace Database
          */
         static std::shared_ptr<LMDB> getInstance(
             const std::string &path,
-            int flags = 0,
+            int flags = MDB_NOSUBDIR,
             int mode = 0600,
             size_t growth_factor = 8,
             unsigned int max_databases = 8);
@@ -194,7 +174,7 @@ namespace Database
          * @param flags
          * @return
          */
-        std::shared_ptr<LMDBDatabase> open_database(const std::string &name, int flags = MDB_CREATE);
+        std::shared_ptr<LMDBDatabase> open_database(const std::string &name, int flags = 0);
 
         /**
          * Returns the number of open R/W transactions in the environment
@@ -224,7 +204,7 @@ namespace Database
          * @param readonly
          * @return
          */
-        std::unique_ptr<LMDBTransaction> transaction(bool readonly = false);
+        std::unique_ptr<LMDBTransaction> transaction(bool readonly = false) const;
 
         /**
          * Registers a new transaction in the environment

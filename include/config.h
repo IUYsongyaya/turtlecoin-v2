@@ -45,16 +45,42 @@ namespace Configuration
     } // namespace Version
 
     /**
-     * defines how long the threads sleep between polling intervals
+     * Defines how long the threads sleep between polling intervals
      * the longer the interval, the slower data may be processed
+     *
+     * NOTE: This value is expressed in milliseconds
      */
-    const int THREAD_POLLING_INTERVAL = 50; // expressed in milliseconds
+    const int THREAD_POLLING_INTERVAL = 50; //
 
-    const int DEFAULT_CONNECTION_TIMEOUT = 2'000; // expressed in milliseconds
+    /**
+     * Defines how long we should wait for outbound connection attempts to
+     * complete whether they be via HTTP, ZMQ, or etc.
+     *
+     * NOTE: This value is expressed in milliseconds
+     */
+    const int DEFAULT_CONNECTION_TIMEOUT = 2'000;
 
+    /**
+     * This is the GENESIS block creation timestamp (seconds since UNIX epoch)
+     */
     const uint64_t GENESIS_BLOCK_TIMESTAMP = 1634788800;
 
+    /**
+     * Our public address prefix
+     */
     const uint64_t PUBLIC_ADDRESS_PREFIX = 0x6bb3b1d;
+
+    namespace ZMQ
+    {
+        /**
+         * The following keys must be set manually as all clients must have the server's
+         * public key to make a valid connection.
+         * See http://rfc.zeromq.org/spec:32 for more information on how the keys are encoded
+         */
+        const std::string SERVER_SECRET_KEY = "!EGQIc+DG97q$Y4DOY}.[8l!%dVf*-W{S.^.Gy&z";
+
+        const std::string SERVER_PUBLIC_KEY = "m/VCSdXIcy5zWa*L)0m+TF#9[SQ]Cf)*Hl@(fw^1";
+    } // namespace ZMQ
 
     namespace Notifier
     {
@@ -63,32 +89,72 @@ namespace Configuration
 
     namespace P2P
     {
+        /**
+         * Defines how often we send a keep alive packet on the P2P network
+         */
         const size_t KEEPALIVE_INTERVAL = 30'000; // expressed in milliseconds
 
+        /**
+         * Defines how often we send a peer exchange packet on the P2P network
+         * to discover new peers
+         */
         const size_t PEER_EXCHANGE_INTERVAL = 120'000; // expressed in milliseconds
 
+        /**
+         * Defines how often we check our current outgoing connection count
+         * and attempt new connections to make up the difference
+         */
         const size_t CONNECTION_MANAGER_INTERVAL = 30'000; // expressed in milliseconds
 
+        /**
+         * The maximum number of peers that we will send (or accept) in a handshake
+         * or peer exchange packet, if more than this are received, the packet is
+         * discarded as a protocol violation error
+         */
         const size_t MAXIMUM_PEERS_EXCHANGED = 200;
 
+        /**
+         * Peers in our peer database will be pruned from our database if the last
+         * seen time exceeds this value
+         */
         const uint64_t PEER_PRUNE_TIME = 86'400; // 1 day
 
+        /**
+         * Defines the default bind port for listening for P2P connections
+         */
         const uint16_t DEFAULT_BIND_PORT = 12897;
 
+        /**
+         * Defines the list of P2P bootstrap/seed nodes for which we will attempt
+         * to connect to if our peer list database is empty
+         */
         const std::vector<SeedNode> SEED_NODES = {{"127.0.0.2", 12897}};
 
+        /**
+         * Sets the default outbound connection count that we will try to maintain
+         */
         const size_t DEFAULT_CONNECTION_COUNT = SEED_NODES.size() + 8;
     } // namespace P2P
 
     namespace API
     {
+        /**
+         * Defines the default node bind port for listening for HTTP requests
+         */
         const uint16_t DEFAULT_NODE_BIND_PORT = 12898;
 
+        /**
+         * Defines the default wallet bind port for listening for HTTP requests
+         */
         const uint16_t DEFAULT_WALLET_BIND_PORT = 18070;
     } // namespace API
 
     namespace Consensus
     {
+        /**
+         * This defines the target number of electors we will select for each round as
+         * producers and validators
+         */
         const size_t ELECTOR_TARGET_COUNT = 10;
 
         /**
@@ -126,13 +192,34 @@ namespace Configuration
 
     namespace Transaction
     {
-        const size_t RING_SIZE = 512; // must be a power of 2
+        /**
+         * Defines the number of ring participants required when signing a
+         * transaction input
+         *
+         * NOTE: Must be a power of two (2)
+         */
+        const size_t RING_SIZE = 512;
 
+        /**
+         * The maximum number of inputs permitted in a single transaction
+         */
         const size_t MAXIMUM_INPUTS = 8;
 
+        /**
+         * The minimum number of outputs required in a single transaction
+         */
         const size_t MINIMUM_OUTPUTS = 2;
 
+        /**
+         * The maximum number of outputs permitted in a single transaction
+         */
         const size_t MAXIMUM_OUTPUTS = 8;
+
+        /**
+         * The maximum amount of data that can be stored in the extra field
+         * of a normal transaction
+         */
+        const size_t MAXIMUM_EXTRA_SIZE = 1'024;
 
         namespace Fees
         {

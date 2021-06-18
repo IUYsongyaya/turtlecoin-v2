@@ -17,6 +17,12 @@ namespace Networking
 
         m_monitor.start(m_socket, ZMQ_EVENT_ALL);
 
+        m_socket.set(zmq::sockopt::curve_secretkey, Configuration::ZMQ::SERVER_SECRET_KEY.c_str());
+
+        m_socket.set(zmq::sockopt::curve_server, true);
+
+        m_socket.set(zmq::sockopt::immediate, true);
+
         m_socket.set(zmq::sockopt::routing_id, identity);
 
         m_socket.set(zmq::sockopt::router_mandatory, true);

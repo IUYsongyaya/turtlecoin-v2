@@ -14,53 +14,6 @@ std::map<std::string, std::shared_ptr<Database::LMDB>> l_environments;
 
 namespace Database
 {
-    LMDB::LMDB(const std::string &path, int flags, int mode, size_t growth_factor, unsigned int max_databases):
-        m_growth_factor(growth_factor), m_env(nullptr), m_open_txns(0)
-    {
-        m_id = Crypto::Hashing::sha3(path.data(), path.size()).to_string();
-
-        auto dir = cppfs::fs::open(path);
-
-        if (!dir.isDirectory())
-        {
-            dir.createDirectory();
-        }
-
-        auto success = mdb_env_create(&m_env);
-
-        if (success != MDB_SUCCESS)
-        {
-            throw std::runtime_error("Could not create LMDB environment: " + MDB_STR_ERR(success));
-        }
-
-        success = mdb_env_set_mapsize(m_env, growth_factor * LMDB_SPACE_MULTIPLIER);
-
-        if (success != MDB_SUCCESS)
-        {
-            throw std::runtime_error("Could not allocate initial LMDB memory map: " + MDB_STR_ERR(success));
-        }
-
-        success = mdb_env_set_maxdbs(m_env, max_databases);
-
-        if (success != MDB_SUCCESS)
-        {
-            throw std::runtime_error("Could not set maximum number of LMDB named databases: " + MDB_STR_ERR(success));
-        }
-
-        /**
-         * A transaction and its cursors must only be used by a single thread, and a thread may only have a single
-         * write transaction at a time. If MDB_NOTLS is in use, this does not apply to read-only transactions.
-         */
-        success = mdb_env_open(m_env, path.c_str(), flags | MDB_NOTLS, mode);
-
-        if (success != MDB_SUCCESS)
-        {
-            mdb_env_close(m_env);
-
-            throw std::runtime_error("Could not open LMDB database file: " + path + ": " + MDB_STR_ERR(success));
-        }
-    }
-
     LMDB::~LMDB()
     {
         close();
@@ -81,7 +34,7 @@ namespace Database
         std::scoped_lock lock(m_mutex);
 
         {
-            const auto error = flush(true);
+            auto error = flush(true);
 
             if (error)
             {
@@ -217,7 +170,66 @@ namespace Database
             return l_environments.at(id);
         }
 
-        auto db = std::make_shared<LMDB>(path, flags, mode, growth_factor, max_databases);
+        auto db = std::make_shared<LMDB>();
+
+        db->m_growth_factor = growth_factor;
+
+        db->m_env = nullptr;
+
+        db->m_open_txns = 0;
+
+        db->m_id = id;
+
+        auto file = cppfs::fs::open(path);
+
+        if (flags & MDB_NOSUBDIR)
+        {
+            if (file.exists() && !file.isFile())
+            {
+                throw std::runtime_error("LMDB path must be a regular file.");
+            }
+        }
+        else
+        {
+            if (!file.isDirectory())
+            {
+                file.createDirectory();
+            }
+        }
+
+        auto success = mdb_env_create(&db->m_env);
+
+        if (success != MDB_SUCCESS)
+        {
+            throw std::runtime_error("Could not create LMDB environment: " + MDB_STR_ERR(success));
+        }
+
+        success = mdb_env_set_mapsize(db->m_env, growth_factor * LMDB_SPACE_MULTIPLIER);
+
+        if (success != MDB_SUCCESS)
+        {
+            throw std::runtime_error("Could not allocate initial LMDB memory map: " + MDB_STR_ERR(success));
+        }
+
+        success = mdb_env_set_maxdbs(db->m_env, max_databases);
+
+        if (success != MDB_SUCCESS)
+        {
+            throw std::runtime_error("Could not set maximum number of LMDB named databases: " + MDB_STR_ERR(success));
+        }
+
+        /**
+         * A transaction and its cursors must only be used by a single thread, and a thread may only have a single
+         * write transaction at a time. If MDB_NOTLS is in use, this does not apply to read-only transactions.
+         */
+        success = mdb_env_open(db->m_env, path.c_str(), flags | MDB_NOTLS, mode);
+
+        if (success != MDB_SUCCESS)
+        {
+            mdb_env_close(db->m_env);
+
+            throw std::runtime_error("Could not open LMDB database file: " + path + ": " + MDB_STR_ERR(success));
+        }
 
         l_environments.insert({id, db});
 
@@ -329,7 +341,7 @@ namespace Database
         return {MAKE_ERROR_MSG(result, MDB_STR_ERR(result)), stats};
     }
 
-    std::unique_ptr<LMDBTransaction> LMDB::transaction(bool readonly)
+    std::unique_ptr<LMDBTransaction> LMDB::transaction(bool readonly) const
     {
         auto instance = LMDB::get_instance(id());
 
@@ -382,7 +394,7 @@ namespace Database
 
         auto txn = std::make_unique<LMDBTransaction>(m_env, readonly);
 
-        auto success = mdb_dbi_open(*txn, name.empty() ? nullptr : name.c_str(), flags, &m_dbi);
+        auto success = mdb_dbi_open(*txn, name.empty() ? nullptr : name.c_str(), flags | MDB_CREATE, &m_dbi);
 
         if (success != MDB_SUCCESS)
         {

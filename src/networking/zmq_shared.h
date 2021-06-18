@@ -8,6 +8,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <crypto.h>
+#include <errors.h>
 #include <iostream>
 #include <mutex>
 #include <set>
@@ -16,135 +17,73 @@
 
 namespace Networking
 {
+    [[nodiscard]] std::tuple<Error, std::string, std::string> zmq_generate_keypair();
+
+    [[nodiscard]] crypto_hash_t zmq_host_port_hash(const std::string &host, const uint16_t &port);
+
+    [[nodiscard]] std::string zmq_sanitize_host(std::string host);
+
     class zmq_connection_monitor : public zmq::monitor_t
     {
       public:
-        ~zmq_connection_monitor()
-        {
-            m_running = false;
+        ~zmq_connection_monitor();
 
-            if (m_poller.joinable())
-            {
-                m_poller.join();
-            }
-        }
+        void on_event_connected(const zmq_event_t &event, const char *addr) override;
 
-        void on_event_connected(const zmq_event_t &event, const char *addr) override
-        {
-            std::scoped_lock lock(m_mutex);
+        void on_event_connect_delayed(const zmq_event_t &event, const char *addr) override;
 
-            m_connected_peers.insert(addr);
+        void on_event_connect_retried(const zmq_event_t &event, const char *addr) override;
 
-            m_delayed_peers.erase(addr);
+        void on_event_listening(const zmq_event_t &event, const char *addr) override;
 
-            m_retried_peers.erase(addr);
+        void on_event_accepted(const zmq_event_t &event, const char *addr) override;
 
-            cv_connected.notify_all();
-        }
+        void on_event_closed(const zmq_event_t &event, const char *addr) override;
 
-        void on_event_connect_delayed(const zmq_event_t &event, const char *addr) override
-        {
-            std::scoped_lock lock(m_mutex);
+        void on_event_disconnected(const zmq_event_t &event, const char *addr) override;
 
-            m_delayed_peers.insert(addr);
+        void on_event_handshake_succeeded(const zmq_event_t &event, const char *addr) override;
 
-            m_retried_peers.erase(addr);
+        void on_event_handshake_failed_auth(const zmq_event_t &event, const char *addr) override;
 
-            m_connected_peers.erase(addr);
-        }
+        void on_event_handshake_failed_protocol(const zmq_event_t &event, const char *addr) override;
 
-        void on_event_connect_retried(const zmq_event_t &event, const char *addr) override
-        {
-            std::scoped_lock lock(m_mutex);
-
-            m_retried_peers.insert(addr);
-
-            m_delayed_peers.erase(addr);
-
-            m_connected_peers.erase(addr);
-        }
-
-        void on_event_listening(const zmq_event_t &event, const char *addr) override
-        {
-            m_listening = true;
-        }
-
-        void on_event_accepted(const zmq_event_t &event, const char *addr) override
-        {
-            std::scoped_lock lock(m_mutex);
-
-            m_connected_peers.insert(addr);
-        }
-
-        void on_event_closed(const zmq_event_t &event, const char *addr) override
-        {
-            std::scoped_lock lock(m_mutex);
-
-            m_connected_peers.erase(addr);
-        }
-
-        void on_event_disconnected(const zmq_event_t &event, const char *addr) override
-        {
-            std::scoped_lock lock(m_mutex);
-
-            m_connected_peers.erase(addr);
-        }
+        void on_event_handshake_failed_no_detail(const zmq_event_t &event, const char *addr) override;
 
         /**
          * Returns the connections (outgoing or incoming) currently associated with the socket
          *
          * @return
          */
-        std::set<std::string> connected() const
-        {
-            std::scoped_lock lock(m_mutex);
-
-            return m_connected_peers;
-        }
+        std::set<std::string> connected() const;
 
         /**
          * Returns the outgoing connections that are currently in a delayed state
          *
          * @return
          */
-        std::set<std::string> delayed() const
-        {
-            std::scoped_lock lock(m_mutex);
-
-            return m_delayed_peers;
-        }
+        std::set<std::string> delayed() const;
 
         /**
          * Returns whether the socket is in a listening state
          *
          * @return
          */
-        bool listening() const
-        {
-            return m_listening;
-        }
+        bool listening() const;
 
         /**
          * Returns the outgoing connections that are currently being retried by the socket
          *
          * @return
          */
-        std::set<std::string> retried() const
-        {
-            std::scoped_lock lock(m_mutex);
-
-            return m_retried_peers;
-        }
+        std::set<std::string> retried() const;
 
         /**
          * Returns whether the monitor is currently running
          *
          * @return
          */
-        bool running() const
-        {
-            return m_running;
-        }
+        bool running() const;
 
         /**
          * Starts the monitor on the given socket
@@ -153,30 +92,12 @@ namespace Networking
          * @param addr
          * @param events
          */
-        void start(zmq::socket_t &socket, int events = ZMQ_EVENT_ALL)
-        {
-            if (!m_running)
-            {
-                const auto guid = Crypto::random_hash();
-
-                init(socket, "inproc://monitor-" + guid.to_string(), events);
-
-                m_running = true;
-
-                m_poller = std::thread(&zmq_connection_monitor::listener, this);
-            }
-        }
+        void start(zmq::socket_t &socket, int events = ZMQ_EVENT_ALL);
 
         std::condition_variable cv_connected;
 
       private:
-        void listener()
-        {
-            while (m_running)
-            {
-                this->check_event(100);
-            }
-        }
+        void listener();
 
         mutable std::mutex m_mutex;
 

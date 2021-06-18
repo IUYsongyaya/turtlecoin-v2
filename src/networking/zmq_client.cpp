@@ -16,7 +16,22 @@ namespace Networking
 
         m_monitor.start(m_socket, ZMQ_EVENT_ALL);
 
+        m_socket.set(zmq::sockopt::curve_serverkey, Configuration::ZMQ::SERVER_PUBLIC_KEY.c_str());
+
+        const auto [error, public_key, secret_key] = zmq_generate_keypair();
+
+        if (error)
+        {
+            throw std::runtime_error(error.to_string());
+        }
+
+        m_socket.set(zmq::sockopt::curve_publickey, public_key);
+
+        m_socket.set(zmq::sockopt::curve_secretkey, secret_key);
+
         m_socket.set(zmq::sockopt::connect_timeout, timeout);
+
+        m_socket.set(zmq::sockopt::immediate, true);
 
         m_socket.set(zmq::sockopt::routing_id, identity);
 

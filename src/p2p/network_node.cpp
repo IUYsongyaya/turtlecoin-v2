@@ -7,31 +7,6 @@
 using namespace BaseTypes;
 using namespace Types::Network;
 
-static inline std::string sanitize_host(std::string host)
-{
-    const auto token = std::string("::ffff:");
-
-    if (host.find(token) != std::string::npos)
-    {
-        host = host.substr(token.size());
-    }
-
-    return host;
-}
-
-static inline crypto_hash_t hash_host_port(const std::string &unsafe_host, const uint16_t &port)
-{
-    serializer_t writer;
-
-    const auto host = sanitize_host(unsafe_host);
-
-    writer.bytes(host.data(), host.size());
-
-    writer.varint(port);
-
-    return Crypto::Hashing::sha3(writer.data(), writer.size());
-}
-
 namespace P2P
 {
     NetworkNode::NetworkNode(const std::string &path, const uint16_t &bind_port): m_running(false)
@@ -90,9 +65,9 @@ namespace P2P
     {
         std::scoped_lock lock(m_mutex_clients);
 
-        const auto host = sanitize_host(unsafe_host);
+        const auto host = Networking::zmq_sanitize_host(unsafe_host);
 
-        const auto hash = hash_host_port(host, port);
+        const auto hash = Networking::zmq_host_port_hash(host, port);
 
         std::cout << "Attempting to connect to :" << host << ":" << port << "\t" << hash << std::endl;
 
@@ -197,6 +172,12 @@ namespace P2P
         if (from == m_server->identity() || packet.peer_id == m_peer_db->peer_id())
         {
             return;
+        }
+
+        if (packet.peers.size() > Configuration::P2P::MAXIMUM_PEERS_EXCHANGED)
+        {
+            throw std::runtime_error(
+                "Handshake contains more than the maximum number of peers accepted, protocol violation.");
         }
 
         std::cout << is_server << "\t" << packet << std::endl;
@@ -459,7 +440,11 @@ namespace P2P
                 }
             }
 
-            if (!connected_to_seed)
+            /**
+             * If we cannot connect to ANY seed node and our peer list database is empty
+             * then we need to fail out as we cannot connect to the peer to peer network
+             */
+            if (!connected_to_seed && m_peer_db->count() == 0)
             {
                 return MAKE_ERROR_MSG(GENERIC_FAILURE, "Could not connect to any seed nodes.");
             }
