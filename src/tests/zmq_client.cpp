@@ -25,21 +25,20 @@ int main(int argc, char **argv)
          cxxopts::value<uint16_t>(server_port)->default_value(std::to_string(server_port)));
     // clang-format on
 
-    auto cli = cli_parse_options(argc, argv, options);
+    auto [cli, log_level] = cli_parse_options(argc, argv, options);
 
-    auto client = ZMQClient();
+    auto logger = Logger::create_logger("./test-zmq-client.log", log_level);
 
-    std::cout << "Client Identity: " << client.identity() << std::endl << std::endl;
+    auto client = ZMQClient(logger);
 
-    std::cout << "Connecting to: " << server_host << ":" << std::to_string(server_port) << "..." << std::endl
-              << std::endl;
+    logger->info("ZMQ Client Identity: {}", client.identity().to_string());
 
     {
         const auto error = client.connect(server_host, server_port);
 
         if (error)
         {
-            std::cout << error << std::endl;
+            logger->error("ZMQ Client connection error: {}", error.to_string());
 
             exit(1);
         }

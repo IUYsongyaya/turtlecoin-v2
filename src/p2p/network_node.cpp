@@ -9,13 +9,14 @@ using namespace Types::Network;
 
 namespace P2P
 {
-    NetworkNode::NetworkNode(const std::string &path, const uint16_t &bind_port): m_running(false)
+    NetworkNode::NetworkNode(logger &logger, const std::string &path, const uint16_t &bind_port):
+        m_running(false), m_logger(logger)
     {
         m_peer_db = std::make_shared<PeerDB>(path);
 
         m_peer_db->prune();
 
-        m_server = std::make_shared<Networking::ZMQServer>(bind_port);
+        m_server = std::make_shared<Networking::ZMQServer>(m_logger, bind_port);
     }
 
     NetworkNode::~NetworkNode()
@@ -37,6 +38,11 @@ namespace P2P
         if (m_peer_exchange_thread.joinable())
         {
             m_peer_exchange_thread.join();
+        }
+
+        if (m_connection_manager_thread.joinable())
+        {
+            m_connection_manager_thread.join();
         }
     }
 
@@ -69,14 +75,14 @@ namespace P2P
 
         const auto hash = Networking::zmq_host_port_hash(host, port);
 
-        std::cout << "Attempting to connect to :" << host << ":" << port << "\t" << hash << std::endl;
+        m_logger->debug("Attempting connection to: {}:{} => {}", host, port, hash.to_string());
 
         if (m_clients_connected.find(hash) != m_clients_connected.end())
         {
             return MAKE_ERROR_MSG(GENERIC_FAILURE, "Already connected to specified host and port");
         }
 
-        auto client = std::make_shared<Networking::ZMQClient>();
+        auto client = std::make_shared<Networking::ZMQClient>(m_logger);
 
         auto error = client->connect(host, port);
 
@@ -120,7 +126,10 @@ namespace P2P
 
                         auto error = connect(peer.address.to_string(), peer.port);
 
-                        // TODO: do something with the error?
+                        if (error)
+                        {
+                            m_logger->debug("Error connecting to peer: {}", error.to_string());
+                        }
                     }
                 }
             }
@@ -153,7 +162,8 @@ namespace P2P
         }
         catch (const std::exception &e)
         {
-            // TODO: if we cannot parse the message, we need to disconnect whoever sent it SOMEHOW
+            // TODO: if we cannot handle the message, we need to disconnect whoever sent it SOMEHOW
+            m_logger->debug("Could not handle incoming P2P message: {}", e.what());
         }
     }
 
@@ -170,6 +180,12 @@ namespace P2P
 
         // we don't talk to ourselves
         if (from == m_server->identity() || packet.peer_id == m_peer_db->peer_id())
+        {
+            return;
+        }
+
+        // we don't talk to peers that are not speaking at least the minimum version
+        if (packet.version < Configuration::P2P::MINIMUM_VERSION)
         {
             return;
         }
@@ -229,6 +245,12 @@ namespace P2P
             return;
         }
 
+        // we don't talk to peers that are not speaking at least the minimum version
+        if (packet.version < Configuration::P2P::MINIMUM_VERSION)
+        {
+            return;
+        }
+
         std::cout << is_server << "\t" << from << std::endl << packet << std::endl;
     }
 
@@ -252,6 +274,12 @@ namespace P2P
 
         // we don't talk to ourselves
         if (from == m_server->identity() || packet.peer_id == m_peer_db->peer_id())
+        {
+            return;
+        }
+
+        // we don't talk to peers that are not speaking at least the minimum version
+        if (packet.version < Configuration::P2P::MINIMUM_VERSION)
         {
             return;
         }
@@ -280,6 +308,12 @@ namespace P2P
 
         // we don't talk to ourselves
         if (from == m_server->identity() || packet.peer_id == m_peer_db->peer_id())
+        {
+            return;
+        }
+
+        // we don't talk to peers that are not speaking at least the minimum version
+        if (packet.version < Configuration::P2P::MINIMUM_VERSION)
         {
             return;
         }
@@ -446,6 +480,13 @@ namespace P2P
              */
             if (!connected_to_seed && m_peer_db->count() == 0)
             {
+                m_running = false;
+
+                if (m_poller_thread.joinable())
+                {
+                    m_poller_thread.join();
+                }
+
                 return MAKE_ERROR_MSG(GENERIC_FAILURE, "Could not connect to any seed nodes.");
             }
 

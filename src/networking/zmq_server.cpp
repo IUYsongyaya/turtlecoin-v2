@@ -8,8 +8,8 @@
 
 namespace Networking
 {
-    ZMQServer::ZMQServer(const uint16_t &bind_port):
-        m_bind_port(bind_port), m_identity(Crypto::random_hash()), m_running(false)
+    ZMQServer::ZMQServer(logger &logger, const uint16_t &bind_port):
+        m_bind_port(bind_port), m_identity(Crypto::random_hash()), m_running(false), m_logger(logger)
     {
         const auto identity = zmq::buffer(m_identity.data(), m_identity.size());
 
@@ -34,6 +34,8 @@ namespace Networking
 
     ZMQServer::~ZMQServer()
     {
+        m_logger->info("Shutting down ZMQ Server on port {0}...", m_bind_port);
+
         m_running = false;
 
         if (m_thread_outgoing.joinable())
@@ -51,6 +53,8 @@ namespace Networking
         std::scoped_lock lock(m_socket_mutex);
 
         m_socket.close();
+
+        m_logger->info("ZMQ Server shutdown complete on port {0}", m_bind_port);
     }
 
     void ZMQServer::add_connection(const crypto_hash_t &identity)
@@ -67,14 +71,16 @@ namespace Networking
     {
         try
         {
+            m_logger->info("Attempting to bind ZMQ Server on *:{0}", m_bind_port);
+
             std::scoped_lock lock(m_socket_mutex);
 
             m_socket.bind("tcp://*:" + std::to_string(m_bind_port));
 
             if (!m_running)
             {
-                m_upnp_helper =
-                    std::make_unique<UPNP>(m_bind_port, Configuration::Version::PROJECT_NAME + ": 0MQ Server");
+                m_upnp_helper = std::make_unique<UPNP>(
+                    m_logger, m_bind_port, Configuration::Version::PROJECT_NAME + ": 0MQ Server");
 
                 m_running = true;
 
@@ -82,6 +88,8 @@ namespace Networking
 
                 m_thread_outgoing = std::thread(&ZMQServer::outgoing_thread, this);
             }
+
+            m_logger->info("ZMQ Server bound on *:{0}", m_bind_port);
 
             return MAKE_ERROR(SUCCESS);
         }
@@ -162,7 +170,7 @@ namespace Networking
             }
             catch (const zmq::error_t &e)
             {
-                // TODO: we should do something
+                m_logger->debug("Could not read incoming ZMQ message: {0}", e.what());
             }
 
             THREAD_SLEEP();

@@ -13,7 +13,7 @@ int main(int argc, char **argv)
 {
     auto options = cli_setup_options(argv);
 
-    auto cli = cli_parse_options(argc, argv, options);
+    auto [cli, log_level] = cli_parse_options(argc, argv, options);
 
     std::cout << "Wallet Address Encoding Check" << std::endl << std::endl;
 

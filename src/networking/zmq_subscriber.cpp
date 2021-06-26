@@ -8,7 +8,8 @@
 
 namespace Networking
 {
-    ZMQSubscriber::ZMQSubscriber(int timeout): m_identity(Crypto::random_hash()), m_running(false), m_timeout(timeout)
+    ZMQSubscriber::ZMQSubscriber(logger &logger, int timeout):
+        m_identity(Crypto::random_hash()), m_running(false), m_timeout(timeout), m_logger(logger)
     {
         m_socket = zmq::socket_t(m_context, zmq::socket_type::sub);
 
@@ -38,6 +39,8 @@ namespace Networking
 
     ZMQSubscriber::~ZMQSubscriber()
     {
+        m_logger->info("Shutting down ZMQ Subscriber...");
+
         m_running = false;
 
         if (m_thread_incoming.joinable())
@@ -48,12 +51,16 @@ namespace Networking
         std::unique_lock lock(m_socket_mutex);
 
         m_socket.close();
+
+        m_logger->info("ZMQ Subscriber shutdown complete");
     }
 
     Error ZMQSubscriber::connect(const std::string &host, const uint16_t &port)
     {
         try
         {
+            m_logger->info("Attempting to connect ZMQ Subscriber to {0}:{1}", host, port);
+
             std::unique_lock lock(m_socket_mutex);
 
             m_socket.connect("tcp://" + host + ":" + std::to_string(port));
@@ -73,6 +80,8 @@ namespace Networking
 
                 m_thread_incoming = std::thread(&ZMQSubscriber::incoming_thread, this);
             }
+
+            m_logger->info("Connected ZMQ Subscriber to {0}:{1}", host, port);
 
             return MAKE_ERROR(SUCCESS);
         }
@@ -140,7 +149,7 @@ namespace Networking
             }
             catch (const zmq::error_t &e)
             {
-                // TODO: we should do something
+                m_logger->debug("Could not read incoming ZMQ message: {0}", e.what());
             }
 
             THREAD_SLEEP();
@@ -162,6 +171,8 @@ namespace Networking
         const auto buf = zmq::buffer(subject.data(), subject.size());
 
         m_socket.set(zmq::sockopt::subscribe, buf);
+
+        m_logger->info("ZMQ Subscriber subject added: {0}", subject.to_string());
     }
 
     void ZMQSubscriber::unsubscribe(const crypto_hash_t &subject)
@@ -169,5 +180,7 @@ namespace Networking
         const auto buf = zmq::buffer(subject.data(), subject.size());
 
         m_socket.set(zmq::sockopt::unsubscribe, buf);
+
+        m_logger->info("ZMQ Subscriber subject removed: {0}", subject.to_string());
     }
 } // namespace Networking

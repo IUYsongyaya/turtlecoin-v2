@@ -45,6 +45,11 @@ namespace Configuration
     } // namespace Version
 
     /**
+     * The default logging level for all applications in this project
+     */
+    const size_t DEFAULT_LOG_LEVEL = 4;
+
+    /**
      * Defines how long the threads sleep between polling intervals
      * the longer the interval, the slower data may be processed
      *
@@ -89,6 +94,16 @@ namespace Configuration
 
     namespace P2P
     {
+        /**
+         * Our current P2P version number
+         */
+        const uint16_t VERSION = 1;
+
+        /**
+         * The minimum P2P version that we can/will talk to
+         */
+        const uint16_t MINIMUM_VERSION = 1;
+
         /**
          * Defines how often we send a keep alive packet on the P2P network
          */

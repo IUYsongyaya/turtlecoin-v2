@@ -37,9 +37,10 @@ namespace Networking
         /**
          * Creates a new instance and sets it up to bind to the specified port
          *
+         * @param logger the shared logger
          * @param bind_port
          */
-        ZMQServer(const uint16_t &bind_port = Configuration::P2P::DEFAULT_BIND_PORT);
+        ZMQServer(logger &logger, const uint16_t &bind_port = Configuration::P2P::DEFAULT_BIND_PORT);
 
         /**
          * Destroying the instance auto-stops the threads and closes the socket
@@ -166,6 +167,8 @@ namespace Networking
         std::unique_ptr<UPNP> m_upnp_helper;
 
         zmq_connection_monitor m_monitor;
+
+        logger m_logger;
     };
 } // namespace Networking
 

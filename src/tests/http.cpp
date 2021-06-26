@@ -24,9 +24,11 @@ int main(int argc, char **argv)
          cxxopts::value<size_t>(server_timeout)->default_value(std::to_string(server_timeout)));
     // clang-format on
 
-    auto cli = cli_parse_options(argc, argv, options);
+    auto [cli, log_level] = cli_parse_options(argc, argv, options);
 
-    auto server = std::make_shared<HTTPServer>();
+    auto logger = Logger::create_logger("./test-http.log", log_level);
+
+    auto server = std::make_shared<HTTPServer>(logger);
 
     server->Get(
         "/",
@@ -43,24 +45,11 @@ int main(int argc, char **argv)
             return response.set_content(result, "application/json");
         });
 
-    std::cout << "Binding server to: *:" << std::to_string(server_port) << "..." << std::endl << std::endl;
-
-    if (server->listen("0.0.0.0", server_port))
+    if (!server->listen("0.0.0.0", server_port))
     {
-        std::cout << "HTTP Server is listening..." << std::endl << std::endl;
-    }
-    else
-    {
-        std::cout << "HTTP Server could not be started..." << std::endl << std::endl;
+        logger->error("HTTP server could not be started");
 
         exit(1);
-    }
-
-    if (server->upnp_active())
-    {
-        std::cout << "External address: " << server->external_address() << ":" << std::to_string(server->port())
-                  << std::endl
-                  << std::endl;
     }
 
     auto client = HTTPClient::create_client("127.0.0.1", server_port);
@@ -73,18 +62,18 @@ int main(int argc, char **argv)
 
         if (!error)
         {
-            std::cout << "Client received valid JSON: " << res->body << std::endl;
+            logger->info("Client received valid JSON: {}", res->body);
         }
         else
         {
-            std::cout << error << std::endl << std::endl;
+            logger->error("Client JSON parsing error: {}", error.to_string());
 
             exit(1);
         }
     }
     else
     {
-        std::cout << "Client received unexpected HTTP status code from server: " << res->status << std::endl;
+        logger->error("Client received unexpected HTTP status code from server: {}", res->status);
 
         exit(1);
     }

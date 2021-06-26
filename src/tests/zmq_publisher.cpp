@@ -19,26 +19,19 @@ int main(int argc, char **argv)
             cxxopts::value<uint16_t>(server_port)->default_value(std::to_string(server_port)));
     // clang-format on
 
-    auto cli = cli_parse_options(argc, argv, options);
+    auto [cli, log_level] = cli_parse_options(argc, argv, options);
 
-    auto server = ZMQPublisher(server_port);
+    auto logger = Logger::create_logger("./test-zmq-publisher.log", log_level);
 
-    std::cout << "Binding server to: *:" << std::to_string(server_port) << "..." << std::endl << std::endl;
+    auto server = std::make_shared<ZMQPublisher>(logger, server_port);
 
-    const auto error = server.bind();
+    const auto error = server->bind();
 
     if (error)
     {
-        std::cout << error << std::endl;
+        logger->error("ZMQ Publisher could not be started: {}", error.to_string());
 
         exit(1);
-    }
-
-    if (server.upnp_active())
-    {
-        std::cout << "External address: " << server.external_address() << ":" << std::to_string(server.port())
-                  << std::endl
-                  << std::endl;
     }
 
     while (true)
@@ -49,7 +42,7 @@ int main(int argc, char **argv)
 
         msg.subject = crypto_hash_t("bf15572be229a849020316b597609fcaa30a5d0ad07048ba301d13e1ccdca90b");
 
-        server.send(msg);
+        server->send(msg);
 
         std::cout << "Sent >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << std::endl << msg << std::endl;
 

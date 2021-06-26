@@ -6,7 +6,8 @@
 
 namespace Networking
 {
-    HTTPServer::HTTPServer(std::string cors_domain): m_cors_domain(std::move(cors_domain)), m_port(0)
+    HTTPServer::HTTPServer(logger &logger, std::string cors_domain):
+        m_cors_domain(std::move(cors_domain)), m_port(0), m_logger(logger), m_host("")
     {
         // auto set proper security headers
         set_post_routing_handler(
@@ -73,6 +74,8 @@ namespace Networking
 
     bool HTTPServer::listen(const std::string &host, int port, int socket_flags)
     {
+        m_logger->info("Attempting to bind HTTP server to {0}:{1}", host, port);
+
         // try to bind to the port so that we can get out early if it doesn't work
         if (!bind_to_port(host.c_str(), port, socket_flags))
         {
@@ -83,10 +86,14 @@ namespace Networking
 
         m_port = port;
 
-        m_upnp_helper = std::make_unique<UPNP>(port, Configuration::Version::PROJECT_NAME + ": HTTP Server");
+        m_host = host;
+
+        m_upnp_helper = std::make_unique<UPNP>(m_logger, port, Configuration::Version::PROJECT_NAME + ": HTTP Server");
 
         // launch the server listener in a thread
         m_server_thread = std::thread(&HTTPServer::server_listener, this);
+
+        m_logger->info("HTTP server successfully started on {0}:{1}", host, port);
 
         return true;
     }
@@ -159,6 +166,8 @@ namespace Networking
 
     void HTTPServer::shutdown()
     {
+        m_logger->info("Shutting down HTTP server on {0}:{1}...", m_host, m_port);
+
         if (is_running())
         {
             Server::stop();
@@ -168,6 +177,8 @@ namespace Networking
         {
             m_server_thread.join();
         }
+
+        m_logger->info("HTTP server shutdown complete on {0}:{1}", m_host, m_port);
     }
 
     bool HTTPServer::upnp_active() const

@@ -10,6 +10,7 @@
 
 #include <errors.h>
 #include <httplib.h>
+#include <logger.h>
 
 namespace Networking
 {
@@ -28,9 +29,10 @@ namespace Networking
         /**
          * Creates a new instance that will serve content within the specified CORS domain
          *
+         * @param logger the shared logger
          * @param cors_domain
          */
-        HTTPServer(std::string cors_domain = "*");
+        HTTPServer(logger &logger, std::string cors_domain = "*");
 
         /**
          * Destroys the instance
@@ -110,9 +112,13 @@ namespace Networking
 
         uint16_t m_port;
 
+        std::string m_host;
+
         std::unique_ptr<UPNP> m_upnp_helper;
 
         std::thread m_server_thread;
+
+        logger m_logger;
     };
 } // namespace Networking
 

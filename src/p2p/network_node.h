@@ -15,7 +15,7 @@ namespace P2P
     class NetworkNode
     {
       public:
-        NetworkNode(const std::string &path, const uint16_t &bind_port);
+        NetworkNode(logger &logger, const std::string &path, const uint16_t &bind_port);
 
         ~NetworkNode();
 
@@ -198,6 +198,8 @@ namespace P2P
         std::thread m_poller_thread, m_keepalive_thread, m_peer_exchange_thread, m_connection_manager_thread;
 
         mutable std::mutex m_mutex_clients, m_mutex_handshake_completed;
+
+        logger m_logger;
     };
 } // namespace P2P
 

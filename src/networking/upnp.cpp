@@ -9,21 +9,26 @@
 
 namespace Networking
 {
-    UPNP::UPNP(const uint16_t &port, std::string service_name, int timeout, bool v6):
+    UPNP::UPNP(logger &logger, const uint16_t &port, std::string service_name, int timeout, bool v6):
         m_port(port),
         m_service_name(std::move(service_name)),
         m_timeout(timeout),
         m_v6(v6),
         m_active(false),
         m_gateway_urls({}),
-        m_upnp_data({0})
+        m_upnp_data({0}),
+        m_logger(logger)
     {
+        m_logger->info("Attempting to set up UPnP port forward for {0} on port {1}", m_service_name, port);
+
         int result;
 
         UPNPDev *device_list = upnpDiscover(m_timeout, nullptr, nullptr, 0, (m_v6) ? 1 : 0, 2, &result);
 
         if (device_list == nullptr || result != 0)
         {
+            m_logger->info("Could not discover any UPnP devices on local network");
+
             freeUPNPDevlist(device_list);
 
             return;
@@ -37,6 +42,8 @@ namespace Networking
 
         if (result != 1)
         {
+            m_logger->info("Could not fetch a UPnP gateway device from discovered UPnP devices on the local network");
+
             return;
         }
 
@@ -47,7 +54,13 @@ namespace Networking
 
             if (!error)
             {
+                m_logger->info("Setup of UPnP port forward for {0} on port {1} successful", m_service_name, port);
+
                 m_active = true;
+            }
+            else
+            {
+                m_logger->info("Could not add UPnP port forward: {0}", error.to_string());
             }
         }
 
@@ -56,21 +69,35 @@ namespace Networking
 
             if (!error)
             {
+                m_logger->info("UPnP detected external IP address of: {0}", wan_address);
+
                 m_wan_address = wan_address;
+            }
+            else
+            {
+                m_logger->info("Could not fetch external WAN address: {0}", error.to_string());
             }
         }
     }
 
     UPNP::~UPNP()
     {
+        m_logger->info("Shutting down UPnP...");
+
         const auto error = del();
 
         if (!error)
         {
             m_active = false;
         }
+        else
+        {
+            m_logger->info("Could not delete UPnP port forward: {0}", error.to_string());
+        }
 
         FreeUPNPUrls(&m_gateway_urls);
+
+        m_logger->info("UPnP shutdown complete");
     }
 
     bool UPNP::active() const

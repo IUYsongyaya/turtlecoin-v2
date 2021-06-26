@@ -19,43 +19,36 @@ int main(int argc, char **argv)
          cxxopts::value<uint16_t>(server_port)->default_value(std::to_string(server_port)));
     // clang-format on
 
-    auto cli = cli_parse_options(argc, argv, options);
+    auto [cli, log_level] = cli_parse_options(argc, argv, options);
 
-    auto server = ZMQServer(server_port);
+    auto logger = Logger::create_logger("./test-zmq-server.log", log_level);
 
-    std::cout << "Server Identity: " << server.identity() << std::endl << std::endl;
+    auto server = std::make_shared<ZMQServer>(logger, server_port);
 
-    std::cout << "Binding server to: *:" << std::to_string(server_port) << "..." << std::endl << std::endl;
+    logger->info("ZMQ Server Identity: {}", server->identity().to_string());
 
     {
-        const auto error = server.bind();
+        const auto error = server->bind();
 
         if (error)
         {
-            std::cout << error << std::endl;
+            logger->error("ZMQ Server could not be started: {}", error.to_string());
 
             exit(1);
         }
     }
 
-    if (server.upnp_active())
-    {
-        std::cout << "External address: " << server.external_address() << ":" << std::to_string(server.port())
-                  << std::endl
-                  << std::endl;
-    }
-
     while (true)
     {
-        while (!server.messages().empty())
+        while (!server->messages().empty())
         {
-            auto msg = server.messages().pop();
+            auto msg = server->messages().pop();
 
             std::cout << msg << std::endl;
 
             msg.to = msg.from;
 
-            server.send(msg);
+            server->send(msg);
         }
 
         THREAD_SLEEP();

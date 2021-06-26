@@ -19,7 +19,9 @@ int main(int argc, char **argv)
 
     auto cli = cli_parse_options(argc, argv, options);
 
-    auto server = P2P::NetworkNode("./peerlist", server_port);
+    auto logger = Logger::create_logger("./test-p2p.log");
+
+    auto server = P2P::NetworkNode(logger, "./peerlist", server_port);
 
     {
         const auto error = server.start();

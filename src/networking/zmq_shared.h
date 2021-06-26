@@ -10,6 +10,7 @@
 #include <crypto.h>
 #include <errors.h>
 #include <iostream>
+#include <logger.h>
 #include <mutex>
 #include <set>
 #include <thread>

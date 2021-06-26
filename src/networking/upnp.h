@@ -7,6 +7,7 @@
 
 #include <config.h>
 #include <errors.h>
+#include <logger.h>
 #include <miniupnpc.h>
 
 namespace Networking
@@ -27,12 +28,14 @@ namespace Networking
          * Creates a new instance of a port mapping to this system if the router/firewall
          * it is connected to supports it
          *
+         * @param logger the shared logger
          * @param port
          * @param service_name
          * @param timeout
          * @param v6
          */
         UPNP(
+            logger &logger,
             const uint16_t &port,
             std::string service_name = Configuration::Version::PROJECT_NAME,
             int timeout = 1000,
@@ -103,6 +106,8 @@ namespace Networking
         UPNPUrls m_gateway_urls;
 
         IGDdatas m_upnp_data;
+
+        logger m_logger;
     };
 
     std::tuple<Error, std::string> get_external_address(bool v6 = false, int timeout = 2000);

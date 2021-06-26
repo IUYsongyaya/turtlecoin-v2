@@ -10,6 +10,7 @@
 #include <ascii.h>
 #include <config.h>
 #include <cxxopts.hpp>
+#include <spdlog/spdlog.h>
 #include <sstream>
 
 namespace config = Configuration::Version;
@@ -52,7 +53,8 @@ static inline cxxopts::Options cli_setup_options(const std::string &path)
     options.add_options("")
         ("h,help", "Display this help message", cxxopts::value<bool>()->implicit_value("true"))
         ("credits", "Display a full listing of the program credits", cxxopts::value<bool>()->implicit_value("true"))
-        ("v,version", "Display the software version information", cxxopts::value<bool>()->implicit_value("true"));
+        ("v,version", "Display the software version information", cxxopts::value<bool>()->implicit_value("true"))
+        ("log-level", "Sets the default logging level (0-6)", cxxopts::value<size_t>()->default_value(std::to_string(Configuration::DEFAULT_LOG_LEVEL)));
     // clang-format on
 
     return options;
@@ -63,7 +65,8 @@ static inline cxxopts::Options cli_setup_options(char **argv)
     return cli_setup_options(argv[0]);
 }
 
-static inline cxxopts::ParseResult cli_parse_options(int argc, char **argv, cxxopts::Options &options)
+static inline std::tuple<cxxopts::ParseResult, spdlog::level::level_enum>
+    cli_parse_options(int argc, char **argv, cxxopts::Options &options)
 {
     try
     {
@@ -90,9 +93,42 @@ static inline cxxopts::ParseResult cli_parse_options(int argc, char **argv, cxxo
             exit(0);
         }
 
+        spdlog::level::level_enum log_level;
+
+        switch (result["log-level"].as<size_t>())
+        {
+            case 0:
+                log_level = spdlog::level::off;
+                break;
+            case 1:
+                log_level = spdlog::level::critical;
+                break;
+            case 2:
+                log_level = spdlog::level::err;
+                break;
+            case 3:
+                log_level = spdlog::level::warn;
+                break;
+            case 4:
+                log_level = spdlog::level::info;
+                break;
+            case 5:
+                log_level = spdlog::level::debug;
+                break;
+            case 6:
+                log_level = spdlog::level::trace;
+                break;
+            default:
+                print_cli_header();
+
+                std::cout << "Invalid log level specified" << std::endl << std::endl;
+
+                exit(1);
+        }
+
         print_cli_header();
 
-        return result;
+        return {result, log_level};
     }
     catch (const cxxopts::OptionException &e)
     {

@@ -16,6 +16,7 @@ add_subdirectory(ipv6-parse)
 add_subdirectory(lmdb)
 add_subdirectory(libzmq)
 add_subdirectory(miniupnp/miniupnpc)
+add_subdirectory(spdlog)
 
 target_include_directories(libminiupnpc-static PUBLIC miniupnp/miniupnpc)
 
@@ -26,3 +27,4 @@ set_property(TARGET platform_folders PROPERTY FOLDER "external")
 set_property(TARGET lmdb PROPERTY FOLDER "external")
 set_property(TARGET libzmq-static PROPERTY FOLDER "external")
 set_property(TARGET libminiupnpc-static PROPERTY FOLDER "external")
+set_property(TARGET spdlog PROPERTY FOLDER "external")

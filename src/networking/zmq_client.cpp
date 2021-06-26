@@ -8,7 +8,8 @@
 
 namespace Networking
 {
-    ZMQClient::ZMQClient(int timeout): m_identity(Crypto::random_hash()), m_running(false), m_timeout(timeout)
+    ZMQClient::ZMQClient(logger &logger, int timeout):
+        m_identity(Crypto::random_hash()), m_running(false), m_timeout(timeout), m_logger(logger)
     {
         const auto identity = zmq::buffer(m_identity.data(), m_identity.size());
 
@@ -44,6 +45,8 @@ namespace Networking
 
     ZMQClient::~ZMQClient()
     {
+        m_logger->info("Shutting down ZMQ Client...");
+
         m_running = false;
 
         if (m_thread_outgoing.joinable())
@@ -59,12 +62,16 @@ namespace Networking
         std::scoped_lock lock(m_socket_mutex);
 
         m_socket.close();
+
+        m_logger->info("ZMQ Client shutdown complete");
     }
 
     Error ZMQClient::connect(const std::string &host, const uint16_t &port)
     {
         try
         {
+            m_logger->info("Attempting to connect ZMQ Client to {0}:{1}", host, port);
+
             std::unique_lock lock(m_connecting);
 
             std::scoped_lock socket_lock(m_socket_mutex);
@@ -88,6 +95,8 @@ namespace Networking
 
                 m_thread_outgoing = std::thread(&ZMQClient::outgoing_thread, this);
             }
+
+            m_logger->info("Connected ZMQ Client to {0}:{1}", host, port);
 
             return MAKE_ERROR(SUCCESS);
         }
@@ -137,7 +146,7 @@ namespace Networking
             }
             catch (const zmq::error_t &e)
             {
-                // TODO: we should do something
+                m_logger->debug("Could not read incoming ZMQ message: {0}", e.what());
             }
 
             THREAD_SLEEP();
@@ -177,8 +186,7 @@ namespace Networking
                 }
                 catch (const zmq::error_t &e)
                 {
-                    std::cout << e.what() << std::endl;
-                    // TODO: Do something
+                    m_logger->warn("Could not send ZMQ message: {0}", e.what());
                 }
             }
 

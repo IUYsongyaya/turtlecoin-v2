@@ -23,23 +23,22 @@ int main(int argc, char **argv)
          cxxopts::value<uint16_t>(server_port)->default_value(std::to_string(server_port)));
     // clang-format on
 
-    auto cli = cli_parse_options(argc, argv, options);
+    auto [cli, log_level] = cli_parse_options(argc, argv, options);
 
-    auto client = ZMQSubscriber();
+    auto logger = Logger::create_logger("./test-zmq-subscriber.log", log_level);
+
+    auto client = std::make_shared<ZMQSubscriber>(logger);
 
     const auto subject = crypto_hash_t("bf15572be229a849020316b597609fcaa30a5d0ad07048ba301d13e1ccdca90b");
 
-    client.subscribe(subject);
-
-    std::cout << "Connecting to: " << server_host << ":" << std::to_string(server_port) << "..." << std::endl
-              << std::endl;
+    client->subscribe(subject);
 
     {
-        const auto error = client.connect(server_host, server_port);
+        const auto error = client->connect(server_host, server_port);
 
         if (error)
         {
-            std::cout << error << std::endl;
+            logger->error("ZMQ Subscriber connection error: {}", error.to_string());
 
             exit(1);
         }
@@ -47,9 +46,9 @@ int main(int argc, char **argv)
 
     while (true)
     {
-        while (!client.messages().empty())
+        while (!client->messages().empty())
         {
-            const auto msg = client.messages().pop();
+            const auto msg = client->messages().pop();
 
             std::cout << "Recv >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << std::endl << msg << std::endl;
         }

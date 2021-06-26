@@ -5,6 +5,8 @@
 #ifndef TURTLECOIN_SERIALIZABLE_H
 #define TURTLECOIN_SERIALIZABLE_H
 
+#include <crypto.h>
+
 namespace BaseTypes
 {
     struct IStorable : ISerializable

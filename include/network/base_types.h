@@ -24,7 +24,7 @@ namespace BaseTypes
     struct NetworkPacketBase
     {
       public:
-        uint16_t version = 1;
+        uint16_t version = Configuration::P2P::VERSION;
 
       protected:
         uint16_t l_type = 0;

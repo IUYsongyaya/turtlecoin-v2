@@ -30,3 +30,6 @@
 [submodule "external/ipv6-parse"]
 	path = external/ipv6-parse
 	url = https://github.com/turtlecoin/ipv6-parse
+[submodule "external/spdlog"]
+	path = external/spdlog
+	url = https://github.com/turtlecoin/spdlog

@@ -35,9 +35,10 @@ namespace Networking
         /**
          * Creates a new instance
          *
+         * @param logger the shared logger
          * @param timeout in milliseconds
          */
-        ZMQSubscriber(int timeout = Configuration::DEFAULT_CONNECTION_TIMEOUT);
+        ZMQSubscriber(logger &logger, int timeout = Configuration::DEFAULT_CONNECTION_TIMEOUT);
 
         /**
          * Destroying the instance auto-stops the threads and closes the socket
@@ -130,6 +131,8 @@ namespace Networking
         ThreadSafeQueue<zmq_message_envelope_t> m_incoming_msgs;
 
         zmq_connection_monitor m_monitor;
+
+        logger m_logger;
     };
 } // namespace Networking
 
