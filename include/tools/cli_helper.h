@@ -8,6 +8,7 @@
 #include "../credits.h"
 
 #include <ascii.h>
+#include <colors.h>
 #include <config.h>
 #include <cxxopts.hpp>
 #include <spdlog/spdlog.h>
@@ -42,7 +43,7 @@ static inline std::string get_cli_header()
 
 static inline void print_cli_header()
 {
-    std::cout << get_cli_header() << std::flush;
+    std::cout << COLOR::green << get_cli_header() << COLOR::reset << std::flush;
 }
 
 static inline cxxopts::Options cli_setup_options(const std::string &path)
@@ -51,10 +52,16 @@ static inline cxxopts::Options cli_setup_options(const std::string &path)
 
     // clang-format off
     options.add_options("")
-        ("h,help", "Display this help message", cxxopts::value<bool>()->implicit_value("true"))
-        ("credits", "Display a full listing of the program credits", cxxopts::value<bool>()->implicit_value("true"))
-        ("v,version", "Display the software version information", cxxopts::value<bool>()->implicit_value("true"))
-        ("log-level", "Sets the default logging level (0-6)", cxxopts::value<size_t>()->default_value(std::to_string(Configuration::DEFAULT_LOG_LEVEL)));
+        ("credits", "Display a full listing of the program credits",
+            cxxopts::value<bool>()->implicit_value("true"))
+        ("h,help", "Display this help message",
+            cxxopts::value<bool>()->implicit_value("true"))
+        ("log-level", "Sets the default logging level (0-6)",
+            cxxopts::value<size_t>()->default_value(std::to_string(Configuration::DEFAULT_LOG_LEVEL)))
+        ("no-console", "Disables the interactive console (if used)",
+            cxxopts::value<bool>()->implicit_value("true"))
+        ("v,version", "Display the software version information",
+            cxxopts::value<bool>()->implicit_value("true"));
     // clang-format on
 
     return options;
@@ -119,9 +126,9 @@ static inline std::tuple<cxxopts::ParseResult, spdlog::level::level_enum>
                 log_level = spdlog::level::trace;
                 break;
             default:
-                print_cli_header();
+                std::cout << options.help({}) << std::endl;
 
-                std::cout << "Invalid log level specified" << std::endl << std::endl;
+                std::cout << COLOR::red << "Invalid log level specified" << COLOR::reset << std::endl << std::endl;
 
                 exit(1);
         }

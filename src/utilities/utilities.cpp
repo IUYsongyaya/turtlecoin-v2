@@ -25,7 +25,7 @@ namespace Utilities
     {
         auto pos = input.find(ch);
 
-        auto initial_pos = 0;
+        uint64_t initial_pos = 0;
 
         std::vector<std::string> result;
 
@@ -41,5 +41,19 @@ namespace Utilities
         result.push_back(input.substr(initial_pos, std::min(pos, input.size()) - initial_pos + 1));
 
         return result;
+    }
+
+    void str_trim(std::string &str, bool to_lowercase)
+    {
+        const auto whitespace = "\t\n\r\f\v";
+
+        str.erase(str.find_last_not_of(whitespace) + 1);
+
+        str.erase(0, str.find_first_not_of(whitespace));
+
+        if (to_lowercase)
+        {
+            std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) { return std::tolower(c); });
+        }
     }
 } // namespace Utilities

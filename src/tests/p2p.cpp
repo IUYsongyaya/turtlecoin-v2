@@ -2,8 +2,28 @@
 //
 // Please see the included LICENSE file for more information.
 
+#include <console.h>
 #include <network_node.h>
 #include <tools/cli_helper.h>
+#include <tools/thread_helper.h>
+
+using namespace Utilities;
+using namespace P2P;
+
+std::condition_variable stopping;
+
+static inline void p2p_handler_thread(std::shared_ptr<NetworkNode> &server, logger &logger)
+{
+    while (true)
+    {
+        logger->info("Incoming: {0}\tOutgoing: {1}", server->incoming_connections(), server->outgoing_connections());
+
+        if (thread_sleep(stopping, 15000))
+        {
+            break;
+        }
+    }
+}
 
 int main(int argc, char **argv)
 {
@@ -17,33 +37,33 @@ int main(int argc, char **argv)
          cxxopts::value<uint16_t>(server_port)->default_value(std::to_string(server_port)));
     // clang-format on
 
-    auto cli = cli_parse_options(argc, argv, options);
+    auto [cli, log_level] = cli_parse_options(argc, argv, options);
 
-    auto logger = Logger::create_logger("./test-p2p.log");
+    auto logger = Logger::create_logger("./test-p2p.log", log_level);
 
-    auto server = P2P::NetworkNode(logger, "./peerlist", server_port);
+    auto server = std::make_shared<NetworkNode>(logger, "./peerlist", server_port);
 
     {
-        const auto error = server.start();
+        const auto error = server->start();
 
         if (error)
         {
-            std::cout << error << std::endl;
+            logger->error("P2P server error: {0}", error.to_string());
 
             exit(1);
         }
     }
 
-    while (server.running())
+    std::thread th(p2p_handler_thread, std::ref(server), std::ref(logger));
+
+    auto console = std::make_shared<ConsoleHandler>("P2P Test Service");
+
+    console->run();
+
+    stopping.notify_all();
+
+    if (th.joinable())
     {
-        std::cout << "Outgoing: " << server.outgoing_connections() << std::endl
-                  << "Incoming: " << server.incoming_connections() << std::endl
-                  << std::endl;
-
-        THREAD_SLEEP_MS(15000);
+        th.join();
     }
-
-    std::cout << "Normal Exit" << std::endl;
-
-    return 0;
 }

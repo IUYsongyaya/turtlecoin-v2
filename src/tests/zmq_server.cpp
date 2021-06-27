@@ -2,10 +2,37 @@
 //
 // Please see the included LICENSE file for more information.
 
+#include <console.h>
 #include <tools/cli_helper.h>
+#include <tools/thread_helper.h>
 #include <zmq_server.h>
 
+using namespace Utilities;
 using namespace Networking;
+
+std::condition_variable stopping;
+
+void server_handler_thread(std::shared_ptr<ZMQServer> &server, logger &logger)
+{
+    while (true)
+    {
+        while (!server->messages().empty())
+        {
+            auto msg = server->messages().pop();
+
+            logger->info("Received: {0}", msg.to_string());
+
+            msg.to = msg.from;
+
+            server->send(msg);
+        }
+
+        if (thread_sleep(stopping))
+        {
+            break;
+        }
+    }
+}
 
 int main(int argc, char **argv)
 {
@@ -32,25 +59,22 @@ int main(int argc, char **argv)
 
         if (error)
         {
-            logger->error("ZMQ Server could not be started: {}", error.to_string());
+            logger->error("ZMQ Server could not be started: {0}", error.to_string());
 
             exit(1);
         }
     }
 
-    while (true)
+    std::thread th(server_handler_thread, std::ref(server), std::ref(logger));
+
+    auto console = std::make_shared<ConsoleHandler>("ZMQ Test Server");
+
+    console->run();
+
+    stopping.notify_all();
+
+    if (th.joinable())
     {
-        while (!server->messages().empty())
-        {
-            auto msg = server->messages().pop();
-
-            std::cout << msg << std::endl;
-
-            msg.to = msg.from;
-
-            server->send(msg);
-        }
-
-        THREAD_SLEEP();
+        th.join();
     }
 }

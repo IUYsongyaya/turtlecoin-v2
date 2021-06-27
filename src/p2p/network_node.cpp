@@ -4,6 +4,8 @@
 
 #include "network_node.h"
 
+#include <tools/thread_helper.h>
+
 using namespace BaseTypes;
 using namespace Types::Network;
 
@@ -21,29 +23,49 @@ namespace P2P
 
     NetworkNode::~NetworkNode()
     {
+        m_logger->info("Shutting down P2P network node");
+
         m_running = false;
 
+        m_stopping.notify_all();
+
         m_server.reset();
+
+        std::unique_lock lock(m_mutex_clients);
+
+        m_clients.clear();
+
+        lock.unlock();
+
+        if (m_connection_manager_thread.joinable())
+        {
+            m_connection_manager_thread.join();
+        }
+
+        m_logger->debug("Shut down P2P connection manager thread successfully");
 
         if (m_poller_thread.joinable())
         {
             m_poller_thread.join();
         }
 
+        m_logger->debug("Shut down P2P poller thread successfully");
+
         if (m_keepalive_thread.joinable())
         {
             m_keepalive_thread.join();
         }
+
+        m_logger->debug("Shut down P2P keep alive thread successfully");
 
         if (m_peer_exchange_thread.joinable())
         {
             m_peer_exchange_thread.join();
         }
 
-        if (m_connection_manager_thread.joinable())
-        {
-            m_connection_manager_thread.join();
-        }
+        m_logger->debug("Shut down P2P peer exchange thread successfully");
+
+        m_logger->info("P2P Network Node shutdown complete");
     }
 
     packet_handshake_t NetworkNode::build_handshake() const
@@ -134,7 +156,10 @@ namespace P2P
                 }
             }
 
-            THREAD_SLEEP_MS(Configuration::P2P::CONNECTION_MANAGER_INTERVAL);
+            if (thread_sleep(m_stopping, Configuration::P2P::CONNECTION_MANAGER_INTERVAL))
+            {
+                break;
+            }
         }
     }
 
@@ -397,7 +422,10 @@ namespace P2P
                 }
             }
 
-            THREAD_SLEEP();
+            if (thread_sleep(m_stopping))
+            {
+                break;
+            }
         }
     }
 
@@ -425,7 +453,10 @@ namespace P2P
     {
         while (m_running)
         {
-            THREAD_SLEEP_MS(Configuration::P2P::KEEPALIVE_INTERVAL);
+            if (thread_sleep(m_stopping, Configuration::P2P::KEEPALIVE_INTERVAL))
+            {
+                break;
+            }
 
             packet_keepalive_t packet(m_peer_db->peer_id());
 
@@ -437,7 +468,10 @@ namespace P2P
     {
         while (m_running)
         {
-            THREAD_SLEEP_MS(Configuration::P2P::PEER_EXCHANGE_INTERVAL);
+            if (thread_sleep(m_stopping, Configuration::P2P::PEER_EXCHANGE_INTERVAL))
+            {
+                break;
+            }
 
             packet_peer_exchange_t packet(m_peer_db->peer_id(), m_server->port());
 

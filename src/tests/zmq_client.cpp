@@ -2,12 +2,39 @@
 //
 // Please see the included LICENSE file for more information.
 
+#include <console.h>
 #include <tools/cli_helper.h>
+#include <tools/thread_helper.h>
 #include <types.h>
 #include <zmq_client.h>
 
+using namespace Utilities;
 using namespace Networking;
 using namespace Types::Network;
+
+std::condition_variable stopping;
+
+void client_handler_thread(std::shared_ptr<ZMQClient> &client, logger &logger)
+{
+    while (true)
+    {
+        while (!client->messages().empty())
+        {
+            auto msg = client->messages().pop();
+
+            logger->info("Received: {0}", msg.to_string());
+
+            msg.to = msg.from;
+
+            client->send(msg);
+        }
+
+        if (thread_sleep(stopping))
+        {
+            break;
+        }
+    }
+}
 
 int main(int argc, char **argv)
 {
@@ -29,16 +56,16 @@ int main(int argc, char **argv)
 
     auto logger = Logger::create_logger("./test-zmq-client.log", log_level);
 
-    auto client = ZMQClient(logger);
+    auto client = std::make_shared<ZMQClient>(logger);
 
-    logger->info("ZMQ Client Identity: {}", client.identity().to_string());
+    logger->info("ZMQ Client Identity: {0}", client->identity().to_string());
 
     {
-        const auto error = client.connect(server_host, server_port);
+        const auto error = client->connect(server_host, server_port);
 
         if (error)
         {
-            logger->error("ZMQ Client connection error: {}", error.to_string());
+            logger->error("ZMQ Client connection error: {0}", error.to_string());
 
             exit(1);
         }
@@ -50,21 +77,18 @@ int main(int argc, char **argv)
 
     const auto outgoing = zmq_message_envelope_t(msg.serialize());
 
-    client.send(outgoing);
+    client->send(outgoing);
 
-    while (true)
+    std::thread th(client_handler_thread, std::ref(client), std::ref(logger));
+
+    auto console = std::make_shared<ConsoleHandler>("ZMQ Test Client");
+
+    console->run();
+
+    stopping.notify_all();
+
+    if (th.joinable())
     {
-        while (!client.messages().empty())
-        {
-            auto msg = client.messages().pop();
-
-            std::cout << msg << std::endl;
-
-            msg.to = msg.from;
-
-            client.send(msg);
-        }
-
-        THREAD_SLEEP();
+        th.join();
     }
 }

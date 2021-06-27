@@ -7,19 +7,10 @@
 
 #include <crypto.h>
 #include <cstdint>
-#include <thread>
-
-#ifndef THREAD_SLEEP
-#define THREAD_SLEEP() std::this_thread::sleep_for(std::chrono::milliseconds(Configuration::THREAD_POLLING_INTERVAL))
-#endif
-
-#ifndef THREAD_SLEEP_MS
-#define THREAD_SLEEP_MS(ms) std::this_thread::sleep_for(std::chrono::milliseconds(ms))
-#endif
 
 struct SeedNode
 {
-    SeedNode(const std::string &host, const uint16_t &port): host(host), port(port) {}
+    SeedNode(std::string host, const uint16_t &port): host(std::move(host)), port(port) {}
 
     std::string host;
     uint16_t port;

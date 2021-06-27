@@ -4,6 +4,7 @@
 
 #include "zmq_client.h"
 
+#include <tools/thread_helper.h>
 #include <zmq_addon.hpp>
 
 namespace Networking
@@ -49,15 +50,21 @@ namespace Networking
 
         m_running = false;
 
+        m_stopping.notify_all();
+
         if (m_thread_outgoing.joinable())
         {
             m_thread_outgoing.join();
         }
 
+        m_logger->debug("Client outgoing thread shut down successfully");
+
         if (m_thread_incoming.joinable())
         {
             m_thread_incoming.join();
         }
+
+        m_logger->debug("Client incoming thread shut down successfully");
 
         std::scoped_lock lock(m_socket_mutex);
 
@@ -118,7 +125,7 @@ namespace Networking
 
     void ZMQClient::incoming_thread()
     {
-        while (m_running)
+        while (true)
         {
             try
             {
@@ -149,7 +156,10 @@ namespace Networking
                 m_logger->debug("Could not read incoming ZMQ message: {0}", e.what());
             }
 
-            THREAD_SLEEP();
+            if (thread_sleep(m_stopping))
+            {
+                break;
+            }
         }
     }
 
@@ -160,16 +170,10 @@ namespace Networking
 
     void ZMQClient::outgoing_thread()
     {
-        while (m_running)
+        while (true)
         {
             while (!m_outgoing_msgs.empty())
             {
-                // allow for early breakout if stopping
-                if (!m_running)
-                {
-                    break;
-                }
-
                 auto message = m_outgoing_msgs.pop();
 
                 // skip empty messages
@@ -190,7 +194,10 @@ namespace Networking
                 }
             }
 
-            THREAD_SLEEP();
+            if (thread_sleep(m_stopping))
+            {
+                break;
+            }
         }
     }
 

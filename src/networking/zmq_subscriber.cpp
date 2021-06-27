@@ -4,6 +4,7 @@
 
 #include "zmq_subscriber.h"
 
+#include <tools/thread_helper.h>
 #include <zmq_addon.hpp>
 
 namespace Networking
@@ -43,10 +44,14 @@ namespace Networking
 
         m_running = false;
 
+        m_stopping.notify_all();
+
         if (m_thread_incoming.joinable())
         {
             m_thread_incoming.join();
         }
+
+        m_logger->debug("ZMQ Subscriber incoming thread shut down successfully");
 
         std::unique_lock lock(m_socket_mutex);
 
@@ -117,7 +122,7 @@ namespace Networking
 
     void ZMQSubscriber::incoming_thread()
     {
-        while (m_running)
+        while (true)
         {
             try
             {
@@ -152,7 +157,10 @@ namespace Networking
                 m_logger->debug("Could not read incoming ZMQ message: {0}", e.what());
             }
 
-            THREAD_SLEEP();
+            if (thread_sleep(m_stopping))
+            {
+                break;
+            }
         }
     }
 

@@ -2,10 +2,36 @@
 //
 // Please see the included LICENSE file for more information.
 
+#include <console.h>
 #include <tools/cli_helper.h>
+#include <tools/thread_helper.h>
 #include <zmq_publisher.h>
 
+using namespace Utilities;
 using namespace Networking;
+
+std::condition_variable stopping;
+
+void auto_sender_thread(std::shared_ptr<ZMQPublisher> &server, logger &logger)
+{
+    while (true)
+    {
+        const auto hash = Crypto::random_hash();
+
+        auto msg = zmq_message_envelope_t(hash.vector());
+
+        msg.subject = crypto_hash_t("bf15572be229a849020316b597609fcaa30a5d0ad07048ba301d13e1ccdca90b");
+
+        server->send(msg);
+
+        logger->info("Sent: {0}", msg.to_string());
+
+        if (thread_sleep(stopping, 2000))
+        {
+            break;
+        }
+    }
+}
 
 int main(int argc, char **argv)
 {
@@ -29,23 +55,21 @@ int main(int argc, char **argv)
 
     if (error)
     {
-        logger->error("ZMQ Publisher could not be started: {}", error.to_string());
+        logger->error("ZMQ Publisher could not be started: {0}", error.to_string());
 
         exit(1);
     }
 
-    while (true)
+    std::thread th(auto_sender_thread, std::ref(server), std::ref(logger));
+
+    auto console = std::make_shared<ConsoleHandler>("ZMQ Test Publisher");
+
+    console->run();
+
+    stopping.notify_all();
+
+    if (th.joinable())
     {
-        const auto hash = Crypto::random_hash();
-
-        auto msg = zmq_message_envelope_t(hash.vector());
-
-        msg.subject = crypto_hash_t("bf15572be229a849020316b597609fcaa30a5d0ad07048ba301d13e1ccdca90b");
-
-        server->send(msg);
-
-        std::cout << "Sent >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << std::endl << msg << std::endl;
-
-        THREAD_SLEEP_MS(2000);
+        th.join();
     }
 }

@@ -6,6 +6,8 @@
 
 #include "zmq_addon.hpp"
 
+#include <tools/thread_helper.h>
+
 namespace Networking
 {
     ZMQServer::ZMQServer(logger &logger, const uint16_t &bind_port):
@@ -38,15 +40,21 @@ namespace Networking
 
         m_running = false;
 
+        m_stopping.notify_all();
+
         if (m_thread_outgoing.joinable())
         {
             m_thread_outgoing.join();
         }
 
+        m_logger->debug("ZMQ Server outgoing thread shut down successfully");
+
         if (m_thread_incoming.joinable())
         {
             m_thread_incoming.join();
         }
+
+        m_logger->debug("ZMQ Server incoming thread shut down successfully");
 
         m_upnp_helper.reset();
 
@@ -138,7 +146,7 @@ namespace Networking
 
     void ZMQServer::incoming_thread()
     {
-        while (m_running)
+        while (true)
         {
             try
             {
@@ -173,7 +181,10 @@ namespace Networking
                 m_logger->debug("Could not read incoming ZMQ message: {0}", e.what());
             }
 
-            THREAD_SLEEP();
+            if (thread_sleep(m_stopping))
+            {
+                break;
+            }
         }
     }
 
@@ -189,16 +200,10 @@ namespace Networking
 
     void ZMQServer::outgoing_thread()
     {
-        while (m_running)
+        while (true)
         {
             while (!m_outgoing_msgs.empty())
             {
-                // allow for early breakout if stopping
-                if (!m_running)
-                {
-                    break;
-                }
-
                 auto message = m_outgoing_msgs.pop();
 
                 // skip empty messages
@@ -247,7 +252,10 @@ namespace Networking
                 }
             }
 
-            THREAD_SLEEP();
+            if (thread_sleep(m_stopping))
+            {
+                break;
+            }
         }
     }
 

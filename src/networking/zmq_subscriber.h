@@ -133,6 +133,8 @@ namespace Networking
         zmq_connection_monitor m_monitor;
 
         logger m_logger;
+
+        std::condition_variable m_stopping;
     };
 } // namespace Networking
 

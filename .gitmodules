@@ -33,3 +33,6 @@
 [submodule "external/spdlog"]
 	path = external/spdlog
 	url = https://github.com/turtlecoin/spdlog
+[submodule "external/cpplinenoise"]
+	path = external/cpplinenoise
+	url = https://github.com/turtlecoin/cpp-linenoise

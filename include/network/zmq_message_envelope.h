@@ -21,13 +21,14 @@ namespace Types::Network
 
         zmq_message_envelope_t(const crypto_hash_t &to): to(to) {}
 
-        zmq_message_envelope_t(const std::vector<uint8_t> &payload): payload(payload) {}
+        zmq_message_envelope_t(std::vector<uint8_t> payload): payload(std::move(payload)) {}
 
         template<typename T> zmq_message_envelope_t(const T &payload): payload(payload.serialize()) {}
 
         zmq_message_envelope_t(const crypto_hash_t &to, const crypto_hash_t &from): to(to), from(from) {}
 
-        zmq_message_envelope_t(const crypto_hash_t &to, const std::vector<uint8_t> &payload): to(to), payload(payload)
+        zmq_message_envelope_t(const crypto_hash_t &to, std::vector<uint8_t> payload):
+            to(to), payload(std::move(payload))
         {
         }
 
@@ -36,36 +37,50 @@ namespace Types::Network
         {
         }
 
-        zmq_message_envelope_t(const crypto_hash_t &to, const crypto_hash_t &from, const std::vector<uint8_t> &payload):
-            to(to), from(from), payload(payload)
+        zmq_message_envelope_t(const crypto_hash_t &to, const crypto_hash_t &from, std::vector<uint8_t> payload):
+            to(to), from(from), payload(std::move(payload))
         {
         }
 
-        zmq::message_t from_msg() const
+        [[nodiscard]] zmq::message_t from_msg() const
         {
             return zmq::message_t(from.data(), from.size());
         }
 
-        zmq::message_t payload_msg() const
+        [[nodiscard]] zmq::message_t payload_msg() const
         {
             return zmq::message_t(payload.data(), payload.size());
         }
 
-        size_t size() const
+        [[nodiscard]] size_t size() const
         {
             return to.size() + from.size() + peer_address.size() + payload.size();
         }
 
-        zmq::message_t subject_msg() const
+        [[nodiscard]] zmq::message_t subject_msg() const
         {
             return zmq::message_t(subject.data(), subject.size());
         }
 
-        zmq::message_t to_msg() const
+        [[nodiscard]] zmq::message_t to_msg() const
         {
             return zmq::message_t(to.data(), to.size());
         }
 
+        [[nodiscard]] std::string to_string() const
+        {
+            std::stringstream ss;
+
+            ss << "ZMQ Message Envelope [" << size() << " bytes]" << std::endl
+               << "To: " << to << std::endl
+               << "From: " << from << std::endl
+               << "Subject: " << subject << std::endl
+               << "Peer Address: " << peer_address << std::endl
+               << "Payload [" << payload.size()
+               << " bytes]: " << Crypto::StringTools::to_hex(payload.data(), payload.size()) << std::endl;
+
+            return ss.str();
+        }
 
         crypto_hash_t to, from, subject;
 
@@ -79,13 +94,7 @@ namespace std
 {
     inline ostream &operator<<(ostream &os, const Types::Network::zmq_message_envelope_t &value)
     {
-        os << "ZMQ Message Envelope [" << value.size() << " bytes]" << std::endl
-           << "To: " << value.to << std::endl
-           << "From: " << value.from << std::endl
-           << "Subject: " << value.subject << std::endl
-           << "Peer Address: " << value.peer_address << std::endl
-           << "Payload [" << value.payload.size()
-           << " bytes]: " << Crypto::StringTools::to_hex(value.payload.data(), value.payload.size()) << std::endl;
+        os << value.to_string();
 
         return os;
     }

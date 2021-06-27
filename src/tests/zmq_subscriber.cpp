@@ -2,10 +2,33 @@
 //
 // Please see the included LICENSE file for more information.
 
+#include <console.h>
 #include <tools/cli_helper.h>
+#include <tools/thread_helper.h>
 #include <zmq_subscriber.h>
 
+using namespace Utilities;
 using namespace Networking;
+
+std::condition_variable stopping;
+
+void client_handler_thread(std::shared_ptr<ZMQSubscriber> &client, logger &logger)
+{
+    while (true)
+    {
+        while (!client->messages().empty())
+        {
+            const auto msg = client->messages().pop();
+
+            logger->info("Received: {0}", msg.to_string());
+        }
+
+        if (thread_sleep(stopping))
+        {
+            break;
+        }
+    }
+}
 
 int main(int argc, char **argv)
 {
@@ -38,21 +61,22 @@ int main(int argc, char **argv)
 
         if (error)
         {
-            logger->error("ZMQ Subscriber connection error: {}", error.to_string());
+            logger->error("ZMQ Subscriber connection error: {0}", error.to_string());
 
             exit(1);
         }
     }
 
-    while (true)
+    std::thread th(client_handler_thread, std::ref(client), std::ref(logger));
+
+    auto console = std::make_shared<ConsoleHandler>("ZMQ Test Subscriber");
+
+    console->run();
+
+    stopping.notify_all();
+
+    if (th.joinable())
     {
-        while (!client->messages().empty())
-        {
-            const auto msg = client->messages().pop();
-
-            std::cout << "Recv >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << std::endl << msg << std::endl;
-        }
-
-        THREAD_SLEEP();
+        th.join();
     }
 }

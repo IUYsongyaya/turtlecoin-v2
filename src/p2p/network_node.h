@@ -7,6 +7,7 @@
 
 #include "peer_database.h"
 
+#include <condition_variable>
 #include <zmq_client.h>
 #include <zmq_server.h>
 
@@ -200,6 +201,8 @@ namespace P2P
         mutable std::mutex m_mutex_clients, m_mutex_handshake_completed;
 
         logger m_logger;
+
+        std::condition_variable m_stopping;
     };
 } // namespace P2P
 

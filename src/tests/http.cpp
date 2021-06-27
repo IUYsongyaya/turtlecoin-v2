@@ -2,10 +2,12 @@
 //
 // Please see the included LICENSE file for more information.
 
+#include <console.h>
 #include <http_client.h>
 #include <http_server.h>
 #include <tools/cli_helper.h>
 
+using namespace Utilities;
 using namespace Networking;
 
 int main(int argc, char **argv)
@@ -27,6 +29,8 @@ int main(int argc, char **argv)
     auto [cli, log_level] = cli_parse_options(argc, argv, options);
 
     auto logger = Logger::create_logger("./test-http.log", log_level);
+
+    auto console = std::make_shared<ConsoleHandler>("HTTP Server Test");
 
     auto server = std::make_shared<HTTPServer>(logger);
 
@@ -78,7 +82,5 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    std::this_thread::sleep_for(std::chrono::seconds(server_timeout));
-
-    return 0;
+    console->run();
 }

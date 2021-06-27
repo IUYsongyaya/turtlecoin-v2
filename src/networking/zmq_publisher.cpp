@@ -4,6 +4,8 @@
 
 #include "zmq_publisher.h"
 
+#include <tools/thread_helper.h>
+
 namespace Networking
 {
     ZMQPublisher::ZMQPublisher(logger &logger, const uint16_t &bind_port):
@@ -32,10 +34,14 @@ namespace Networking
 
         m_running = false;
 
+        m_stopping.notify_all();
+
         if (m_thread_outgoing.joinable())
         {
             m_thread_outgoing.join();
         }
+
+        m_logger->debug("ZMQ Publisher outgoing thread shut down successfully");
 
         m_upnp_helper.reset();
 
@@ -93,16 +99,10 @@ namespace Networking
 
     void ZMQPublisher::outgoing_thread()
     {
-        while (m_running)
+        while (true)
         {
             while (!m_outgoing_msgs.empty())
             {
-                // allow for early breakout if stopping
-                if (!m_running)
-                {
-                    break;
-                }
-
                 auto message = m_outgoing_msgs.pop();
 
                 // skip empty messages
@@ -125,7 +125,10 @@ namespace Networking
                 }
             }
 
-            THREAD_SLEEP();
+            if (thread_sleep(m_stopping))
+            {
+                break;
+            }
         }
     }
 
