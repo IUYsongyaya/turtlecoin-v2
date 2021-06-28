@@ -48,6 +48,10 @@ int main(int argc, char **argv)
 
     auto [cli, log_level] = cli_parse_options(argc, argv, options);
 
+    auto console = std::make_shared<ConsoleHandler>("ZMQ Test Subscriber");
+
+    console->catch_abort();
+
     auto logger = Logger::create_logger("./test-zmq-subscriber.log", log_level);
 
     auto client = std::make_shared<ZMQSubscriber>(logger);
@@ -68,8 +72,6 @@ int main(int argc, char **argv)
     }
 
     std::thread th(client_handler_thread, std::ref(client), std::ref(logger));
-
-    auto console = std::make_shared<ConsoleHandler>("ZMQ Test Subscriber");
 
     console->run();
 

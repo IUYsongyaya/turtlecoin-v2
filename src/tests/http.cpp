@@ -28,9 +28,11 @@ int main(int argc, char **argv)
 
     auto [cli, log_level] = cli_parse_options(argc, argv, options);
 
-    auto logger = Logger::create_logger("./test-http.log", log_level);
-
     auto console = std::make_shared<ConsoleHandler>("HTTP Server Test");
+
+    console->catch_abort();
+
+    auto logger = Logger::create_logger("./test-http.log", log_level);
 
     auto server = std::make_shared<HTTPServer>(logger);
 

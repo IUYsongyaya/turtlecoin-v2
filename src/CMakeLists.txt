@@ -6,6 +6,7 @@ add_subdirectory(logger)
 add_subdirectory(networking)
 add_subdirectory(node)
 add_subdirectory(p2p)
+add_subdirectory(seed_node)
 add_subdirectory(utilities)
 
 if(BUILD_UNIT_TESTS)

@@ -5,12 +5,17 @@
 #ifndef TURTLECOIN_UTILITIES_H
 #define TURTLECOIN_UTILITIES_H
 
-#include <algorithm>
 #include <string>
 #include <vector>
 
 namespace Utilities
 {
+    /**
+     * Prints the given tuple of left/right columns as a table
+     * @param rows
+     */
+    void print_table(const std::vector<std::tuple<std::string, std::string>> &rows);
+
     /**
      * Joins a vector of strings together using the specified character as the delimiter
      *

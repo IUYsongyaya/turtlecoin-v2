@@ -11,8 +11,8 @@ using namespace Types::Network;
 
 namespace P2P
 {
-    NetworkNode::NetworkNode(logger &logger, const std::string &path, const uint16_t &bind_port):
-        m_running(false), m_logger(logger)
+    NetworkNode::NetworkNode(logger &logger, const std::string &path, const uint16_t &bind_port, bool seed_mode):
+        m_running(false), m_logger(logger), m_seed_mode(seed_mode)
     {
         m_peer_db = std::make_shared<PeerDB>(path);
 
@@ -277,6 +277,17 @@ namespace P2P
         }
 
         std::cout << is_server << "\t" << from << std::endl << packet << std::endl;
+
+        /**
+         * If we are operating in seed mode and the incoming data packet came
+         * from a connected client, relay it out to all connected clients
+         */
+        if (m_seed_mode && is_server)
+        {
+            zmq_message_envelope_t msg(packet.serialize());
+
+            send(msg);
+        }
     }
 
     void NetworkNode::handle_packet(
@@ -512,7 +523,7 @@ namespace P2P
              * If we cannot connect to ANY seed node and our peer list database is empty
              * then we need to fail out as we cannot connect to the peer to peer network
              */
-            if (!connected_to_seed && m_peer_db->count() == 0)
+            if (!m_seed_mode && !connected_to_seed && m_peer_db->count() == 0)
             {
                 m_running = false;
 

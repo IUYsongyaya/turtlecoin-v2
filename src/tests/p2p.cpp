@@ -39,6 +39,10 @@ int main(int argc, char **argv)
 
     auto [cli, log_level] = cli_parse_options(argc, argv, options);
 
+    auto console = std::make_shared<ConsoleHandler>("P2P Test Service");
+
+    console->catch_abort();
+
     auto logger = Logger::create_logger("./test-p2p.log", log_level);
 
     auto server = std::make_shared<NetworkNode>(logger, "./peerlist", server_port);
@@ -55,8 +59,6 @@ int main(int argc, char **argv)
     }
 
     std::thread th(p2p_handler_thread, std::ref(server), std::ref(logger));
-
-    auto console = std::make_shared<ConsoleHandler>("P2P Test Service");
 
     console->run();
 

@@ -1,0 +1,14 @@
+// Copyright (c) 2021, The TurtleCoin Developers
+//
+// Please see the included LICENSE file for more information.
+
+#ifdef WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+
+#include <windows.h>
+
+IDI_ICON1 ICON DISCARDABLE "./icon.ico"
+
+#endif

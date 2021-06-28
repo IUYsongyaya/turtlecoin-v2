@@ -9,7 +9,6 @@
 #include <iomanip>
 #include <linenoise.hpp>
 #include <tools/signal_handler.h>
-#include <utility>
 
 namespace Utilities
 {
@@ -18,32 +17,41 @@ namespace Utilities
     {
         m_command_names.emplace_back("exit");
 
+        m_command_names.emplace_back("help");
+
         m_command_names.emplace_back("quit");
+    }
+
+    void ConsoleHandler::catch_abort()
+    {
+        ControlSignal::register_handler(
+            [&]()
+            {
+                std::cout << std::endl
+                          << COLOR::yellow << "Termination signal caught. Performing hard exit." << COLOR::reset
+                          << std::endl
+                          << std::endl;
+
+                exit(0);
+            });
     }
 
     void ConsoleHandler::display_help()
     {
-        const auto width = maximum_command_length();
+        std::vector<std::tuple<std::string, std::string>> options;
 
-        std::cout << std::endl
-                  << std::endl
-                  << COLOR::green << std::left << std::setw(m_name.length()) << m_name << std::endl
-                  << std::left << std::setfill('=') << std::setw(m_name.length()) << "" << std::endl
-                  << std::left << std::setfill(' ') << COLOR::reset;
-
-        // loop through the available commands and split them out to the screen
         for (const auto &[command, option] : m_commands)
         {
-            std::cout << COLOR::green << std::setw(width) << command << "\t" << COLOR::reset << option.description
-                      << std::endl;
+            options.emplace_back(command, option.description);
         }
 
-        std::cout << std::endl
-                  << std::setw(width) << COLOR::green << "exit" << COLOR::reset << "\tExits the program" << std::endl
-                  << std::setw(width) << COLOR::green << "help" << COLOR::reset << "\tDisplays this help message"
-                  << std::endl;
+        options.emplace_back("exit", "Exits the program");
 
-        std::cout << std::endl << std::endl;
+        options.emplace_back("help", "Displays this help message");
+
+        std::cout << std::endl << COLOR::white << m_name << " Help Menu" << COLOR::reset << std::endl;
+
+        Utilities::print_table(options);
     }
 
     size_t ConsoleHandler::maximum_command_length()
@@ -113,6 +121,12 @@ namespace Utilities
             // the first part is our command
             command = command_parts.front();
 
+            // typing ? is the same as asking for help
+            if (command == "?")
+            {
+                command = "help";
+            }
+
             // erase our command from the front of the vector
             command_parts.erase(command_parts.begin());
 
@@ -137,8 +151,21 @@ namespace Utilities
             {
                 linenoise::AddHistory(command.c_str());
 
+                std::visit(
+                    [&](auto &&arg)
+                    {
+                        using T = std::decay_t<decltype(arg)>;
 
-                m_commands.at(command).callback(command_parts);
+                        if constexpr (std::is_same_v<T, std::function<void(void)>>)
+                        {
+                            arg();
+                        }
+                        else if constexpr (std::is_same_v<T, std::function<void(const std::vector<std::string>)>>)
+                        {
+                            arg(command_parts);
+                        }
+                    },
+                    m_commands.at(command).callback);
             }
         }
     }
@@ -146,7 +173,7 @@ namespace Utilities
     void ConsoleHandler::register_command(
         std::string command,
         const std::string &description,
-        const std::function<void(const std::vector<std::string>)> &callback)
+        const callback_t &callback)
     {
         Utilities::str_trim(command, true);
 

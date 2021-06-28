@@ -48,7 +48,7 @@ static inline void print_cli_header()
 
 static inline cxxopts::Options cli_setup_options(const std::string &path)
 {
-    cxxopts::Options options(path, get_cli_header());
+    cxxopts::Options options(path, "");
 
     // clang-format off
     options.add_options("")
@@ -56,10 +56,10 @@ static inline cxxopts::Options cli_setup_options(const std::string &path)
             cxxopts::value<bool>()->implicit_value("true"))
         ("h,help", "Display this help message",
             cxxopts::value<bool>()->implicit_value("true"))
+        ("log-file", "Specify the <path> to the log file",
+            cxxopts::value<std::string>(), "<path>")
         ("log-level", "Sets the default logging level (0-6)",
-            cxxopts::value<size_t>()->default_value(std::to_string(Configuration::DEFAULT_LOG_LEVEL)))
-        ("no-console", "Disables the interactive console (if used)",
-            cxxopts::value<bool>()->implicit_value("true"))
+            cxxopts::value<size_t>()->default_value(std::to_string(Configuration::DEFAULT_LOG_LEVEL)), "#")
         ("v,version", "Display the software version information",
             cxxopts::value<bool>()->implicit_value("true"));
     // clang-format on
@@ -81,6 +81,8 @@ static inline std::tuple<cxxopts::ParseResult, spdlog::level::level_enum>
 
         if (result.count("help") > 0)
         {
+            print_cli_header();
+
             std::cout << options.help({}) << std::endl;
 
             exit(0);
@@ -126,6 +128,8 @@ static inline std::tuple<cxxopts::ParseResult, spdlog::level::level_enum>
                 log_level = spdlog::level::trace;
                 break;
             default:
+                print_cli_header();
+
                 std::cout << options.help({}) << std::endl;
 
                 std::cout << COLOR::red << "Invalid log level specified" << COLOR::reset << std::endl << std::endl;
@@ -139,9 +143,13 @@ static inline std::tuple<cxxopts::ParseResult, spdlog::level::level_enum>
     }
     catch (const cxxopts::OptionException &e)
     {
-        std::cout << "Error: Unable to parse command line argument options: " << e.what() << std::endl << std::endl;
+        print_cli_header();
 
         std::cout << options.help({}) << std::endl;
+
+        std::cout << COLOR::red << "Unable to parse command line argument options: " << e.what() << COLOR::reset
+                  << std::endl
+                  << std::endl;
 
         exit(1);
     }

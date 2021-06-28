@@ -10,10 +10,10 @@ const stat = promisify(fs.stat);
 const exec = promisify(childProcess.exec);
 
 /* The directories to run our formatting on, recursively */
-const directoriesToFormat = ['include', 'src'];
+const directoriesToFormat = ['include', 'src', 'binaryinfo'];
 
 /* Filetypes to run the formatter on */
-const fileTypes = ['.h', '.cpp', '.c', '.hpp'];
+const fileTypes = ['.h', '.cpp', '.c', '.hpp', '.rc'];
 
 const binaryPath = 'clang-format';
 

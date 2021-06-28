@@ -51,12 +51,24 @@ if(NOT MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -O3 -static-libstdc++ -static -Wuninitialized")
 endif()
 
+if(WIN32)
+    set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/binaryinfo/icon.rc LANGUAGE RC)
+    set(WIN32_ICON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/binaryinfo/icon.rc)
+    if (MINGW)
+        set(CMAKE_RC_COMPILER_INIT windres)
+        enable_language(RC)
+        set(CMAKE_RC_COMPILE_OBJECT "<CMAKE_RC_COMPILER> <FLAGS> <DEFINES> -o <OBJECT> <SOURCE>")
+        set(RC_CFLAGS "-DMINGW -Ocoff")
+        set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/binaryinfo/icon.rc COMPILE_FLAGS "${RC_CFLAGS}")
+    endif()
+endif()
+
 # makes the credits file includable in source code
-file(READ CREDITS credits_content)
+file(READ ${CMAKE_CURRENT_SOURCE_DIR}/CREDITS credits_content)
 string(REPLACE "\"" "\\\"" credits_content "${credits_content}")
 string(REPLACE "\n" "\\n\"\n\"" credits_content "${credits_content}")
 set(credits_content "const auto program_credits = \n\"${credits_content}\";")
-file(WRITE include/credits.h "${credits_content}")
+file(WRITE ${CMAKE_CURRENT_SOURCE_DIR}/include/credits.h "${credits_content}")
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/external)
 

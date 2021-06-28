@@ -4,8 +4,42 @@
 
 #include "utilities.h"
 
+#include "colors.h"
+
+#include <algorithm>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+
 namespace Utilities
 {
+    void print_table(const std::vector<std::tuple<std::string, std::string>> &rows)
+    {
+        size_t long_left = 0, long_right = 0;
+
+        for (const auto &[left, right] : rows)
+        {
+            long_left = std::max(long_left, left.length());
+
+            long_right = std::max(long_right, right.length());
+        }
+
+        size_t total_width = long_left + long_right + 7;
+
+        std::stringstream ss;
+
+        std::cout << COLOR::white << std::string(total_width, '=') << COLOR::reset << std::endl;
+
+        for (const auto &[left, right] : rows)
+        {
+            std::cout << COLOR::white << "| " << std::left << std::setw(long_left) << COLOR::yellow << left
+                      << COLOR::white << " | " << std::setw(long_right) << COLOR::green << right << COLOR::white << " |"
+                      << std::endl;
+        }
+
+        std::cout << COLOR::white << std::string(total_width, '=') << COLOR::reset << std::endl << std::endl;
+    }
+
     std::string str_join(const std::vector<std::string> &input, const char &ch)
     {
         std::string result;

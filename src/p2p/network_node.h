@@ -16,7 +16,15 @@ namespace P2P
     class NetworkNode
     {
       public:
-        NetworkNode(logger &logger, const std::string &path, const uint16_t &bind_port);
+        /**
+         * Constructs a new instance of the Network Node object
+         *
+         * @param logger
+         * @param path
+         * @param bind_port
+         * @param seed_mode
+         */
+        NetworkNode(logger &logger, const std::string &path, const uint16_t &bind_port, bool seed_mode = false);
 
         ~NetworkNode();
 
@@ -186,7 +194,7 @@ namespace P2P
          */
         void poller();
 
-        std::atomic<bool> m_running;
+        std::atomic<bool> m_running, m_seed_mode;
 
         std::shared_ptr<PeerDB> m_peer_db;
 

@@ -13,10 +13,13 @@
 #include <optional>
 #include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace Utilities
 {
+    typedef std::variant<std::function<void(void)>, std::function<void(const std::vector<std::string>)>> callback_t;
+
     /**
      * Structure that helps us build our interactive console application
      * that holds the command, description, and the callback method
@@ -25,10 +28,7 @@ namespace Utilities
     {
         console_command_t() {}
 
-        console_command_t(
-            std::string command,
-            std::string description,
-            std::function<void(const std::vector<std::string>)> callback):
+        console_command_t(std::string command, std::string description, callback_t callback):
             command(std::move(command)), description(std::move(description)), callback(std::move(callback))
         {
         }
@@ -37,7 +37,7 @@ namespace Utilities
 
         std::string description;
 
-        std::function<void(const std::vector<std::string>)> callback;
+        callback_t callback;
     };
 
     /**
@@ -60,7 +60,16 @@ namespace Utilities
         ConsoleHandler(std::string application_name = "Application Help Menu");
 
         /**
+         * Registers a control signal handler that exits the program when
+         * CTRL-C is encountered
+         */
+        void catch_abort();
+
+        /**
          * Runs the interactive console with the provided prompt
+         *
+         * This method also overrides any prior control signal handlers
+         * that had been previously registered
          *
          * @param prompt
          */
@@ -73,10 +82,7 @@ namespace Utilities
          * @param description
          * @param callback
          */
-        void register_command(
-            std::string command,
-            const std::string &description,
-            const std::function<void(const std::vector<std::string>)> &callback);
+        void register_command(std::string command, const std::string &description, const callback_t &callback);
 
       private:
         /**

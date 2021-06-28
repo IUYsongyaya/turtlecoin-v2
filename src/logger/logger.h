@@ -16,7 +16,7 @@ class Logger
 {
   public:
     static logger create_logger(
-        const std::string &path,
+        const std::string &path = std::string(),
         const logging_level &level = logging_level::info,
         size_t flush_interval = 1);
 };

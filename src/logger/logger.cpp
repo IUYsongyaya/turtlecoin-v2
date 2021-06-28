@@ -18,10 +18,15 @@ logger Logger::create_logger(const std::string &path, const logging_level &level
     // setup the console output
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
 
-    // setup the file log output
-    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(path);
+    std::vector<spdlog::sink_ptr> sinks {console_sink};
 
-    std::vector<spdlog::sink_ptr> sinks {console_sink, file_sink};
+    if (!path.empty())
+    {
+        // setup the file log output
+        auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(path);
+
+        sinks.push_back(file_sink);
+    }
 
     // create the multisink logger
     auto logger = std::make_shared<spdlog::async_logger>(
