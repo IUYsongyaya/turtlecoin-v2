@@ -7,7 +7,6 @@
 
 #include "http_shared.h"
 
-#include <chrono>
 #include <config.h>
 #include <errors.h>
 #include <httplib.h>

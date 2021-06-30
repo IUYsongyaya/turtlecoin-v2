@@ -2,37 +2,37 @@
 //
 // Please see the included LICENSE file for more information.
 
+#include <cli_helper.h>
 #include <console.h>
 #include <http_client.h>
 #include <http_server.h>
-#include <tools/cli_helper.h>
 
 using namespace Utilities;
 using namespace Networking;
 
 int main(int argc, char **argv)
 {
+    auto console = std::make_shared<ConsoleHandler>("HTTP Server Test");
+
+    auto cli = std::make_shared<Utilities::CLIHelper>(argv);
+
     uint16_t server_port = Configuration::API::DEFAULT_NODE_BIND_PORT;
 
     size_t server_timeout = 30;
 
-    auto options = cli_setup_options(argv);
-
     // clang-format off
-    options.add_options("Server")
+    cli->add_options("Server")
         ("p,port", "The local port to bind the server to",
          cxxopts::value<uint16_t>(server_port)->default_value(std::to_string(server_port)))
         ("t,timeout", "Keep the test server running for N seconds",
          cxxopts::value<size_t>(server_timeout)->default_value(std::to_string(server_timeout)));
     // clang-format on
 
-    auto [cli, log_level] = cli_parse_options(argc, argv, options);
-
-    auto console = std::make_shared<ConsoleHandler>("HTTP Server Test");
+    cli->parse(argc, argv);
 
     console->catch_abort();
 
-    auto logger = Logger::create_logger("./test-http.log", log_level);
+    auto logger = Logger::create_logger("./test-http.log", cli->log_level());
 
     auto server = std::make_shared<HTTPServer>(logger);
 
@@ -50,6 +50,8 @@ int main(int argc, char **argv)
 
             return response.set_content(result, "application/json");
         });
+
+    logger->info("HTTP Test server starting...");
 
     if (!server->listen("0.0.0.0", server_port))
     {
@@ -84,5 +86,9 @@ int main(int argc, char **argv)
         exit(1);
     }
 
+    logger->info("HTTP Test Server Started");
+
     console->run();
+
+    logger->info("HTTP Tester Server shutting down");
 }

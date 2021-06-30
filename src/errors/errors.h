@@ -15,34 +15,52 @@
 enum ErrorCode
 {
     SUCCESS = 0,
-    P2P_NO_START,
-    P2P_NO_DATA,
-    DB_EMPTY,
-    GENERIC_FAILURE,
+
+    // (de)serialization error code(s)
+    JSON_PARSE_ERROR,
+
+    // networking error code(s)
+    UPNP_FAILURE,
+    UPNP_NOT_SUPPORTED,
+    ZMQ_CONNECT_ERROR,
+    ZMQ_BIND_ERROR,
+    ZMQ_GENERIC_ERROR,
+    P2P_SEED_CONNECT,
+    P2P_DUPE_CONNECT,
+    HTTP_BODY_REQUIRED_BUT_NOT_FOUND,
+
+    // peer list error code(s)
+    PEERLIST_ADD_FAILURE,
+
+    // address encoding error code(s)
     BASE58_DECODE,
     ADDRESS_PREFIX_MISMATCH,
-    NOT_A_PUBLIC_KEY,
-    LMDB_ERROR,
-    DB_KEY_NOT_FOUND,
-    UNKNOWN_TRANSACTION_TYPE,
-    GLOBAL_INDEX_OUT_OF_BOUNDS,
-    BLOCK_NOT_FOUND,
-    TRANSACTION_NOT_FOUND,
-    BLOCK_DOES_NOT_CHAIN,
-    BLOCK_ALREADY_EXISTS,
+    ADDRESS_DECODE,
+
+    // database error code(s)
+    DB_EMPTY,
+    DB_BLOCK_NOT_FOUND,
+    DB_TRANSACTION_NOT_FOUND,
+    DB_GLOBAL_INDEX_OUT_OF_BOUNDS,
+    DB_DESERIALIZATION_ERROR,
+
+    // block error code(s)
     BLOCK_TXN_ORDER,
+    BLOCK_TXN_MISMATCH,
+
+    // transaction error code(s)
+    UNKNOWN_TRANSACTION_TYPE,
+
+    // staking error code(s)
     STAKING_CANDIDATE_NOT_FOUND,
     STAKING_STAKER_NOT_FOUND,
-    DESERIALIZATION_ERROR,
-    BLOCK_TRANSACTIONS_MISMATCH,
-    ZMQ_SERVER_BIND_FAILURE,
-    ZMQ_CLIENT_CONNECT_FAILURE,
-    JSON_DESERIALIZATION_ERROR,
-    HTTP_BODY_REQUIRED_BUT_NOT_FOUND,
+
     /**
      * Do not change LMDB values as they map directly to LMDB return codes
      * See: http://www.lmdb.tech/doc/group__errors.html
      */
+    LMDB_ERROR = -40000,
+    LMDB_EMPTY = -39999,
     LMDB_KEYEXIST = -30799,
     LMDB_NOTFOUND = -30798,
     LMDB_PAGE_NOTFOUND = -30797,

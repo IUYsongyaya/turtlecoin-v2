@@ -13,10 +13,26 @@ namespace Networking
         if (zmq_curve_keypair(public_key, secret_key) != 0)
         {
             return {
-                MAKE_ERROR_MSG(GENERIC_FAILURE, "Could not generate ZMQ CURVE key pair"), std::string(), std::string()};
+                MAKE_ERROR_MSG(ZMQ_GENERIC_ERROR, "Could not generate ZMQ CURVE key pair"),
+                std::string(),
+                std::string()};
         }
 
         return {MAKE_ERROR(SUCCESS), public_key, secret_key};
+    }
+
+    std::tuple<Error, std::string> zmq_generate_public_key(const std::string &secret_key)
+    {
+        char public_key[41] = {0};
+
+        if (zmq_curve_public(public_key, secret_key.c_str()) != 0)
+        {
+            return {
+                MAKE_ERROR_MSG(ZMQ_GENERIC_ERROR, "Could not generate ZMQ CURVE public key from secret key"),
+                std::string()};
+        }
+
+        return {MAKE_ERROR(SUCCESS), public_key};
     }
 
     crypto_hash_t zmq_host_port_hash(const std::string &host, const uint16_t &port)
@@ -44,6 +60,15 @@ namespace Networking
         return host;
     }
 
+    zmq_connection_monitor::zmq_connection_monitor()
+    {
+        m_connected_peers = std::make_shared<ThreadSafeSet<std::string>>();
+
+        m_delayed_peers = std::make_shared<ThreadSafeSet<std::string>>();
+
+        m_retried_peers = std::make_shared<ThreadSafeSet<std::string>>();
+    }
+
     zmq_connection_monitor::~zmq_connection_monitor()
     {
         m_running = false;
@@ -56,37 +81,31 @@ namespace Networking
 
     void zmq_connection_monitor::on_event_connected(const zmq_event_t &event, const char *addr)
     {
-        std::scoped_lock lock(m_mutex);
+        m_connected_peers->insert(addr);
 
-        m_connected_peers.insert(addr);
+        m_delayed_peers->erase(addr);
 
-        m_delayed_peers.erase(addr);
-
-        m_retried_peers.erase(addr);
+        m_retried_peers->erase(addr);
 
         cv_connected.notify_all();
     }
 
     void zmq_connection_monitor::on_event_connect_delayed(const zmq_event_t &event, const char *addr)
     {
-        std::scoped_lock lock(m_mutex);
+        m_delayed_peers->insert(addr);
 
-        m_delayed_peers.insert(addr);
+        m_retried_peers->erase(addr);
 
-        m_retried_peers.erase(addr);
-
-        m_connected_peers.erase(addr);
+        m_connected_peers->erase(addr);
     }
 
     void zmq_connection_monitor::on_event_connect_retried(const zmq_event_t &event, const char *addr)
     {
-        std::scoped_lock lock(m_mutex);
+        m_retried_peers->insert(addr);
 
-        m_retried_peers.insert(addr);
+        m_delayed_peers->erase(addr);
 
-        m_delayed_peers.erase(addr);
-
-        m_connected_peers.erase(addr);
+        m_connected_peers->erase(addr);
     }
 
     void zmq_connection_monitor::on_event_listening(const zmq_event_t &event, const char *addr)
@@ -96,23 +115,17 @@ namespace Networking
 
     void zmq_connection_monitor::on_event_accepted(const zmq_event_t &event, const char *addr)
     {
-        std::scoped_lock lock(m_mutex);
-
-        m_connected_peers.insert(addr);
+        m_connected_peers->insert(addr);
     }
 
     void zmq_connection_monitor::on_event_closed(const zmq_event_t &event, const char *addr)
     {
-        std::scoped_lock lock(m_mutex);
-
-        m_connected_peers.erase(addr);
+        m_connected_peers->erase(addr);
     }
 
     void zmq_connection_monitor::on_event_disconnected(const zmq_event_t &event, const char *addr)
     {
-        std::scoped_lock lock(m_mutex);
-
-        m_connected_peers.erase(addr);
+        m_connected_peers->erase(addr);
     }
 
     void zmq_connection_monitor::on_event_handshake_succeeded(const zmq_event_t &event, const char *addr)
@@ -135,17 +148,13 @@ namespace Networking
         // do nothing
     }
 
-    std::set<std::string> zmq_connection_monitor::connected() const
+    std::shared_ptr<ThreadSafeSet<std::string>> zmq_connection_monitor::connected() const
     {
-        std::scoped_lock lock(m_mutex);
-
         return m_connected_peers;
     }
 
-    std::set<std::string> zmq_connection_monitor::delayed() const
+    std::shared_ptr<ThreadSafeSet<std::string>> zmq_connection_monitor::delayed() const
     {
-        std::scoped_lock lock(m_mutex);
-
         return m_delayed_peers;
     }
 
@@ -162,10 +171,8 @@ namespace Networking
         return m_listening;
     }
 
-    std::set<std::string> zmq_connection_monitor::retried() const
+    std::shared_ptr<ThreadSafeSet<std::string>> zmq_connection_monitor::retried() const
     {
-        std::scoped_lock lock(m_mutex);
-
         return m_retried_peers;
     }
 

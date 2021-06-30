@@ -2,7 +2,7 @@
 //
 // Please see the included LICENSE file for more information.
 
-#include "network_node.h"
+#include "p2p_node.h"
 
 #include <tools/thread_helper.h>
 
@@ -11,19 +11,19 @@ using namespace Types::Network;
 
 namespace P2P
 {
-    NetworkNode::NetworkNode(logger &logger, const std::string &path, const uint16_t &bind_port, bool seed_mode):
+    Node::Node(logger &logger, const std::string &path, const uint16_t &bind_port, bool seed_mode):
         m_running(false), m_logger(logger), m_seed_mode(seed_mode)
     {
-        m_peer_db = std::make_shared<PeerDB>(path);
+        m_peer_db = std::make_shared<PeerDB>(logger, path);
 
         m_peer_db->prune();
 
         m_server = std::make_shared<Networking::ZMQServer>(m_logger, bind_port);
     }
 
-    NetworkNode::~NetworkNode()
+    Node::~Node()
     {
-        m_logger->info("Shutting down P2P network node");
+        m_logger->debug("Shutting down P2P network node");
 
         m_running = false;
 
@@ -31,44 +31,42 @@ namespace P2P
 
         m_server.reset();
 
-        std::unique_lock lock(m_mutex_clients);
-
         m_clients.clear();
 
-        lock.unlock();
+        m_logger->trace("Shutdown all connected clients");
 
         if (m_connection_manager_thread.joinable())
         {
             m_connection_manager_thread.join();
         }
 
-        m_logger->debug("Shut down P2P connection manager thread successfully");
+        m_logger->trace("Shut down P2P connection manager thread successfully");
 
         if (m_poller_thread.joinable())
         {
             m_poller_thread.join();
         }
 
-        m_logger->debug("Shut down P2P poller thread successfully");
+        m_logger->trace("Shut down P2P poller thread successfully");
 
         if (m_keepalive_thread.joinable())
         {
             m_keepalive_thread.join();
         }
 
-        m_logger->debug("Shut down P2P keep alive thread successfully");
+        m_logger->trace("Shut down P2P keep alive thread successfully");
 
         if (m_peer_exchange_thread.joinable())
         {
             m_peer_exchange_thread.join();
         }
 
-        m_logger->debug("Shut down P2P peer exchange thread successfully");
+        m_logger->trace("Shut down P2P peer exchange thread successfully");
 
-        m_logger->info("P2P Network Node shutdown complete");
+        m_logger->debug("P2P Network Node shutdown complete");
     }
 
-    packet_handshake_t NetworkNode::build_handshake() const
+    packet_handshake_t Node::build_handshake() const
     {
         packet_handshake_t packet(m_peer_db->peer_id(), m_server->port());
 
@@ -77,7 +75,7 @@ namespace P2P
         return packet;
     }
 
-    std::vector<network_peer_t> NetworkNode::build_peer_list() const
+    std::vector<network_peer_t> Node::build_peer_list() const
     {
         std::vector<network_peer_t> results = m_peer_db->peers();
 
@@ -89,20 +87,18 @@ namespace P2P
         return results;
     }
 
-    Error NetworkNode::connect(const std::string &unsafe_host, const uint16_t &port)
+    Error Node::connect(const std::string &unsafe_host, const uint16_t &port)
     {
-        std::scoped_lock lock(m_mutex_clients);
-
         const auto host = Networking::zmq_sanitize_host(unsafe_host);
 
         const auto hash = Networking::zmq_host_port_hash(host, port);
 
-        m_logger->debug("Attempting connection to: {}:{} => {}", host, port, hash.to_string());
-
-        if (m_clients_connected.find(hash) != m_clients_connected.end())
+        if (m_clients.contains(hash))
         {
-            return MAKE_ERROR_MSG(GENERIC_FAILURE, "Already connected to specified host and port");
+            return MAKE_ERROR_MSG(P2P_DUPE_CONNECT, "Already connected to specified host and port");
         }
+
+        m_logger->debug("Attempting connection to: {0}:{1} => {2}", host, port, hash.to_string());
 
         auto client = std::make_shared<Networking::ZMQClient>(m_logger);
 
@@ -113,23 +109,34 @@ namespace P2P
             return error;
         }
 
-        m_clients_connected.insert(hash);
-
         const auto packet = build_handshake();
 
         auto message = zmq_message_envelope_t(packet);
 
         client->send(message);
 
-        m_clients.push_back(client);
+        m_clients.insert(hash, client);
 
         return MAKE_ERROR(SUCCESS);
     }
 
-    void NetworkNode::connection_manager()
+    void Node::connection_manager()
     {
         while (m_running)
         {
+            // check to see if any of our clients are disconnected, and if so, remove em
+            {
+                for (const auto &[id, client] : m_clients)
+                {
+                    if (!client->connected())
+                    {
+                        m_logger->trace("Client {0} is no longer connected, destroying...", id.to_string());
+
+                        m_clients.erase(id);
+                    }
+                }
+            }
+
             const auto delta_connections = Configuration::P2P::DEFAULT_CONNECTION_COUNT - outgoing_connections();
 
             if (delta_connections > 0)
@@ -150,7 +157,7 @@ namespace P2P
 
                         if (error)
                         {
-                            m_logger->debug("Error connecting to peer: {}", error.to_string());
+                            m_logger->trace("Error connecting to peer: {0}", error.to_string());
                         }
                     }
                 }
@@ -163,7 +170,7 @@ namespace P2P
         }
     }
 
-    void NetworkNode::handle_incoming_message(const zmq_message_envelope_t &message, bool is_server)
+    void Node::handle_incoming_message(const zmq_message_envelope_t &message, bool is_server)
     {
         try
         {
@@ -188,17 +195,17 @@ namespace P2P
         catch (const std::exception &e)
         {
             // TODO: if we cannot handle the message, we need to disconnect whoever sent it SOMEHOW
-            m_logger->debug("Could not handle incoming P2P message: {}", e.what());
+            m_logger->trace("Could not handle incoming P2P message: {}", e.what());
         }
     }
 
-    void NetworkNode::handle_packet(
+    void Node::handle_packet(
         const crypto_hash_t &from,
         const std::string &peer_address,
         const Types::Network::packet_handshake_t &packet,
         bool is_server)
     {
-        if (is_server && m_completed_handshake.find(from) != m_completed_handshake.end())
+        if (is_server && m_completed_handshake.contains(from))
         {
             throw std::runtime_error("Handshake already completed, protocol violation.");
         }
@@ -247,19 +254,23 @@ namespace P2P
 
             reply(message);
 
-            std::scoped_lock lock(m_mutex_handshake_completed);
-
             m_completed_handshake.insert(from);
         }
     }
 
-    void NetworkNode::handle_packet(
+    void Node::handle_packet(
         const crypto_hash_t &from,
         const std::string &peer_address,
         const Types::Network::packet_data_t &packet,
         bool is_server)
     {
-        if (m_completed_handshake.find(from) == m_completed_handshake.end())
+        // if we are running in seed mode, then all data packets are ignored
+        if (m_seed_mode)
+        {
+            return;
+        }
+
+        if (m_completed_handshake.contains(from))
         {
             throw std::runtime_error("Handshake not completed first, protocol violation.");
         }
@@ -277,20 +288,9 @@ namespace P2P
         }
 
         std::cout << is_server << "\t" << from << std::endl << packet << std::endl;
-
-        /**
-         * If we are operating in seed mode and the incoming data packet came
-         * from a connected client, relay it out to all connected clients
-         */
-        if (m_seed_mode && is_server)
-        {
-            zmq_message_envelope_t msg(packet.serialize());
-
-            send(msg);
-        }
     }
 
-    void NetworkNode::handle_packet(
+    void Node::handle_packet(
         const crypto_hash_t &from,
         const std::string &peer_address,
         const Types::Network::packet_keepalive_t &packet,
@@ -303,7 +303,7 @@ namespace P2P
             return;
         }
 
-        if (m_completed_handshake.find(from) == m_completed_handshake.end())
+        if (m_completed_handshake.contains(from))
         {
             throw std::runtime_error("Handshake not completed first, protocol violation.");
         }
@@ -331,13 +331,13 @@ namespace P2P
         m_peer_db->touch(packet.peer_id);
     }
 
-    void NetworkNode::handle_packet(
+    void Node::handle_packet(
         const crypto_hash_t &from,
         const std::string &peer_address,
         const Types::Network::packet_peer_exchange_t &packet,
         bool is_server)
     {
-        if (is_server && m_completed_handshake.find(from) == m_completed_handshake.end())
+        if (is_server && m_completed_handshake.contains(from))
         {
             throw std::runtime_error("Handshake not completed first, protocol violation.");
         }
@@ -384,29 +384,27 @@ namespace P2P
         }
     }
 
-    size_t NetworkNode::incoming_connections() const
+    size_t Node::incoming_connections() const
     {
         return m_server->connections();
     }
 
-    size_t NetworkNode::outgoing_connections() const
+    size_t Node::outgoing_connections() const
     {
-        std::scoped_lock lock(m_mutex_clients);
-
         return m_clients.size();
     }
 
-    crypto_hash_t NetworkNode::peer_id() const
+    crypto_hash_t Node::peer_id() const
     {
         return m_peer_db->peer_id();
     }
 
-    std::shared_ptr<PeerDB> NetworkNode::peers() const
+    std::shared_ptr<PeerDB> Node::peers() const
     {
         return m_peer_db;
     }
 
-    void NetworkNode::poller()
+    void Node::poller()
     {
         while (m_running)
         {
@@ -417,13 +415,7 @@ namespace P2P
                 handle_incoming_message(message, true);
             }
 
-            std::unique_lock lock(m_mutex_clients);
-
-            const auto clients = m_clients;
-
-            lock.unlock();
-
-            for (const auto &client : clients)
+            for (const auto &[id, client] : m_clients)
             {
                 if (!client->messages().empty())
                 {
@@ -440,27 +432,25 @@ namespace P2P
         }
     }
 
-    void NetworkNode::reply(const zmq_message_envelope_t &message)
+    void Node::reply(const zmq_message_envelope_t &message)
     {
         m_server->send(message);
     }
 
-    bool NetworkNode::running() const
+    bool Node::running() const
     {
         return m_running;
     }
 
-    void NetworkNode::send(const zmq_message_envelope_t &message)
+    void Node::send(const zmq_message_envelope_t &message)
     {
-        std::scoped_lock lock(m_mutex_clients);
-
-        for (const auto &client : m_clients)
+        for (const auto &[id, client] : m_clients)
         {
             client->send(message);
         }
     }
 
-    void NetworkNode::send_keepalives()
+    void Node::send_keepalives()
     {
         while (m_running)
         {
@@ -472,10 +462,13 @@ namespace P2P
             packet_keepalive_t packet(m_peer_db->peer_id());
 
             send(packet);
+
+            // send via server to poke the clients
+            reply(packet);
         }
     }
 
-    void NetworkNode::send_peer_exchanges()
+    void Node::send_peer_exchanges()
     {
         while (m_running)
         {
@@ -490,7 +483,7 @@ namespace P2P
         }
     }
 
-    Error NetworkNode::start()
+    Error Node::start(const std::vector<std::string> &seed_nodes)
     {
         if (!m_running)
         {
@@ -505,13 +498,28 @@ namespace P2P
 
             m_running = true;
 
-            m_poller_thread = std::thread(&NetworkNode::poller, this);
+            m_poller_thread = std::thread(&Node::poller, this);
 
             bool connected_to_seed = false;
 
+            // attempt connections to the compiled in seed nodes
             for (const auto &seed_node : Configuration::P2P::SEED_NODES)
             {
                 auto error = connect(seed_node.host, seed_node.port);
+
+                if (!error)
+                {
+                    connected_to_seed = true;
+                }
+            }
+
+            // attempt connections to any alternate seed nodes specified
+            for (const auto &seed_node : seed_nodes)
+            {
+                const auto seed = ip_address_t(seed_node);
+
+                auto error =
+                    connect(seed.to_string(), (seed.port() != 0) ? seed.port() : Configuration::P2P::DEFAULT_BIND_PORT);
 
                 if (!error)
                 {
@@ -527,19 +535,21 @@ namespace P2P
             {
                 m_running = false;
 
+                m_stopping.notify_all();
+
                 if (m_poller_thread.joinable())
                 {
                     m_poller_thread.join();
                 }
 
-                return MAKE_ERROR_MSG(GENERIC_FAILURE, "Could not connect to any seed nodes.");
+                return MAKE_ERROR_MSG(P2P_SEED_CONNECT, "Could not connect to any seed nodes.");
             }
 
-            m_keepalive_thread = std::thread(&NetworkNode::send_keepalives, this);
+            m_keepalive_thread = std::thread(&Node::send_keepalives, this);
 
-            m_peer_exchange_thread = std::thread(&NetworkNode::send_peer_exchanges, this);
+            m_peer_exchange_thread = std::thread(&Node::send_peer_exchanges, this);
 
-            m_connection_manager_thread = std::thread(&NetworkNode::connection_manager, this);
+            m_connection_manager_thread = std::thread(&Node::connection_manager, this);
         }
 
         return MAKE_ERROR(SUCCESS);

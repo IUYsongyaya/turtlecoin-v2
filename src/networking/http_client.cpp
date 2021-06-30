@@ -4,6 +4,8 @@
 
 #include "http_client.h"
 
+#include <chrono>
+
 namespace Networking
 {
     std::shared_ptr<httplib::Client> HTTPClient::create_client(
@@ -64,7 +66,7 @@ namespace Networking
         if (json_body.Parse(result->body.c_str()).HasParseError()
             && json_body.Parse(body_as_json_string.c_str()).HasParseError())
         {
-            return {MAKE_ERROR(JSON_DESERIALIZATION_ERROR), std::move(json_body)};
+            return {MAKE_ERROR(JSON_PARSE_ERROR), std::move(json_body)};
         }
 
         return {MAKE_ERROR(SUCCESS), std::move(json_body)};

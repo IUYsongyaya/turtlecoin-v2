@@ -7,6 +7,7 @@
 
 #include <crypto.h>
 #include <db_lmdb.h>
+#include <logger.h>
 #include <types.h>
 
 using namespace Types::Network;
@@ -16,7 +17,7 @@ namespace P2P
     class PeerDB
     {
       public:
-        PeerDB(const std::string &path);
+        PeerDB(logger &logger, const std::string &path);
 
         /**
          * Adds the peer entry to the database
@@ -112,6 +113,8 @@ namespace P2P
         mutable std::mutex m_mutex;
 
         crypto_hash_t m_peer_id;
+
+        logger m_logger;
     };
 } // namespace P2P
 

@@ -10,11 +10,7 @@ foreach(test_file ${test_files})
 
     add_executable("${TEST_NAME}_test" ${TEST_FILE} ${WIN32_ICON_FILE})
 
-    target_link_libraries("${TEST_NAME}_test" crypto-static ipv6-parser Core Utilities P2P Networking)
-
-    if(WIN32)
-        target_link_libraries("${TEST_NAME}_test" ws2_32 crypt32)
-    endif()
+    target_link_libraries("${TEST_NAME}_test" External Common Core Utilities P2P Networking)
 
     set_property(TARGET "${TEST_NAME}_test" PROPERTY OUTPUT_NAME "test_${TEST_NAME}")
 endforeach()

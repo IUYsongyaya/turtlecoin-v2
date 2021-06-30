@@ -2,8 +2,8 @@
 //
 // Please see the included LICENSE file for more information.
 
+#include <cli_helper.h>
 #include <console.h>
-#include <tools/cli_helper.h>
 #include <tools/thread_helper.h>
 #include <zmq_subscriber.h>
 
@@ -32,33 +32,35 @@ void client_handler_thread(std::shared_ptr<ZMQSubscriber> &client, logger &logge
 
 int main(int argc, char **argv)
 {
+    auto console = std::make_shared<ConsoleHandler>("ZMQ Test Subscriber");
+
+    auto cli = std::make_shared<Utilities::CLIHelper>(argv);
+
     std::string server_host = "127.0.0.2";
 
     uint16_t server_port = Configuration::Notifier::DEFAULT_BIND_PORT;
 
-    auto options = cli_setup_options(argv);
-
     // clang-format off
-    options.add_options("Remote Host")
+    cli->add_options("Remote Host")
         ("r,remote","The remote host IP/name to connect to",
          cxxopts::value<std::string>(server_host)->default_value(server_host))
         ("p,port","The remote host port to connect to",
          cxxopts::value<uint16_t>(server_port)->default_value(std::to_string(server_port)));
     // clang-format on
 
-    auto [cli, log_level] = cli_parse_options(argc, argv, options);
-
-    auto console = std::make_shared<ConsoleHandler>("ZMQ Test Subscriber");
+    cli->parse(argc, argv);
 
     console->catch_abort();
 
-    auto logger = Logger::create_logger("./test-zmq-subscriber.log", log_level);
+    auto logger = Logger::create_logger("./test-zmq-subscriber.log", cli->log_level());
 
     auto client = std::make_shared<ZMQSubscriber>(logger);
 
     const auto subject = crypto_hash_t("bf15572be229a849020316b597609fcaa30a5d0ad07048ba301d13e1ccdca90b");
 
     client->subscribe(subject);
+
+    logger->info("Test ZMQ Subscriber Starting...");
 
     {
         const auto error = client->connect(server_host, server_port);
@@ -73,7 +75,11 @@ int main(int argc, char **argv)
 
     std::thread th(client_handler_thread, std::ref(client), std::ref(logger));
 
+    logger->info("Test ZMQ Subscriber Started");
+
     console->run();
+
+    logger->info("Test ZMQ Subscriber shutting down...");
 
     stopping.notify_all();
 

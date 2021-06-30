@@ -2,101 +2,79 @@
 //
 // Please see the included LICENSE file for more information.
 
-#include <address_encoding.h>
+#include <address.h>
+#include <cli_helper.h>
 #include <crypto.h>
-#include <tools/cli_helper.h>
+#include <logger.h>
 #include <utilities.h>
 
-using namespace Utilities;
+using namespace Common::Address;
 
 int main(int argc, char **argv)
 {
-    auto options = cli_setup_options(argv);
+    auto cli = std::make_shared<Utilities::CLIHelper>(argv);
 
-    auto [cli, log_level] = cli_parse_options(argc, argv, options);
+    cli->parse(argc, argv);
 
-    std::cout << "Wallet Address Encoding Check" << std::endl << std::endl;
+    auto logger = Logger::create_logger("", cli->log_level());
+
+    logger->warn("Walled Address Encoding Check");
 
     const auto [wallet_seed, words, timestamp] = Crypto::generate_wallet_seed();
 
-    std::cout << "Seed: " << wallet_seed << std::endl
-              << std::endl
-              << "Creation Timestamp: " << std::to_string(timestamp) << std::endl
-              << std::endl
-              << "Mnemonic Phrase: " << std::endl;
+    logger->info("Seed: {0}", wallet_seed.to_string());
 
-    for (size_t i = 0; i < words.size(); ++i)
-    {
-        if (i != 0 && i % 8 == 0)
-        {
-            std::cout << std::endl << "\t";
-        }
-        else if (i == 0)
-        {
-            std::cout << "\t";
-        }
+    logger->info("Creation Timestamp: {0}", std::to_string(timestamp));
 
-        std::cout << words[i];
-
-        if (i + 1 != words.size())
-        {
-            std::cout << " ";
-        }
-    }
-
-    std::cout << std::endl << std::endl;
+    logger->info("Mnemonic Phrase: {0}", Utilities::str_join(words));
 
     const auto [public_view, private_view] = Crypto::generate_wallet_view_keys(wallet_seed);
 
-    std::cout << "View Keys" << std::endl
-              << "\t"
-              << "Private: " << private_view << std::endl
-              << "\t"
-              << "Public: " << public_view << std::endl
-              << std::endl;
+    logger->warn("View Keys");
+
+    logger->info("Private: {0}", private_view.to_string());
+
+    logger->info("Public: {0}", public_view.to_string());
 
     const auto [public_spend, private_spend] = Crypto::generate_wallet_spend_keys(wallet_seed);
 
-    std::cout << "Spend Keys" << std::endl
-              << "\t"
-              << "Private: " << private_spend << std::endl
-              << "\t"
-              << "Public: " << public_spend << std::endl
-              << std::endl;
+    logger->warn("Spend Keys");
 
-    const auto address = encode_address(public_spend, public_view);
+    logger->info("Private: {0}", private_spend.to_string());
 
-    std::cout << "Address: " << address << std::endl << std::endl;
+    logger->info("Public: {0}", public_spend.to_string());
+
+    const auto address = encode(public_spend, public_view);
+
+    logger->warn("Public Address");
+
+    logger->info("Address: {0}", address);
 
     {
-        std::cout << "Address Decoding...: ";
-
-        const auto [error, spend, view] = decode_address(address);
+        const auto [error, spend, view] = decode(address);
 
         if (error || spend != public_spend || view != public_view)
         {
-            std::cout << "Failed" << std::endl;
+            logger->error("Address Decoding... Failed");
 
             exit(1);
         }
 
-        std::cout << "Passed" << std::endl << std::endl;
+        logger->info("Address Decoding... Passed");
     }
 
     {
-        std::cout << "v1 Address Decoding Failure...: ";
-
-        const auto [error, spend, view] = decode_address(
+        const auto [error, spend, view] = decode(
             "TRTLv1QeF7jjfjnbs4nY1WMYifTnJyVpX9fosdPiP6hEJY7Mz1Z9Bfk424C6DXbebyVD5wD9prpwJQhAMMgtAzFEPVvVd9ijAk2");
 
         if (!error)
         {
-            std::cout << "Failed" << std::endl;
+            logger->error("v1 Address Decoding Failure... Failed");
 
             exit(1);
         }
 
-        std::cout << "Passed" << std::endl << std::endl;
+        logger->info("v1 Address Decoding Failure... Passed");
     }
 
     return 0;

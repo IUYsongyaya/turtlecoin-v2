@@ -12,8 +12,8 @@
 #include <config.h>
 #include <errors.h>
 #include <network/zmq_message_envelope.h>
-#include <thread>
 #include <tools/thread_safe_queue.h>
+#include <tools/thread_safe_set.h>
 #include <zmq.hpp>
 
 using namespace Types::Network;
@@ -130,13 +130,6 @@ namespace Networking
         void del_connection(const crypto_hash_t &identity);
 
         /**
-         * Removes a record of the connection without aquiring lock
-         *
-         * @param identity
-         */
-        void del_connection_unsafe(const crypto_hash_t &identity);
-
-        /**
          * The thread that reads from the ZMQ socket
          */
         void incoming_thread();
@@ -156,9 +149,9 @@ namespace Networking
 
         std::thread m_thread_incoming, m_thread_outgoing;
 
-        mutable std::mutex m_socket_mutex, m_mutex;
+        mutable std::mutex m_socket_mutex;
 
-        std::set<crypto_hash_t> m_connections;
+        ThreadSafeSet<crypto_hash_t> m_connections;
 
         crypto_hash_t m_identity;
 

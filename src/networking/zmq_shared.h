@@ -14,11 +14,14 @@
 #include <mutex>
 #include <set>
 #include <thread>
+#include <tools/thread_safe_set.h>
 #include <zmq.hpp>
 
 namespace Networking
 {
     [[nodiscard]] std::tuple<Error, std::string, std::string> zmq_generate_keypair();
+
+    [[nodiscard]] std::tuple<Error, std::string> zmq_generate_public_key(const std::string &secret_key);
 
     [[nodiscard]] crypto_hash_t zmq_host_port_hash(const std::string &host, const uint16_t &port);
 
@@ -27,6 +30,8 @@ namespace Networking
     class zmq_connection_monitor : public zmq::monitor_t
     {
       public:
+        zmq_connection_monitor();
+
         ~zmq_connection_monitor();
 
         void on_event_connected(const zmq_event_t &event, const char *addr) override;
@@ -56,14 +61,14 @@ namespace Networking
          *
          * @return
          */
-        std::set<std::string> connected() const;
+        std::shared_ptr<ThreadSafeSet<std::string>> connected() const;
 
         /**
          * Returns the outgoing connections that are currently in a delayed state
          *
          * @return
          */
-        std::set<std::string> delayed() const;
+        std::shared_ptr<ThreadSafeSet<std::string>> delayed() const;
 
         /**
          * Returns whether the socket is in a listening state
@@ -77,7 +82,7 @@ namespace Networking
          *
          * @return
          */
-        std::set<std::string> retried() const;
+        std::shared_ptr<ThreadSafeSet<std::string>> retried() const;
 
         /**
          * Returns whether the monitor is currently running
@@ -100,11 +105,9 @@ namespace Networking
       private:
         void listener();
 
-        mutable std::mutex m_mutex;
-
         std::atomic<bool> m_running = false, m_listening = false;
 
-        std::set<std::string> m_connected_peers, m_delayed_peers, m_retried_peers;
+        std::shared_ptr<ThreadSafeSet<std::string>> m_connected_peers, m_delayed_peers, m_retried_peers;
 
         std::thread m_poller;
     };

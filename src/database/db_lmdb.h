@@ -1021,7 +1021,7 @@ namespace Database
                 success = error == SUCCESS;
             } while (success);
 
-            Error error = (!results.empty()) ? SUCCESS : DB_KEY_NOT_FOUND;
+            Error error = (!results.empty()) ? SUCCESS : LMDB_EMPTY;
 
             return {error, key, results};
         }

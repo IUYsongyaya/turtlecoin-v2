@@ -2,9 +2,9 @@
 //
 // Please see the included LICENSE file for more information.
 
+#include <cli_helper.h>
 #include <console.h>
-#include <network_node.h>
-#include <tools/cli_helper.h>
+#include <p2p_node.h>
 #include <tools/thread_helper.h>
 
 using namespace Utilities;
@@ -12,7 +12,7 @@ using namespace P2P;
 
 std::condition_variable stopping;
 
-static inline void p2p_handler_thread(std::shared_ptr<NetworkNode> &server, logger &logger)
+static inline void p2p_handler_thread(std::shared_ptr<Node> &server, logger &logger)
 {
     while (true)
     {
@@ -27,32 +27,38 @@ static inline void p2p_handler_thread(std::shared_ptr<NetworkNode> &server, logg
 
 int main(int argc, char **argv)
 {
+    auto console = std::make_shared<ConsoleHandler>("P2P Test Service");
+
+    auto cli = std::make_shared<Utilities::CLIHelper>(argv);
+
     uint16_t server_port = Configuration::P2P::DEFAULT_BIND_PORT;
 
-    auto options = cli_setup_options(argv);
+    auto seed_nodes = std::vector<std::string>();
 
     // clang-format off
-    options.add_options("Server")
+    cli->add_options("Server")
         ("p,port", "The local port to bind the server to",
-         cxxopts::value<uint16_t>(server_port)->default_value(std::to_string(server_port)));
+            cxxopts::value<uint16_t>(server_port)->default_value(std::to_string(server_port)))
+        ("seed-node", "Additional seed nodes to attempt when bootstrapping",
+            cxxopts::value<std::vector<std::string>>(seed_nodes), "<ip:port>");
     // clang-format on
 
-    auto [cli, log_level] = cli_parse_options(argc, argv, options);
-
-    auto console = std::make_shared<ConsoleHandler>("P2P Test Service");
+    cli->parse(argc, argv);
 
     console->catch_abort();
 
-    auto logger = Logger::create_logger("./test-p2p.log", log_level);
+    auto logger = Logger::create_logger("./test-p2p.log", cli->log_level());
 
-    auto server = std::make_shared<NetworkNode>(logger, "./peerlist", server_port);
+    auto server = std::make_shared<Node>(logger, "./peerlist", server_port);
+
+    logger->info("Starting Test P2P Node...");
 
     {
-        const auto error = server->start();
+        const auto error = server->start(seed_nodes);
 
         if (error)
         {
-            logger->error("P2P server error: {0}", error.to_string());
+            logger->error("Test P2P Node could not start: {0}", error.to_string());
 
             exit(1);
         }
@@ -60,7 +66,11 @@ int main(int argc, char **argv)
 
     std::thread th(p2p_handler_thread, std::ref(server), std::ref(logger));
 
+    logger->info("P2P Node started on *:{0}", server_port);
+
     console->run();
+
+    logger->info("P2P Node shutting down...");
 
     stopping.notify_all();
 

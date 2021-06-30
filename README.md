@@ -6,6 +6,8 @@
 
 <!-- TODO additional updates -->
 
+## This package is NOT production ready
+
 ## compilation
 
 ```bash

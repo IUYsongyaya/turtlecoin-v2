@@ -2,8 +2,8 @@
 //
 // Please see the included LICENSE file for more information.
 
+#include <cli_helper.h>
 #include <console.h>
-#include <tools/cli_helper.h>
 #include <tools/thread_helper.h>
 #include <types.h>
 #include <zmq_client.h>
@@ -38,31 +38,33 @@ void client_handler_thread(std::shared_ptr<ZMQClient> &client, logger &logger)
 
 int main(int argc, char **argv)
 {
+    auto console = std::make_shared<ConsoleHandler>("ZMQ Test Client");
+
+    auto cli = std::make_shared<Utilities::CLIHelper>(argv);
+
     std::string server_host = "127.0.0.2";
 
     uint16_t server_port = Configuration::P2P::DEFAULT_BIND_PORT;
 
-    auto options = cli_setup_options(argv);
-
     // clang-format off
-    options.add_options("Remote Host")
+    cli->add_options("Remote Host")
         ("r,remote","The remote host IP/name to connect to",
          cxxopts::value<std::string>(server_host)->default_value(server_host))
         ("p,port","The remote host port to connect to",
          cxxopts::value<uint16_t>(server_port)->default_value(std::to_string(server_port)));
     // clang-format on
 
-    auto [cli, log_level] = cli_parse_options(argc, argv, options);
+    cli->parse(argc, argv);
 
-    auto logger = Logger::create_logger("./test-zmq-client.log", log_level);
-
-    auto console = std::make_shared<ConsoleHandler>("ZMQ Test Client");
+    auto logger = Logger::create_logger("./test-zmq-client.log", cli->log_level());
 
     console->catch_abort();
 
     auto client = std::make_shared<ZMQClient>(logger);
 
     logger->info("ZMQ Client Identity: {0}", client->identity().to_string());
+
+    logger->info("Starting Test ZMQ Client...");
 
     {
         const auto error = client->connect(server_host, server_port);
@@ -85,7 +87,11 @@ int main(int argc, char **argv)
 
     std::thread th(client_handler_thread, std::ref(client), std::ref(logger));
 
+    logger->info("Test ZMQ Client Started");
+
     console->run();
+
+    logger->info("Test ZMQ Client shutting down...");
 
     stopping.notify_all();
 

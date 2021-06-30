@@ -7,6 +7,7 @@
 
 #include <deque>
 #include <mutex>
+#include <thread>
 #include <vector>
 
 template<typename T> class ThreadSafeDeque
@@ -24,7 +25,7 @@ template<typename T> class ThreadSafeDeque
     {
         std::scoped_lock lock(m_mutex);
 
-        return m_deque[position];
+        return m_container[position];
     }
 
     /**
@@ -37,7 +38,7 @@ template<typename T> class ThreadSafeDeque
     {
         std::scoped_lock lock(m_mutex);
 
-        return m_deque.at(position);
+        return m_container.at(position);
     }
 
     /**
@@ -49,7 +50,19 @@ template<typename T> class ThreadSafeDeque
     {
         std::scoped_lock lock(m_mutex);
 
-        return m_deque.back();
+        return m_container.back();
+    }
+
+    /**
+     * returns an iterator to the beginning
+     *
+     * @return
+     */
+    auto begin() const
+    {
+        std::scoped_lock lock(m_mutex);
+
+        return m_container.begin();
     }
 
     /**
@@ -59,7 +72,7 @@ template<typename T> class ThreadSafeDeque
     {
         std::scoped_lock lock(m_mutex);
 
-        m_deque.clear();
+        m_container.clear();
     }
 
     /**
@@ -71,7 +84,19 @@ template<typename T> class ThreadSafeDeque
     {
         std::scoped_lock lock(m_mutex);
 
-        return m_deque.empty();
+        return m_container.empty();
+    }
+
+    /**
+     * returns an iterator to the end
+     *
+     * @return
+     */
+    auto end() const
+    {
+        std::scoped_lock lock(m_mutex);
+
+        return m_container.end();
     }
 
     /**
@@ -83,7 +108,7 @@ template<typename T> class ThreadSafeDeque
     {
         std::scoped_lock lock(m_mutex);
 
-        return m_deque.front();
+        return m_container.front();
     }
 
     /**
@@ -95,7 +120,7 @@ template<typename T> class ThreadSafeDeque
     {
         std::scoped_lock lock(m_mutex);
 
-        return m_deque.max_size();
+        return m_container.max_size();
     }
 
     /**
@@ -107,9 +132,9 @@ template<typename T> class ThreadSafeDeque
     {
         std::scoped_lock lock(m_mutex);
 
-        auto item = m_deque.back();
+        auto item = m_container.back();
 
-        m_deque.pop_back();
+        m_container.pop_back();
 
         return item;
     }
@@ -123,9 +148,9 @@ template<typename T> class ThreadSafeDeque
     {
         std::scoped_lock lock(m_mutex);
 
-        auto item = m_deque.front();
+        auto item = m_container.front();
 
-        m_deque.pop_front();
+        m_container.pop_front();
 
         return item;
     }
@@ -139,7 +164,7 @@ template<typename T> class ThreadSafeDeque
     {
         std::scoped_lock lock(m_mutex);
 
-        m_deque.push_back(item);
+        m_container.push_back(item);
     }
 
     /**
@@ -154,7 +179,7 @@ template<typename T> class ThreadSafeDeque
 
         for (const auto &item : items)
         {
-            m_deque.push_back(item);
+            m_container.push_back(item);
         }
     }
 
@@ -167,7 +192,7 @@ template<typename T> class ThreadSafeDeque
     {
         std::scoped_lock lock(m_mutex);
 
-        m_deque.push_front(item);
+        m_container.push_front(item);
     }
 
     /**
@@ -190,8 +215,32 @@ template<typename T> class ThreadSafeDeque
 
         for (const auto &item : temp)
         {
-            m_deque.push_front(item);
+            m_container.push_front(item);
         }
+    }
+
+    /**
+     * returns a reverse iterator to the beginning
+     *
+     * @return
+     */
+    auto rbegin() const
+    {
+        std::scoped_lock lock(m_mutex);
+
+        return m_container.rbegin();
+    }
+
+    /**
+     * returns a reverse iterator to the end
+     *
+     * @return
+     */
+    auto rend() const
+    {
+        std::scoped_lock lock(m_mutex);
+
+        return m_container.rend();
     }
 
     /**
@@ -209,7 +258,7 @@ template<typename T> class ThreadSafeDeque
     {
         std::scoped_lock lock(m_mutex);
 
-        m_deque.resize(count);
+        m_container.resize(count);
     }
 
     /**
@@ -228,7 +277,7 @@ template<typename T> class ThreadSafeDeque
     {
         std::scoped_lock lock(m_mutex);
 
-        m_deque.resise(count, item);
+        m_container.resise(count, item);
     }
 
     /**
@@ -242,7 +291,7 @@ template<typename T> class ThreadSafeDeque
     {
         std::scoped_lock lock(m_mutex);
 
-        m_deque[position] = item;
+        m_container[position] = item;
     }
 
     /**
@@ -252,7 +301,7 @@ template<typename T> class ThreadSafeDeque
     {
         std::scoped_lock lock(m_mutex);
 
-        m_deque.shrink_to_fit();
+        m_container.shrink_to_fit();
     }
 
     /**
@@ -264,7 +313,7 @@ template<typename T> class ThreadSafeDeque
     {
         std::scoped_lock lock(m_mutex);
 
-        return m_deque.size();
+        return m_container.size();
     }
 
     /**
@@ -274,12 +323,12 @@ template<typename T> class ThreadSafeDeque
     {
         std::scoped_lock lock(m_mutex);
 
-        if (m_deque.empty())
+        if (m_container.empty())
         {
             return;
         }
 
-        m_deque.pop_back();
+        m_container.pop_back();
     }
 
     /**
@@ -289,17 +338,17 @@ template<typename T> class ThreadSafeDeque
     {
         std::scoped_lock lock(m_mutex);
 
-        if (m_deque.empty())
+        if (m_container.empty())
         {
             return;
         }
 
-        m_deque.pop_front();
+        m_container.pop_front();
     }
 
 
   private:
-    std::deque<T> m_deque;
+    std::deque<T> m_container;
 
     mutable std::mutex m_mutex;
 };

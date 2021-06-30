@@ -13,7 +13,7 @@ static const auto PEER_ID_IDENTIFIER =
 
 namespace P2P
 {
-    PeerDB::PeerDB(const std::string &path)
+    PeerDB::PeerDB(logger &logger, const std::string &path): m_logger(logger)
     {
         m_env = Database::LMDB::getInstance(path);
 
@@ -34,6 +34,8 @@ namespace P2P
         else
         {
             m_peer_id = Crypto::random_hash();
+
+            m_logger->debug("Generated new peer ID: {0}", m_peer_id.to_string());
         }
 
         info->put(PEER_ID_IDENTIFIER, m_peer_id);
@@ -43,17 +45,19 @@ namespace P2P
     {
         if (entry.peer_id == m_peer_id)
         {
-            return MAKE_ERROR_MSG(GENERIC_FAILURE, "Error adding self to peer database.");
+            return MAKE_ERROR_MSG(PEERLIST_ADD_FAILURE, "Error adding self to peer database.");
         }
 
         const auto prune_time = (time(nullptr)) - Configuration::P2P::PEER_PRUNE_TIME;
 
         if (entry.last_seen < prune_time)
         {
-            return MAKE_ERROR_MSG(GENERIC_FAILURE, "Peer last seen too far in the past.");
+            return MAKE_ERROR_MSG(PEERLIST_ADD_FAILURE, "Peer last seen too far in the past.");
         }
 
         std::scoped_lock lock(m_mutex);
+
+        m_logger->trace("Adding new Peer entry: {0}", entry.peer_id.to_string());
 
         return m_database->put(entry.peer_id, entry.serialize());
     }
@@ -69,12 +73,16 @@ namespace P2P
     {
         std::scoped_lock lock(m_mutex);
 
+        m_logger->trace("Deleting Peer entry: {0}", entry.peer_id.to_string());
+
         return m_database->del(entry.peer_id);
     }
 
     Error PeerDB::del(const crypto_hash_t &peer_id)
     {
         std::scoped_lock lock(m_mutex);
+
+        m_logger->trace("Deleting Peer entry: {0}", peer_id.to_string());
 
         return m_database->del(peer_id);
     }
@@ -129,6 +137,11 @@ namespace P2P
         const auto all_peers = peers();
 
         const auto prune_time = (time(nullptr)) - Configuration::P2P::PEER_PRUNE_TIME;
+
+        if (!all_peers.empty())
+        {
+            m_logger->trace("Starting peer list pruning...");
+        }
 
         for (const auto &peer : all_peers)
         {

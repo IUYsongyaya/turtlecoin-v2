@@ -9,6 +9,7 @@
 #include <condition_variable>
 #include <config.h>
 #include <mutex>
+#include <thread>
 
 /**
  * Pauses execution of the running thread until the timeout elapses OR

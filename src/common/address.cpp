@@ -2,13 +2,13 @@
 //
 // Please see the included LICENSE file for more information.
 
-#include "address_encoding.h"
+#include "address.h"
 
 #include <config.h>
 
-namespace Utilities
+namespace Common::Address
 {
-    std::tuple<Error, crypto_public_key_t, crypto_public_key_t> decode_address(const std::string &address)
+    std::tuple<Error, crypto_public_key_t, crypto_public_key_t> decode(const std::string &address)
     {
         auto [success, decoded] = Crypto::CNBase58::decode_check(address);
 
@@ -35,11 +35,11 @@ namespace Utilities
         }
         catch (...)
         {
-            return {MAKE_ERROR(NOT_A_PUBLIC_KEY), {}, {}};
+            return {MAKE_ERROR(ADDRESS_DECODE), {}, {}};
         }
     }
 
-    std::string encode_address(const crypto_public_key_t &public_spend, const crypto_public_key_t &public_view)
+    std::string encode(const crypto_public_key_t &public_spend, const crypto_public_key_t &public_view)
     {
         // construct the raw address [prefix || public_spend || public_view]
         serializer_t writer;
@@ -53,4 +53,4 @@ namespace Utilities
         // Encode the raw address as Base58 and prepend the Base58 encoded prefix
         return Crypto::CNBase58::encode_check(writer);
     }
-} // namespace Utilities
+} // namespace Common::Address

@@ -1,10 +1,14 @@
-#include <tools/cli_helper.h>
+// Copyright (c) 2021, The TurtleCoin Developers
+//
+// Please see the included LICENSE file for more information.
+
+#include <cli_helper.h>
 
 int main(int argc, char **argv)
 {
-    auto options = cli_setup_options(argv);
+    auto cli = std::make_shared<Utilities::CLIHelper>(argv);
 
-    auto cli = cli_parse_options(argc, argv, options);
+    cli->parse(argc, argv);
 
     return 0;
 }

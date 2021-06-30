@@ -9,7 +9,7 @@ namespace Networking
     HTTPServer::HTTPServer(logger &logger, std::string cors_domain):
         m_cors_domain(std::move(cors_domain)), m_port(0), m_logger(logger), m_host("")
     {
-        // auto set proper security headers
+        // auto set security headers
         set_post_routing_handler(
             [this](const auto &req, auto &res)
             {
@@ -42,8 +42,10 @@ namespace Networking
             });
 
         set_exception_handler(
-            [](const auto &request, auto &response, const std::exception &e)
+            [&](const auto &request, auto &response, const std::exception &e)
             {
+                m_logger->debug("HTTP Internal Server Error: {0}", e.what());
+
                 response.status = 500;
 
                 response.set_content("500 Internal Server Error", "text/plain");
@@ -74,7 +76,7 @@ namespace Networking
 
     bool HTTPServer::listen(const std::string &host, int port, int socket_flags)
     {
-        m_logger->info("Attempting to bind HTTP server to {0}:{1}", host, port);
+        m_logger->debug("Attempting to bind HTTP server to {0}:{1}", host, port);
 
         // try to bind to the port so that we can get out early if it doesn't work
         if (!bind_to_port(host.c_str(), port, socket_flags))
@@ -93,7 +95,7 @@ namespace Networking
         // launch the server listener in a thread
         m_server_thread = std::thread(&HTTPServer::server_listener, this);
 
-        m_logger->info("HTTP server successfully started on {0}:{1}", host, port);
+        m_logger->debug("HTTP server successfully started on {0}:{1}", host, port);
 
         return true;
     }
@@ -127,7 +129,7 @@ namespace Networking
         if (json_body.Parse(request.body.c_str()).HasParseError()
             && json_body.Parse(body_as_json_string.c_str()).HasParseError())
         {
-            return {MAKE_ERROR(JSON_DESERIALIZATION_ERROR), std::move(json_body)};
+            return {MAKE_ERROR(JSON_PARSE_ERROR), std::move(json_body)};
         }
 
         return {MAKE_ERROR(SUCCESS), std::move(json_body)};
@@ -166,19 +168,21 @@ namespace Networking
 
     void HTTPServer::shutdown()
     {
-        m_logger->info("Shutting down HTTP server on {0}:{1}...", m_host, m_port);
+        m_logger->debug("Shutting down HTTP server on {0}:{1}...", m_host, m_port);
 
         if (is_running())
         {
             Server::stop();
         }
 
+        m_logger->trace("HTTPLib instance stopped");
+
         if (m_server_thread.joinable())
         {
             m_server_thread.join();
         }
 
-        m_logger->info("HTTP server shutdown complete on {0}:{1}", m_host, m_port);
+        m_logger->debug("HTTP server shutdown complete on {0}:{1}", m_host, m_port);
     }
 
     bool HTTPServer::upnp_active() const

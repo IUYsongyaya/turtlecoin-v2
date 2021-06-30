@@ -36,7 +36,7 @@ namespace Networking
 
     ZMQServer::~ZMQServer()
     {
-        m_logger->info("Shutting down ZMQ Server on port {0}...", m_bind_port);
+        m_logger->debug("Shutting down ZMQ Server on port {0}...", m_bind_port);
 
         m_running = false;
 
@@ -47,14 +47,14 @@ namespace Networking
             m_thread_outgoing.join();
         }
 
-        m_logger->debug("ZMQ Server outgoing thread shut down successfully");
+        m_logger->trace("ZMQ Server outgoing thread shut down successfully");
 
         if (m_thread_incoming.joinable())
         {
             m_thread_incoming.join();
         }
 
-        m_logger->debug("ZMQ Server incoming thread shut down successfully");
+        m_logger->trace("ZMQ Server incoming thread shut down successfully");
 
         m_upnp_helper.reset();
 
@@ -62,16 +62,16 @@ namespace Networking
 
         m_socket.close();
 
-        m_logger->info("ZMQ Server shutdown complete on port {0}", m_bind_port);
+        m_logger->debug("ZMQ Server shutdown complete on port {0}", m_bind_port);
     }
 
     void ZMQServer::add_connection(const crypto_hash_t &identity)
     {
-        std::scoped_lock lock(m_mutex);
-
-        if (m_connections.find(identity) == m_connections.end())
+        if (!m_connections.contains(identity))
         {
             m_connections.insert(identity);
+
+            m_logger->trace("Adding registered connection for: {0}", identity.to_string());
         }
     }
 
@@ -79,7 +79,7 @@ namespace Networking
     {
         try
         {
-            m_logger->info("Attempting to bind ZMQ Server on *:{0}", m_bind_port);
+            m_logger->debug("Attempting to bind ZMQ Server on *:{0}", m_bind_port);
 
             std::scoped_lock lock(m_socket_mutex);
 
@@ -97,36 +97,29 @@ namespace Networking
                 m_thread_outgoing = std::thread(&ZMQServer::outgoing_thread, this);
             }
 
-            m_logger->info("ZMQ Server bound on *:{0}", m_bind_port);
+            m_logger->debug("ZMQ Server bound on *:{0}", m_bind_port);
 
             return MAKE_ERROR(SUCCESS);
         }
         catch (const zmq::error_t &e)
         {
-            return MAKE_ERROR_MSG(ZMQ_SERVER_BIND_FAILURE, e.what());
+            return MAKE_ERROR_MSG(ZMQ_BIND_ERROR, e.what());
         }
     }
 
     size_t ZMQServer::connections() const
     {
-        std::scoped_lock lock(m_mutex);
-
         return m_connections.size();
     }
 
     void ZMQServer::del_connection(const crypto_hash_t &identity)
     {
-        std::scoped_lock lock(m_mutex);
-
-        del_connection_unsafe(identity);
-    }
-
-    void ZMQServer::del_connection_unsafe(const crypto_hash_t &identity)
-    {
-        if (m_connections.find(identity) != m_connections.end())
+        if (m_connections.contains(identity))
         {
             m_connections.erase(identity);
         }
+
+        m_logger->trace("Deleting registered connection for: {0}", identity.to_string());
     }
 
     std::string ZMQServer::external_address() const
@@ -146,7 +139,7 @@ namespace Networking
 
     void ZMQServer::incoming_thread()
     {
-        while (true)
+        while (m_running)
         {
             try
             {
@@ -174,11 +167,16 @@ namespace Networking
                     routable_msg.peer_address = ZMQ_GETS(message, "Peer-Address");
 
                     m_incoming_msgs.push(routable_msg);
+
+                    m_logger->trace(
+                        "Message received from {0}: {1}",
+                        routable_msg.peer_address,
+                        Crypto::StringTools::to_hex(routable_msg.payload.data(), routable_msg.payload.size()));
                 }
             }
             catch (const zmq::error_t &e)
             {
-                m_logger->debug("Could not read incoming ZMQ message: {0}", e.what());
+                m_logger->trace("Could not read incoming ZMQ message: {0}", e.what());
             }
 
             if (thread_sleep(m_stopping))
@@ -200,10 +198,16 @@ namespace Networking
 
     void ZMQServer::outgoing_thread()
     {
-        while (true)
+        while (m_running)
         {
             while (!m_outgoing_msgs.empty())
             {
+                // allow for early breakout if stopping
+                if (!m_running)
+                {
+                    break;
+                }
+
                 auto message = m_outgoing_msgs.pop();
 
                 // skip empty messages
@@ -215,8 +219,6 @@ namespace Networking
                 // messages without a destination are BROADCAST messages
                 if (message.to.empty())
                 {
-                    std::scoped_lock lock(m_mutex);
-
                     for (const auto &to : m_connections)
                     {
                         try
@@ -228,6 +230,11 @@ namespace Networking
                             m_socket.send(message.to_msg(), zmq::send_flags::sndmore);
 
                             m_socket.send(message.payload_msg(), zmq::send_flags::dontwait);
+
+                            m_logger->trace(
+                                "Message sent to {0}: {1}",
+                                message.to.to_string(),
+                                Crypto::StringTools::to_hex(message.payload.data(), message.payload.size()));
                         }
                         catch (const zmq::error_t &e)
                         {
@@ -244,6 +251,11 @@ namespace Networking
                         m_socket.send(message.to_msg(), zmq::send_flags::sndmore);
 
                         m_socket.send(message.payload_msg(), zmq::send_flags::dontwait);
+
+                        m_logger->trace(
+                            "Message sent to {0}: {1}",
+                            message.to.to_string(),
+                            Crypto::StringTools::to_hex(message.payload.data(), message.payload.size()));
                     }
                     catch (const zmq::error_t &e)
                     {

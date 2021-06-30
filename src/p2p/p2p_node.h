@@ -8,12 +8,14 @@
 #include "peer_database.h"
 
 #include <condition_variable>
+#include <tools/thread_safe_map.h>
+#include <tools/thread_safe_set.h>
 #include <zmq_client.h>
 #include <zmq_server.h>
 
 namespace P2P
 {
-    class NetworkNode
+    class Node
     {
       public:
         /**
@@ -24,9 +26,9 @@ namespace P2P
          * @param bind_port
          * @param seed_mode
          */
-        NetworkNode(logger &logger, const std::string &path, const uint16_t &bind_port, bool seed_mode = false);
+        Node(logger &logger, const std::string &path, const uint16_t &bind_port, bool seed_mode = false);
 
-        ~NetworkNode();
+        ~Node();
 
         /**
          * Returns the number of incoming connections
@@ -57,6 +59,15 @@ namespace P2P
         std::shared_ptr<PeerDB> peers() const;
 
         /**
+         * Replies via the server to a request by a client
+         *
+         * NOTE: message must be properly routed via the TO field
+         *
+         * @param message
+         */
+        void reply(const zmq_message_envelope_t &message);
+
+        /**
          * Returns if the P2P network node is running
          *
          * @return
@@ -73,9 +84,10 @@ namespace P2P
         /**
          * Starts the P2P network node
          *
+         * @param seed_nodes
          * @return
          */
-        Error start();
+        Error start(const std::vector<std::string> &seed_nodes = {});
 
       private:
         /**
@@ -171,15 +183,6 @@ namespace P2P
             bool is_server = false);
 
         /**
-         * Replies via the server to a request by a client
-         *
-         * NOTE: message must be properly routed via the TO field
-         *
-         * @param message
-         */
-        void reply(const zmq_message_envelope_t &message);
-
-        /**
          * The thread that sends keepalive messages
          */
         void send_keepalives();
@@ -200,13 +203,11 @@ namespace P2P
 
         std::shared_ptr<Networking::ZMQServer> m_server;
 
-        std::vector<std::shared_ptr<Networking::ZMQClient>> m_clients;
+        ThreadSafeMap<crypto_hash_t, std::shared_ptr<Networking::ZMQClient>> m_clients;
 
-        std::set<crypto_hash_t> m_completed_handshake, m_clients_connected;
+        ThreadSafeSet<crypto_hash_t> m_completed_handshake;
 
         std::thread m_poller_thread, m_keepalive_thread, m_peer_exchange_thread, m_connection_manager_thread;
-
-        mutable std::mutex m_mutex_clients, m_mutex_handshake_completed;
 
         logger m_logger;
 

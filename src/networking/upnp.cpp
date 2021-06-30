@@ -19,15 +19,16 @@ namespace Networking
         m_upnp_data({0}),
         m_logger(logger)
     {
-        m_logger->info("Attempting to set up UPnP port forward for {0} on port {1}", m_service_name, port);
+        m_logger->debug("Attempting to set up UPnP port forward for {0} on port {1}", m_service_name, port);
 
         int result;
 
+        // attempt to discover any UPnP capable devices on the network
         UPNPDev *device_list = upnpDiscover(m_timeout, nullptr, nullptr, 0, (m_v6) ? 1 : 0, 2, &result);
 
         if (device_list == nullptr || result != 0)
         {
-            m_logger->info("Could not discover any UPnP devices on local network");
+            m_logger->trace("Could not discover any UPnP devices on local network");
 
             freeUPNPDevlist(device_list);
 
@@ -36,13 +37,14 @@ namespace Networking
 
         char lan_address[64] = {0};
 
+        // attempt to get a valid Internet Gateway Device (IGD) from the UPnP capable devices
         result = UPNP_GetValidIGD(device_list, &m_gateway_urls, &m_upnp_data, lan_address, sizeof(lan_address));
 
         freeUPNPDevlist(device_list);
 
         if (result != 1)
         {
-            m_logger->info("Could not fetch a UPnP gateway device from discovered UPnP devices on the local network");
+            m_logger->debug("Could not fetch a UPnP gateway device from discovered UPnP devices on the local network");
 
             return;
         }
@@ -54,13 +56,13 @@ namespace Networking
 
             if (!error)
             {
-                m_logger->info("Setup of UPnP port forward for {0} on port {1} successful", m_service_name, port);
+                m_logger->debug("Setup of UPnP port forward for {0} on port {1} successful", m_service_name, port);
 
                 m_active = true;
             }
             else
             {
-                m_logger->info("Could not add UPnP port forward: {0}", error.to_string());
+                m_logger->debug("Could not add UPnP port forward: {0}", error.to_string());
             }
         }
 
@@ -69,20 +71,20 @@ namespace Networking
 
             if (!error)
             {
-                m_logger->info("UPnP detected external IP address of: {0}", wan_address);
+                m_logger->debug("UPnP detected external IP address of: {0}", wan_address);
 
                 m_wan_address = wan_address;
             }
             else
             {
-                m_logger->info("Could not fetch external WAN address: {0}", error.to_string());
+                m_logger->debug("Could not fetch external WAN address: {0}", error.to_string());
             }
         }
     }
 
     UPNP::~UPNP()
     {
-        m_logger->info("Shutting down UPnP...");
+        m_logger->debug("Shutting down UPnP...");
 
         const auto error = del();
 
@@ -92,12 +94,12 @@ namespace Networking
         }
         else
         {
-            m_logger->info("Could not delete UPnP port forward: {0}", error.to_string());
+            m_logger->trace("Could not delete UPnP port forward: {0}", error.to_string());
         }
 
         FreeUPNPUrls(&m_gateway_urls);
 
-        m_logger->info("UPnP shutdown complete");
+        m_logger->debug("UPnP shutdown complete");
     }
 
     bool UPNP::active() const
@@ -124,7 +126,7 @@ namespace Networking
             return MAKE_ERROR(SUCCESS);
         }
 
-        return MAKE_ERROR_MSG(GENERIC_FAILURE, "Could not add UPnP port mapping.");
+        return MAKE_ERROR_MSG(UPNP_FAILURE, "Could not add UPnP port mapping.");
     }
 
     Error UPNP::del()
@@ -132,7 +134,7 @@ namespace Networking
         if (!m_active)
         {
             return MAKE_ERROR_MSG(
-                GENERIC_FAILURE, "UPnP is not supported by your network or we were unable to detect its presence.");
+                UPNP_NOT_SUPPORTED, "UPnP is not supported by your network or we were unable to detect its presence.");
         }
 
         const auto port_string = std::to_string(m_port);
@@ -144,7 +146,7 @@ namespace Networking
             return MAKE_ERROR(SUCCESS);
         }
 
-        return MAKE_ERROR_MSG(GENERIC_FAILURE, "Could not remove UPnP port mapping.");
+        return MAKE_ERROR_MSG(UPNP_FAILURE, "Could not remove UPnP port mapping.");
     }
 
     std::string UPNP::external_address() const
@@ -158,7 +160,8 @@ namespace Networking
         {
             return {
                 MAKE_ERROR_MSG(
-                    GENERIC_FAILURE, "UPnP is not supported by your network or we were unable to detect its presence."),
+                    UPNP_NOT_SUPPORTED,
+                    "UPnP is not supported by your network or we were unable to detect its presence."),
                 {}};
         }
 
@@ -169,7 +172,7 @@ namespace Networking
             return {MAKE_ERROR(SUCCESS), std::string(wan_address)};
         }
 
-        return {MAKE_ERROR_MSG(GENERIC_FAILURE, "Could not get external IP address"), {}};
+        return {MAKE_ERROR_MSG(UPNP_FAILURE, "Could not get external IP address"), {}};
     }
 
     std::string UPNP::local_address() const

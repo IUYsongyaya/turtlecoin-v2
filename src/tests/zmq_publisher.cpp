@@ -2,8 +2,8 @@
 //
 // Please see the included LICENSE file for more information.
 
+#include <cli_helper.h>
 #include <console.h>
-#include <tools/cli_helper.h>
 #include <tools/thread_helper.h>
 #include <zmq_publisher.h>
 
@@ -35,25 +35,27 @@ void auto_sender_thread(std::shared_ptr<ZMQPublisher> &server, logger &logger)
 
 int main(int argc, char **argv)
 {
+    auto console = std::make_shared<ConsoleHandler>("ZMQ Test Publisher");
+
+    auto cli = std::make_shared<Utilities::CLIHelper>(argv);
+
     uint16_t server_port = Configuration::Notifier::DEFAULT_BIND_PORT;
 
-    auto options = cli_setup_options(argv);
-
     // clang-format off
-    options.add_options("Server")
+    cli->add_options("Server")
         ("p,port", "The local port to bind the server to",
             cxxopts::value<uint16_t>(server_port)->default_value(std::to_string(server_port)));
     // clang-format on
 
-    auto [cli, log_level] = cli_parse_options(argc, argv, options);
-
-    auto console = std::make_shared<ConsoleHandler>("ZMQ Test Publisher");
+    cli->parse(argc, argv);
 
     console->catch_abort();
 
-    auto logger = Logger::create_logger("./test-zmq-publisher.log", log_level);
+    auto logger = Logger::create_logger("./test-zmq-publisher.log", cli->log_level());
 
     auto server = std::make_shared<ZMQPublisher>(logger, server_port);
+
+    logger->info("Starting Test ZMQ Publisher...");
 
     const auto error = server->bind();
 
@@ -66,7 +68,11 @@ int main(int argc, char **argv)
 
     std::thread th(auto_sender_thread, std::ref(server), std::ref(logger));
 
+    logger->info("Test ZMQ Publisher Started");
+
     console->run();
+
+    logger->info("Test ZMQ Publisher shutting down...");
 
     stopping.notify_all();
 

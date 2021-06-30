@@ -114,6 +114,11 @@ struct ip_address_t : virtual BaseTypes::IStorable
         return !is_v4();
     }
 
+    [[nodiscard]] uint16_t port() const
+    {
+        return m_address.port;
+    }
+
     void serialize(serializer_t &writer) const override
     {
         for (size_t i = 0; i < IPV6_NUM_COMPONENTS; ++i)

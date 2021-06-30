@@ -7,6 +7,7 @@
 
 #include <mutex>
 #include <queue>
+#include <thread>
 #include <vector>
 
 template<typename T, typename Comparison = std::less<T>> class ThreadSafePriorityQueue
@@ -23,7 +24,7 @@ template<typename T, typename Comparison = std::less<T>> class ThreadSafePriorit
     {
         std::scoped_lock lock(m_mutex);
 
-        return m_priority_queue.empty();
+        return m_container.empty();
     }
 
     /**
@@ -35,9 +36,9 @@ template<typename T, typename Comparison = std::less<T>> class ThreadSafePriorit
     {
         std::scoped_lock lock(m_mutex);
 
-        auto item = m_priority_queue.top();
+        auto item = m_container.top();
 
-        m_priority_queue.pop();
+        m_container.pop();
 
         return item;
     }
@@ -51,7 +52,7 @@ template<typename T, typename Comparison = std::less<T>> class ThreadSafePriorit
     {
         std::scoped_lock lock(m_mutex);
 
-        m_priority_queue.push(item);
+        m_container.push(item);
     }
 
     /**
@@ -66,7 +67,7 @@ template<typename T, typename Comparison = std::less<T>> class ThreadSafePriorit
 
         for (const auto &item : items)
         {
-            m_priority_queue.push(item);
+            m_container.push(item);
         }
     }
 
@@ -79,7 +80,7 @@ template<typename T, typename Comparison = std::less<T>> class ThreadSafePriorit
     {
         std::scoped_lock lock(m_mutex);
 
-        return m_priority_queue.size();
+        return m_container.size();
     }
 
     /**
@@ -91,11 +92,11 @@ template<typename T, typename Comparison = std::less<T>> class ThreadSafePriorit
     {
         std::scoped_lock lock(m_mutex);
 
-        return m_priority_queue.top();
+        return m_container.top();
     }
 
   private:
-    std::priority_queue<T, std::vector<T>, Comparison> m_priority_queue;
+    std::priority_queue<T, std::vector<T>, Comparison> m_container;
 
     mutable std::mutex m_mutex;
 };

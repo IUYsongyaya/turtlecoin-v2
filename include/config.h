@@ -66,6 +66,8 @@ namespace Configuration
      */
     const uint64_t PUBLIC_ADDRESS_PREFIX = 0x6bb3b1d;
 
+    const std::string DEFAULT_DATA_DIR = "." + Version::PROJECT_NAME;
+
     namespace ZMQ
     {
         /**
@@ -74,8 +76,6 @@ namespace Configuration
          * See http://rfc.zeromq.org/spec:32 for more information on how the keys are encoded
          */
         const std::string SERVER_SECRET_KEY = "!EGQIc+DG97q$Y4DOY}.[8l!%dVf*-W{S.^.Gy&z";
-
-        const std::string SERVER_PUBLIC_KEY = "m/VCSdXIcy5zWa*L)0m+TF#9[SQ]Cf)*Hl@(fw^1";
     } // namespace ZMQ
 
     namespace Notifier
@@ -134,7 +134,7 @@ namespace Configuration
          * Defines the list of P2P bootstrap/seed nodes for which we will attempt
          * to connect to if our peer list database is empty
          */
-        const std::vector<SeedNode> SEED_NODES = {{"127.0.0.2", 12897}};
+        const std::vector<SeedNode> SEED_NODES = {{"165.227.252.132", 12897}};
 
         /**
          * Sets the default outbound connection count that we will try to maintain

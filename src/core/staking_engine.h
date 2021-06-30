@@ -5,9 +5,7 @@
 #ifndef CORE_STAKING_ENGINE_H
 #define CORE_STAKING_ENGINE_H
 
-#include <crypto.h>
 #include <db_lmdb.h>
-#include <errors.h>
 #include <types.h>
 
 namespace Core

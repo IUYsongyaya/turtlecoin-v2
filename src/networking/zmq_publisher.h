@@ -12,7 +12,6 @@
 #include <config.h>
 #include <errors.h>
 #include <network/zmq_message_envelope.h>
-#include <thread>
 #include <tools/thread_safe_queue.h>
 #include <zmq.hpp>
 

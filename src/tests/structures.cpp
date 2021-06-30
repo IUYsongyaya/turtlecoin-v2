@@ -2,7 +2,7 @@
 //
 // Please see the included LICENSE file for more information.
 
-#include <tools/cli_helper.h>
+#include <cli_helper.h>
 #include <types.h>
 
 using namespace Types;
@@ -83,9 +83,9 @@ static inline void check_binary_json_serialization(const T &value, const std::st
 
 int main(int argc, char **argv)
 {
-    auto options = cli_setup_options(argv);
+    auto cli = std::make_shared<Utilities::CLIHelper>(argv);
 
-    auto cli = cli_parse_options(argc, argv, options);
+    cli->parse(argc, argv);
 
     std::cout << "Data Structures Tests" << std::endl << std::endl;
 

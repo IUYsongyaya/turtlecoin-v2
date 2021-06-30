@@ -7,6 +7,7 @@
 
 #include <mutex>
 #include <queue>
+#include <thread>
 #include <vector>
 
 template<typename T> class ThreadSafeQueue
@@ -23,7 +24,7 @@ template<typename T> class ThreadSafeQueue
     {
         std::scoped_lock lock(m_mutex);
 
-        return m_queue.back();
+        return m_container.back();
     }
 
     /**
@@ -33,7 +34,7 @@ template<typename T> class ThreadSafeQueue
     {
         std::scoped_lock lock(m_mutex);
 
-        m_queue = std::queue<T>();
+        m_container = std::queue<T>();
     }
 
     /**
@@ -45,7 +46,7 @@ template<typename T> class ThreadSafeQueue
     {
         std::scoped_lock lock(m_mutex);
 
-        return m_queue.empty();
+        return m_container.empty();
     }
 
     /**
@@ -57,7 +58,7 @@ template<typename T> class ThreadSafeQueue
     {
         std::scoped_lock lock(m_mutex);
 
-        return m_queue.front();
+        return m_container.front();
     }
 
     /**
@@ -69,9 +70,9 @@ template<typename T> class ThreadSafeQueue
     {
         std::scoped_lock lock(m_mutex);
 
-        auto item = m_queue.front();
+        auto item = m_container.front();
 
-        m_queue.pop();
+        m_container.pop();
 
         return item;
     }
@@ -85,7 +86,7 @@ template<typename T> class ThreadSafeQueue
     {
         std::scoped_lock lock(m_mutex);
 
-        m_queue.push(item);
+        m_container.push(item);
     }
 
     /**
@@ -100,7 +101,7 @@ template<typename T> class ThreadSafeQueue
 
         for (const auto &item : items)
         {
-            m_queue.push(item);
+            m_container.push(item);
         }
     }
 
@@ -113,7 +114,7 @@ template<typename T> class ThreadSafeQueue
     {
         std::scoped_lock lock(m_mutex);
 
-        return m_queue.size();
+        return m_container.size();
     }
 
     /**
@@ -123,16 +124,16 @@ template<typename T> class ThreadSafeQueue
     {
         std::scoped_lock lock(m_mutex);
 
-        if (m_queue.empty())
+        if (m_container.empty())
         {
             return;
         }
 
-        m_queue.pop();
+        m_container.pop();
     }
 
   private:
-    std::queue<T> m_queue;
+    std::queue<T> m_container;
 
     mutable std::mutex m_mutex;
 };

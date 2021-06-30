@@ -2,28 +2,30 @@
 //
 // Please see the included LICENSE file for more information.
 
-#ifndef TURTLECOIN_BASE58_H
-#define TURTLECOIN_BASE58_H
+#ifndef COMMON_ADDRESS_H
+#define COMMON_ADDRESS_H
 
 #include <crypto.h>
 #include <errors.h>
 
-namespace Utilities
+namespace Common::Address
 {
     /**
      * Decodes the public keys from a Base58 encoded public wallet address
+     *
      * @param address public wallet address
      * @return
      */
-    std::tuple<Error, crypto_public_key_t, crypto_public_key_t> decode_address(const std::string &address);
+    std::tuple<Error, crypto_public_key_t, crypto_public_key_t> decode(const std::string &address);
 
     /**
      * Encodes the public keys into a Base58 encoded public wallet address
+     *
      * @param public_spend the public spend key
      * @param public_view the public view key
      * @return
      */
-    std::string encode_address(const crypto_public_key_t &public_spend, const crypto_public_key_t &public_view);
-} // namespace Utilities
+    std::string encode(const crypto_public_key_t &public_spend, const crypto_public_key_t &public_view);
+} // namespace Common::Address
 
-#endif // TURTLECOIN_BASE58_H
+#endif // COMMON_ADDRESS_H

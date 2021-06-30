@@ -18,7 +18,16 @@ namespace Networking
 
         m_monitor.start(m_socket, ZMQ_EVENT_ALL);
 
-        m_socket.set(zmq::sockopt::curve_serverkey, Configuration::ZMQ::SERVER_PUBLIC_KEY.c_str());
+        {
+            const auto [error, public_key] = zmq_generate_public_key(Configuration::ZMQ::SERVER_SECRET_KEY);
+
+            if (error)
+            {
+                throw std::runtime_error(error.to_string());
+            }
+
+            m_socket.set(zmq::sockopt::curve_serverkey, public_key.c_str());
+        }
 
         const auto [error, public_key, secret_key] = zmq_generate_keypair();
 
@@ -33,7 +42,7 @@ namespace Networking
 
         m_socket.set(zmq::sockopt::connect_timeout, timeout);
 
-        m_socket.set(zmq::sockopt::immediate, true);
+        m_socket.set(zmq::sockopt::immediate, false);
 
         m_socket.set(zmq::sockopt::routing_id, identity);
 
@@ -46,7 +55,7 @@ namespace Networking
 
     ZMQClient::~ZMQClient()
     {
-        m_logger->info("Shutting down ZMQ Client...");
+        m_logger->debug("Shutting down ZMQ Client...");
 
         m_running = false;
 
@@ -57,27 +66,27 @@ namespace Networking
             m_thread_outgoing.join();
         }
 
-        m_logger->debug("Client outgoing thread shut down successfully");
+        m_logger->trace("Client outgoing thread shut down successfully");
 
         if (m_thread_incoming.joinable())
         {
             m_thread_incoming.join();
         }
 
-        m_logger->debug("Client incoming thread shut down successfully");
+        m_logger->trace("Client incoming thread shut down successfully");
 
         std::scoped_lock lock(m_socket_mutex);
 
         m_socket.close();
 
-        m_logger->info("ZMQ Client shutdown complete");
+        m_logger->debug("ZMQ Client shutdown complete");
     }
 
     Error ZMQClient::connect(const std::string &host, const uint16_t &port)
     {
         try
         {
-            m_logger->info("Attempting to connect ZMQ Client to {0}:{1}", host, port);
+            m_logger->debug("Attempting to connect ZMQ Client to {0}:{1}", host, port);
 
             std::unique_lock lock(m_connecting);
 
@@ -90,8 +99,7 @@ namespace Networking
 
             if (timeout == std::cv_status::timeout)
             {
-                return MAKE_ERROR_MSG(
-                    ZMQ_CLIENT_CONNECT_FAILURE, "Could not connect to " + host + ":" + std::to_string(port));
+                return MAKE_ERROR_MSG(ZMQ_CONNECT_ERROR, "Could not connect to " + host + ":" + std::to_string(port));
             }
 
             if (!m_running)
@@ -103,19 +111,19 @@ namespace Networking
                 m_thread_outgoing = std::thread(&ZMQClient::outgoing_thread, this);
             }
 
-            m_logger->info("Connected ZMQ Client to {0}:{1}", host, port);
+            m_logger->debug("Connected ZMQ Client to {0}:{1}", host, port);
 
             return MAKE_ERROR(SUCCESS);
         }
         catch (const zmq::error_t &e)
         {
-            return MAKE_ERROR_MSG(ZMQ_CLIENT_CONNECT_FAILURE, e.what());
+            return MAKE_ERROR_MSG(ZMQ_CONNECT_ERROR, e.what());
         }
     }
 
     bool ZMQClient::connected() const
     {
-        return !m_monitor.connected().empty();
+        return !m_monitor.connected()->empty();
     }
 
     crypto_hash_t ZMQClient::identity() const
@@ -125,7 +133,7 @@ namespace Networking
 
     void ZMQClient::incoming_thread()
     {
-        while (true)
+        while (m_running)
         {
             try
             {
@@ -149,11 +157,16 @@ namespace Networking
                     routable_msg.peer_address = ZMQ_GETS(message, "Peer-Address");
 
                     m_incoming_msgs.push(routable_msg);
+
+                    m_logger->trace(
+                        "Message received from {0}: {1}",
+                        routable_msg.peer_address,
+                        Crypto::StringTools::to_hex(routable_msg.payload.data(), routable_msg.payload.size()));
                 }
             }
             catch (const zmq::error_t &e)
             {
-                m_logger->debug("Could not read incoming ZMQ message: {0}", e.what());
+                m_logger->trace("Could not read incoming ZMQ message: {0}", e.what());
             }
 
             if (thread_sleep(m_stopping))
@@ -170,7 +183,7 @@ namespace Networking
 
     void ZMQClient::outgoing_thread()
     {
-        while (true)
+        while (m_running)
         {
             while (!m_outgoing_msgs.empty())
             {
@@ -187,10 +200,15 @@ namespace Networking
                     std::scoped_lock lock(m_socket_mutex);
 
                     m_socket.send(message.payload_msg(), zmq::send_flags::dontwait);
+
+                    m_logger->trace(
+                        "Message sent to {0}: {1}",
+                        message.to.to_string(),
+                        Crypto::StringTools::to_hex(message.payload.data(), message.payload.size()));
                 }
                 catch (const zmq::error_t &e)
                 {
-                    m_logger->warn("Could not send ZMQ message: {0}", e.what());
+                    m_logger->debug("Could not send ZMQ message: {0}", e.what());
                 }
             }
 

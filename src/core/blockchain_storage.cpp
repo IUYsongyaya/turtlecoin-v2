@@ -57,7 +57,7 @@ namespace Core
 
         if (error)
         {
-            return {MAKE_ERROR(BLOCK_NOT_FOUND), {}, {}};
+            return {MAKE_ERROR(DB_BLOCK_NOT_FOUND), {}, {}};
         }
 
         std::vector<Types::Blockchain::transaction_t> transactions;
@@ -70,7 +70,7 @@ namespace Core
 
             if (txn_error)
             {
-                return {MAKE_ERROR(TRANSACTION_NOT_FOUND), {}, {}};
+                return {MAKE_ERROR(DB_TRANSACTION_NOT_FOUND), {}, {}};
             }
 
             transactions.push_back(transaction);
@@ -87,7 +87,7 @@ namespace Core
 
         if (error)
         {
-            return {MAKE_ERROR(BLOCK_NOT_FOUND), {}, {}};
+            return {MAKE_ERROR(DB_BLOCK_NOT_FOUND), {}, {}};
         }
 
         return get_block(block_hash);
@@ -105,7 +105,7 @@ namespace Core
 
         if (error)
         {
-            return {MAKE_ERROR(BLOCK_NOT_FOUND), 0, {}};
+            return {MAKE_ERROR(DB_BLOCK_NOT_FOUND), 0, {}};
         }
 
         return {error, result_timestamp, block_hash};
@@ -123,7 +123,7 @@ namespace Core
 
         if (error)
         {
-            return {MAKE_ERROR(BLOCK_NOT_FOUND), {}};
+            return {MAKE_ERROR(DB_BLOCK_NOT_FOUND), {}};
         }
 
         return {error, block_hash};
@@ -136,7 +136,7 @@ namespace Core
 
         if (error)
         {
-            return {MAKE_ERROR(BLOCK_NOT_FOUND), 0};
+            return {MAKE_ERROR(DB_BLOCK_NOT_FOUND), 0};
         }
 
         return {error, block.block_index};
@@ -167,7 +167,7 @@ namespace Core
 
         if (global_index > maximum_global_index)
         {
-            return {MAKE_ERROR(GLOBAL_INDEX_OUT_OF_BOUNDS), {}};
+            return {MAKE_ERROR(DB_GLOBAL_INDEX_OUT_OF_BOUNDS), {}};
         }
 
         // go get the transaction output for the global index
@@ -196,7 +196,7 @@ namespace Core
         // if we did not get the same number of results as requested... fail
         if (results.size() != global_indexes.size())
         {
-            return {MAKE_ERROR(GLOBAL_INDEX_OUT_OF_BOUNDS), {}};
+            return {MAKE_ERROR(DB_GLOBAL_INDEX_OUT_OF_BOUNDS), {}};
         }
 
         return {MAKE_ERROR(SUCCESS), results};
@@ -210,7 +210,7 @@ namespace Core
 
         if (error)
         {
-            return {MAKE_ERROR(TRANSACTION_NOT_FOUND), {}, {}};
+            return {MAKE_ERROR(DB_TRANSACTION_NOT_FOUND), {}, {}};
         }
 
         // go get the block hash the transaction is contained within
@@ -218,7 +218,7 @@ namespace Core
 
         if (txn_error)
         {
-            return {MAKE_ERROR(BLOCK_NOT_FOUND), {}, {}};
+            return {MAKE_ERROR(DB_BLOCK_NOT_FOUND), {}, {}};
         }
 
         deserializer_t reader(txn_data);
@@ -255,7 +255,7 @@ namespace Core
 
         if (error)
         {
-            return {MAKE_ERROR(TRANSACTION_NOT_FOUND), {}};
+            return {MAKE_ERROR(DB_TRANSACTION_NOT_FOUND), {}};
         }
 
         std::vector<uint64_t> result;
@@ -271,7 +271,7 @@ namespace Core
             }
             catch (...)
             {
-                return {MAKE_ERROR(DESERIALIZATION_ERROR), {}};
+                return {MAKE_ERROR(DB_DESERIALIZATION_ERROR), {}};
             }
         }
 
@@ -313,7 +313,7 @@ namespace Core
             // verify that the number of transactions match what is expected
             if (transactions.size() != block.transactions.size())
             {
-                return MAKE_ERROR(BLOCK_TRANSACTIONS_MISMATCH);
+                return MAKE_ERROR(BLOCK_TXN_MISMATCH);
             }
 
             // dump the transaction hashes into two vectors so that we can easily compare them

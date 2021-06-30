@@ -5,7 +5,6 @@
 #ifndef CORE_BLOCKCHAIN_STORAGE_H
 #define CORE_BLOCKCHAIN_STORAGE_H
 
-#include <crypto.h>
 #include <db_lmdb.h>
 #include <types.h>
 
@@ -35,7 +34,7 @@ namespace Core
          * @param block_hash
          * @return
          */
-        bool block_exists(const crypto_hash_t &block_hash) const;
+        [[nodiscard]] bool block_exists(const crypto_hash_t &block_hash) const;
 
         /**
          * Checks whether the block with the given index exists in the database
@@ -43,7 +42,7 @@ namespace Core
          * @param block_index
          * @return
          */
-        bool block_exists(const uint64_t &block_index) const;
+        [[nodiscard]] bool block_exists(const uint64_t &block_index) const;
 
         /**
          * Retrieves the block and transactions within that block using the specified block hash
@@ -51,7 +50,7 @@ namespace Core
          * @param block_hash
          * @return
          */
-        std::tuple<Error, Types::Blockchain::block_t, std::vector<Types::Blockchain::transaction_t>>
+        [[nodiscard]] std::tuple<Error, Types::Blockchain::block_t, std::vector<Types::Blockchain::transaction_t>>
             get_block(const crypto_hash_t &block_hash) const;
 
         /**
@@ -60,7 +59,7 @@ namespace Core
          * @param block_height
          * @return
          */
-        std::tuple<Error, Types::Blockchain::block_t, std::vector<Types::Blockchain::transaction_t>>
+        [[nodiscard]] std::tuple<Error, Types::Blockchain::block_t, std::vector<Types::Blockchain::transaction_t>>
             get_block(const uint64_t &block_index) const;
 
         /**
@@ -69,14 +68,15 @@ namespace Core
          * @param timestamp
          * @return
          */
-        std::tuple<Error, uint64_t, crypto_hash_t> get_block_by_timestamp(const uint64_t &timestamp) const;
+        [[nodiscard]] std::tuple<Error, uint64_t, crypto_hash_t>
+            get_block_by_timestamp(const uint64_t &timestamp) const;
 
         /**
          * Retrieve the total number of blocks stored in the database
          *
          * @return
          */
-        size_t get_block_count() const;
+        [[nodiscard]] size_t get_block_count() const;
 
         /**
          * Retrieve the block hash for the given block index
@@ -84,7 +84,7 @@ namespace Core
          * @param block_index
          * @return
          */
-        std::tuple<Error, crypto_hash_t> get_block_hash(const uint64_t &block_index) const;
+        [[nodiscard]] std::tuple<Error, crypto_hash_t> get_block_hash(const uint64_t &block_index) const;
 
         /**
          * Retrieve the block hash for the given block hash
@@ -92,14 +92,14 @@ namespace Core
          * @param block_hash
          * @return
          */
-        std::tuple<Error, uint64_t> get_block_index(const crypto_hash_t &block_hash) const;
+        [[nodiscard]] std::tuple<Error, uint64_t> get_block_index(const crypto_hash_t &block_hash) const;
 
         /**
          * Retrieves the maximum transaction output global index from the database
          *
          * @return
          */
-        std::tuple<Error, uint64_t> get_maximum_global_index() const;
+        [[nodiscard]] std::tuple<Error, uint64_t> get_maximum_global_index() const;
 
         /**
          * Retrieves the transaction output for the specified global index
@@ -107,7 +107,7 @@ namespace Core
          * @param global_index
          * @return
          */
-        std::tuple<Error, Types::Blockchain::transaction_output_t>
+        [[nodiscard]] std::tuple<Error, Types::Blockchain::transaction_output_t>
             get_output_by_global_index(const uint64_t &global_index) const;
 
         /**
@@ -116,7 +116,7 @@ namespace Core
          * @param global_indexes
          * @return
          */
-        std::tuple<Error, std::map<uint64_t, Types::Blockchain::transaction_output_t>>
+        [[nodiscard]] std::tuple<Error, std::map<uint64_t, Types::Blockchain::transaction_output_t>>
             get_outputs_by_global_indexes(const std::vector<uint64_t> &global_indexes) const;
 
         /**
@@ -125,7 +125,7 @@ namespace Core
          * @param txn_hash
          * @return
          */
-        std::tuple<Error, Types::Blockchain::transaction_t, crypto_hash_t>
+        [[nodiscard]] std::tuple<Error, Types::Blockchain::transaction_t, crypto_hash_t>
             get_transaction(const crypto_hash_t &txn_hash) const;
 
         /**
@@ -134,7 +134,8 @@ namespace Core
          * @param txn_hash
          * @return
          */
-        std::tuple<Error, std::vector<uint64_t>> get_transaction_indexes(const crypto_hash_t &txn_hash) const;
+        [[nodiscard]] std::tuple<Error, std::vector<uint64_t>>
+            get_transaction_indexes(const crypto_hash_t &txn_hash) const;
 
         /**
          * Checks if the specified key image exists in the database
@@ -142,7 +143,7 @@ namespace Core
          * @param key_image
          * @return
          */
-        bool key_image_exists(const crypto_key_image_t &key_image) const;
+        [[nodiscard]] bool key_image_exists(const crypto_key_image_t &key_image) const;
 
         /**
          * Checks if the specified key image exists in the database
@@ -150,7 +151,8 @@ namespace Core
          * @param key_images
          * @return
          */
-        std::map<crypto_key_image_t, bool> key_image_exists(const std::vector<crypto_key_image_t> &key_images) const;
+        [[nodiscard]] std::map<crypto_key_image_t, bool>
+            key_image_exists(const std::vector<crypto_key_image_t> &key_images) const;
 
         /**
          * Saves the block with the transactions specified in the database
