@@ -26,6 +26,15 @@ namespace Utilities
     std::string str_join(const std::vector<std::string> &input, const char &ch = ' ');
 
     /**
+     * Pads a string with blank spaces up to the specified length
+     *
+     * @param input
+     * @param length
+     * @return
+     */
+    std::string str_pad(std::string input, size_t length = 0);
+
+    /**
      * Splits a string into a vector of strings using the specified character as a delimiter
      *
      * @param input

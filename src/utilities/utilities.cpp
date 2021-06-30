@@ -32,9 +32,8 @@ namespace Utilities
 
         for (const auto &[left, right] : rows)
         {
-            std::cout << COLOR::white << "| " << std::left << std::setw(long_left) << COLOR::yellow << left
-                      << COLOR::white << " | " << std::setw(long_right) << COLOR::green << right << COLOR::white << " |"
-                      << std::endl;
+            std::cout << COLOR::white << "| " << COLOR::yellow << str_pad(left, long_left) << COLOR::white << " | "
+                      << COLOR::green << str_pad(right, long_right) << COLOR::white << " |" << std::endl;
         }
 
         std::cout << COLOR::white << std::string(total_width, '=') << COLOR::reset << std::endl << std::endl;
@@ -53,6 +52,21 @@ namespace Utilities
         result = result.substr(0, result.size() - 1);
 
         return result;
+    }
+
+    std::string str_pad(std::string input, size_t length)
+    {
+        if (input.length() < length)
+        {
+            const auto delta = length - input.length();
+
+            for (size_t i = 0; i < delta; ++i)
+            {
+                input += " ";
+            }
+        }
+
+        return input;
     }
 
     std::vector<std::string> str_split(const std::string &input, const char &ch)
